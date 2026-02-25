@@ -9,11 +9,7 @@ function Hero() {
             Earn Money While You Watch Ads
           </h1>
           <p className="text-lg md:text-xl mb-6 text-white/85">
-            Watch ads, refer friends, build your team, and start earning today. Multiple income streams, one platform.
-          </p>
-
-          <p className="text-white/80 mb-8 text-sm md:text-base">
-            Join thousands who get paid for watching short ads, earn more when you refer others, and unlock team rewards as your network grows. No extra job—just your phone, a few minutes, and real payouts in Naira, CFA, or RWF.
+            Watch short ads, refer friends, and earn daily from one simple platform.
           </p>
 
           <div className="flex flex-wrap justify-center gap-4 mb-10">
@@ -22,9 +18,6 @@ function Hero() {
             </span>
             <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-green-50 text-green-700 text-sm font-medium">
               Refer friends → Earn more
-            </span>
-            <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-amber-50 text-amber-700 text-sm font-medium">
-              Build your team → Unlock rewards
             </span>
           </div>
 

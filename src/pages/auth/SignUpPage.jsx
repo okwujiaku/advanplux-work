@@ -34,10 +34,7 @@ function SignUpPage() {
   return (
     <div className="min-h-screen bg-[linear-gradient(180deg,#f2f5fa_0%,#ffffff_100%)] px-4 py-8 sm:py-10">
       <div className="max-w-md mx-auto">
-        <div className="w-24 h-24 mx-auto rounded-full bg-white border border-slate-200 shadow flex items-center justify-center text-slate-800 font-bold text-xl">
-          ADV
-        </div>
-        <div className="mt-6 bg-white rounded-3xl border border-slate-200 shadow-xl p-6">
+        <div className="bg-white rounded-3xl border border-slate-200 shadow-xl p-6">
           <h1 className="text-3xl font-bold text-slate-900">Sign Up</h1>
 
           <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
@@ -96,7 +93,7 @@ function SignUpPage() {
 
             <button
               type="submit"
-              className="w-full py-3.5 rounded-2xl bg-[linear-gradient(135deg,#05080f_0%,#0e2a47_55%,#0f4f85_100%)] hover:opacity-95 text-white font-semibold shadow-lg"
+              className="w-full py-3.5 rounded-2xl bg-[linear-gradient(135deg,#063b24_0%,#0b4f30_55%,#126c44_100%)] hover:opacity-95 text-white font-semibold shadow-lg"
             >
               Sign Up
             </button>
@@ -104,7 +101,7 @@ function SignUpPage() {
 
           <p className="text-sm text-slate-500 mt-5 text-center">
             Already Signed Up?{' '}
-            <Link to="/sign-in" className="text-[#0f4f85] font-semibold">
+            <Link to="/sign-in" className="text-[#126c44] font-semibold">
               Sign In
             </Link>
           </p>
