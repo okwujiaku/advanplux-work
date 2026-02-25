@@ -23,27 +23,27 @@ function Dashboard() {
   ]
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top_right,#fff7e8_0%,#fffdf6_45%,#f8f3e9_100%)]">
-      <header className="bg-[#fff7e8]/95 border-b border-[#e8dcc8] sticky top-0 z-40 backdrop-blur">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top_right,#eef4ff_0%,#ffffff_45%,#f5f9ff_100%)]">
+      <header className="bg-white/95 border-b border-slate-200 sticky top-0 z-40 backdrop-blur">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="py-2 space-y-2 sm:space-y-0 sm:flex sm:justify-between sm:items-center sm:h-14 sm:py-0">
             <div className="flex items-center justify-between gap-2">
-              <Link to="/" className="text-xl font-bold text-[#7d5b2f]">
+              <Link to="/" className="text-xl font-bold text-slate-900">
                 Advanplux
               </Link>
-              <span className="text-[#a77d4a] text-sm hidden sm:inline">Dashboard</span>
+              <span className="text-slate-500 text-sm hidden sm:inline">Dashboard</span>
             </div>
           </div>
         </div>
         {menuOpen && (
-          <div className="border-t border-[#e8dcc8] bg-[#fff8ec]">
+          <div className="border-t border-slate-200 bg-white">
             <div className="max-w-7xl mx-auto px-4 py-2 grid sm:grid-cols-2 lg:grid-cols-4 gap-2">
               {menuItems.map((item) => (
                 <Link
                   key={item.label}
                   to={item.to}
                   onClick={() => setMenuOpen(false)}
-                  className="px-3 py-2 rounded-lg text-sm text-[#6f522c] hover:bg-[#f4e8d5]"
+                  className="px-3 py-2 rounded-lg text-sm text-slate-700 hover:bg-sky-50"
                 >
                   {item.label}
                 </Link>
@@ -55,7 +55,7 @@ function Dashboard() {
 
       <div className="flex">
         {/* Desktop sidebar */}
-        <aside className="hidden md:block w-64 flex-shrink-0 bg-[linear-gradient(180deg,#fff8ec_0%,#f5ebda_100%)] border-r border-[#e8dcc8] min-h-[calc(100vh-3.5rem)]">
+        <aside className="hidden md:block w-64 flex-shrink-0 bg-white border-r border-slate-200 min-h-[calc(100vh-3.5rem)] shadow-sm">
           <nav className="p-4 space-y-1">
             {navItems.map(({ to, end, label }) => (
               <NavLink
@@ -64,7 +64,9 @@ function Dashboard() {
                 end={end}
                 className={({ isActive }) =>
                   `block px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
-                    isActive ? 'bg-[#dcb175] text-[#3f2b16]' : 'text-[#6f522c] hover:bg-[#f2e4ce]'
+                    isActive
+                      ? 'bg-[linear-gradient(135deg,#2563eb_0%,#1d4ed8_100%)] text-white shadow-md'
+                      : 'text-slate-700 hover:bg-sky-50'
                   }`
                 }
               >
@@ -79,11 +81,11 @@ function Dashboard() {
       </div>
 
       {/* Mobile bottom nav */}
-      <div className="md:hidden fixed bottom-3 left-1/2 -translate-x-1/2 w-[92%] bg-[#fff8ec] border border-[#e8dcc8] rounded-2xl shadow-lg z-40">
+      <div className="md:hidden fixed bottom-3 left-1/2 -translate-x-1/2 w-[92%] bg-white border border-slate-200 rounded-2xl shadow-lg z-40">
         <div className="grid grid-cols-3 text-center">
-          <Link to="/dashboard" className="py-3 text-sm font-medium text-[#6f522c]">Home</Link>
-          <Link to="/dashboard/watch" className="py-3 text-xs font-medium text-[#6f522c]/90 px-2">Watch Ads and get paid</Link>
-          <button type="button" onClick={() => setMenuOpen((prev) => !prev)} className="py-3 text-sm font-medium text-[#6f522c]/90">Menu</button>
+          <Link to="/dashboard" className="py-3 text-sm font-medium text-slate-800">Home</Link>
+          <Link to="/dashboard/watch" className="py-3 text-xs font-medium text-slate-700 px-2">Watch Ads and get paid</Link>
+          <button type="button" onClick={() => setMenuOpen((prev) => !prev)} className="py-3 text-sm font-medium text-slate-700">Menu</button>
         </div>
       </div>
     </div>
