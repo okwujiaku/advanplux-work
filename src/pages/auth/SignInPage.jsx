@@ -2,6 +2,24 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
 
+function Icon({ type }) {
+  const cls = 'w-4 h-4 text-slate-500'
+  if (type === 'user') {
+    return (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={cls}>
+        <path d="M20 21a8 8 0 0 0-16 0" />
+        <circle cx="12" cy="8" r="4" />
+      </svg>
+    )
+  }
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={cls}>
+      <rect x="4" y="11" width="16" height="10" rx="2" />
+      <path d="M8 11V7a4 4 0 1 1 8 0v4" />
+    </svg>
+  )
+}
+
 function SignInPage() {
   const navigate = useNavigate()
   const { signIn } = useApp()
@@ -21,14 +39,14 @@ function SignInPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[linear-gradient(180deg,#f2f5fa_0%,#ffffff_100%)] px-4 py-8 sm:py-10">
-      <div className="max-w-md mx-auto">
+    <div className="min-h-screen bg-[linear-gradient(135deg,#143D59_0%,#1B4965_100%)] px-4 py-6 flex items-center justify-center">
+      <div className="max-w-md mx-auto w-full">
         <div className="bg-white rounded-3xl border border-slate-200 shadow-xl p-6">
           <h1 className="text-3xl font-bold text-slate-900">Sign In</h1>
 
           <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
             <div className="flex items-center gap-3 px-4 py-3 border border-slate-200 rounded-2xl shadow-sm">
-              <span className="text-slate-400">👤</span>
+              <Icon type="user" />
               <input
                 type="text"
                 value={emailOrPhone}
@@ -38,7 +56,7 @@ function SignInPage() {
               />
             </div>
             <div className="flex items-center gap-3 px-4 py-3 border border-slate-200 rounded-2xl shadow-sm">
-              <span className="text-slate-400">🔒</span>
+              <Icon type="lock" />
               <input
                 type="password"
                 value={password}
