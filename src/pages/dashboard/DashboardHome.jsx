@@ -77,7 +77,7 @@ function DashboardHome() {
       <div className="relative overflow-hidden bg-white rounded-xl border border-slate-200 p-3.5 sm:p-5 shadow-lg">
         <div className="pointer-events-none absolute top-0 right-0 h-full w-28 opacity-40 bg-[linear-gradient(180deg,transparent_0%,#dbeafe_100%)]" />
         <h2 className="text-base sm:text-lg font-semibold text-slate-900 mb-3 sm:mb-4">Quick links</h2>
-        <div className="grid grid-cols-2 gap-2.5 sm:gap-3 sm:grid-cols-3 lg:grid-cols-5">
+        <div className="grid grid-cols-3 gap-2 sm:gap-3 sm:grid-cols-4 lg:grid-cols-5">
           {actions.map((action) =>
             action.href ? (
               <a
@@ -85,19 +85,19 @@ function DashboardHome() {
                 href={action.href}
                 target="_blank"
                 rel="noreferrer"
-                className="p-2.5 sm:p-4 rounded-lg sm:rounded-xl border border-slate-200 bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_100%)] text-center hover:-translate-y-0.5 hover:shadow-md transition-all"
+                className="aspect-square p-2 sm:p-3 rounded-md border border-slate-200 bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_100%)] text-center flex flex-col items-center justify-center hover:-translate-y-0.5 hover:shadow-md transition-all"
               >
-                <div className="w-8 h-8 sm:w-10 sm:h-10 mx-auto mb-1.5 sm:mb-2 rounded-md sm:rounded-lg bg-blue-100 flex items-center justify-center text-base sm:text-xl">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-1 rounded-md bg-blue-100 ring-1 ring-blue-200 flex items-center justify-center text-xl sm:text-2xl">
                   <span>{action.icon}</span>
                 </div>
-                <p className="font-semibold text-slate-800 text-xs sm:text-sm leading-tight">{action.label}</p>
+                <p className="font-semibold text-slate-800 text-[11px] sm:text-xs leading-tight">{action.label}</p>
               </a>
             ) : (
-              <Link key={action.label} to={action.to} className="p-2.5 sm:p-4 rounded-lg sm:rounded-xl border border-slate-200 bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_100%)] text-center hover:-translate-y-0.5 hover:shadow-md transition-all">
-                <div className="w-8 h-8 sm:w-10 sm:h-10 mx-auto mb-1.5 sm:mb-2 rounded-md sm:rounded-lg bg-blue-100 flex items-center justify-center text-base sm:text-xl">
+              <Link key={action.label} to={action.to} className="aspect-square p-2 sm:p-3 rounded-md border border-slate-200 bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_100%)] text-center flex flex-col items-center justify-center hover:-translate-y-0.5 hover:shadow-md transition-all">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-1 rounded-md bg-blue-100 ring-1 ring-blue-200 flex items-center justify-center text-xl sm:text-2xl">
                   <span>{action.icon}</span>
                 </div>
-                <p className="font-semibold text-slate-800 text-xs sm:text-sm leading-tight">{action.label}</p>
+                <p className="font-semibold text-slate-800 text-[11px] sm:text-xs leading-tight">{action.label}</p>
               </Link>
             ),
           )}
