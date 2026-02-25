@@ -27,10 +27,10 @@ function SignInPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault()
     setError('')
-    const result = signIn({ emailOrPhone, password })
+    const result = await signIn({ emailOrPhone, password })
     if (!result.ok) {
       setError(result.error)
       return

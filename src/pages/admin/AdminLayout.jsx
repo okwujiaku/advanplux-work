@@ -41,6 +41,7 @@ function AdminLayout() {
 
   const [platformBankAccounts, setPlatformBankAccounts] = useState(() => getInitialValue('platformBankAccounts', []))
   const [members, setMembers] = useState(() => getInitialValue('adminMembers', [DEFAULT_MEMBER]))
+  const [remoteUsers, setRemoteUsers] = useState([])
   const [bonusWithdrawals, setBonusWithdrawals] = useState(() => getInitialValue('bonusWithdrawals', []))
   const [giftCodes, setGiftCodes] = useState(() => getInitialValue('giftCodes', []))
   const [announcements, setAnnouncements] = useState(() => getInitialValue('announcements', []))
@@ -98,8 +99,34 @@ function AdminLayout() {
   }, [adminAccounts])
 
   useEffect(() => {
-    const authUserById = new Map(users.map((user) => [user.id, user]))
-    const ids = new Set([DEFAULT_MEMBER.id, ...users.map((user) => user.id), ...deposits.map((d) => d.userId), ...withdrawals.map((w) => w.userId)])
+    const controller = new AbortController()
+    const loadRemoteUsers = async () => {
+      try {
+        const response = await fetch('/api/admin/users', { signal: controller.signal })
+        const payload = await response.json()
+        if (response.ok && payload?.ok && Array.isArray(payload.users)) {
+          setRemoteUsers(payload.users)
+        }
+      } catch {
+        // Keep existing local users when backend is unavailable.
+      }
+    }
+    loadRemoteUsers()
+    return () => controller.abort()
+  }, [])
+
+  useEffect(() => {
+    const normalizedRemoteUsers = remoteUsers.map((user) => ({
+      id: user.id,
+      email: user.email || '',
+      phone: user.phone || '',
+      myInvitationCode: user.invitationCode || '',
+      referredByUserId: user.referredByUserId || '',
+      createdAt: user.createdAt || '',
+    }))
+    const allUsers = [...users, ...normalizedRemoteUsers]
+    const authUserById = new Map(allUsers.map((user) => [user.id, user]))
+    const ids = new Set([DEFAULT_MEMBER.id, ...allUsers.map((user) => user.id), ...deposits.map((d) => d.userId), ...withdrawals.map((w) => w.userId)])
     setMembers((prev) => {
       let changed = false
       const next = [...prev]
@@ -147,7 +174,7 @@ function AdminLayout() {
       })
       return changed ? merged : prev
     })
-  }, [deposits, users, withdrawals])
+  }, [deposits, remoteUsers, users, withdrawals])
 
   const selectedMember = useMemo(
     () => members.find((member) => member.id === selectedMemberId) || members[0] || DEFAULT_MEMBER,

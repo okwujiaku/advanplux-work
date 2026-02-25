@@ -53,10 +53,10 @@ function SignUpPage() {
     setForm((prev) => ({ ...prev, [key]: event.target.value }))
   }
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault()
     setError('')
-    const result = signUp(form)
+    const result = await signUp(form)
     if (!result.ok) {
       setError(result.error)
       return

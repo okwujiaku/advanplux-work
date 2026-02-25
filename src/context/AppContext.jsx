@@ -34,6 +34,7 @@ const DEFAULT_AD_VIDEO_IDS = [
 const EARN_PER_AD_USD = 0.4
 const AUTH_USERS_KEY = 'authUsers'
 const AUTH_CURRENT_USER_KEY = 'authCurrentUserId'
+const AUTH_SESSION_TOKEN_KEY = 'authSessionToken'
 
 function getInitialValue(key, fallback) {
   if (typeof window === 'undefined' || !window.localStorage) return fallback
@@ -98,6 +99,15 @@ export function AppProvider({ children }) {
     }
   })
 
+  const saveSessionToken = useCallback((token) => {
+    if (typeof window === 'undefined' || !window.localStorage) return
+    if (token) {
+      window.localStorage.setItem(AUTH_SESSION_TOKEN_KEY, token)
+      return
+    }
+    window.localStorage.removeItem(AUTH_SESSION_TOKEN_KEY)
+  }, [])
+
   const currentUser = users.find((user) => user.id === currentUserId) || null
   const isAuthenticated = !!currentUser
 
@@ -115,7 +125,7 @@ export function AppProvider({ children }) {
     }
   }, [currentUser, users])
 
-  const signUp = useCallback(({ phone, email, password, confirmPassword, invitationCode }) => {
+  const localSignUp = useCallback(({ phone, email, password, confirmPassword, invitationCode }) => {
     const normalizedPhone = normalizePhone(phone)
     const normalizedEmail = normalizeEmail(email)
     const cleanPassword = String(password || '')
@@ -159,7 +169,7 @@ export function AppProvider({ children }) {
     return { ok: true, user: newUser }
   }, [users])
 
-  const signIn = useCallback(({ emailOrPhone, password }) => {
+  const localSignIn = useCallback(({ emailOrPhone, password }) => {
     const identifier = String(emailOrPhone || '').trim()
     const cleanPassword = String(password || '')
     if (!identifier || !cleanPassword) return { ok: false, error: 'Email/phone and password are required.' }
@@ -179,9 +189,97 @@ export function AppProvider({ children }) {
     return { ok: true, user }
   }, [users])
 
+  const signUp = useCallback(async ({ phone, email, password, confirmPassword, invitationCode }) => {
+    try {
+      const response = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone, email, password, confirmPassword, invitationCode }),
+      })
+      const payload = await response.json()
+      if (response.ok && payload?.ok && payload.user) {
+        const serverUser = payload.user
+        const localUser = {
+          id: serverUser.id,
+          phone: normalizePhone(phone),
+          email: normalizeEmail(email),
+          password: String(password || ''),
+          myInvitationCode: serverUser.invitationCode || generateInvitationCode(users),
+          referredByUserId: serverUser.referredByUserId || null,
+          createdAt: serverUser.createdAt || new Date().toISOString(),
+        }
+        setUsers((prev) => {
+          const withoutDuplicate = prev.filter((candidate) => candidate.id !== localUser.id && candidate.email !== localUser.email)
+          return [localUser, ...withoutDuplicate]
+        })
+        setCurrentUserId(localUser.id)
+        saveSessionToken(payload.token || '')
+        return { ok: true, user: localUser }
+      }
+
+      const shouldFallback =
+        response.status === 503 ||
+        response.status >= 500 ||
+        payload?.code === 'BACKEND_NOT_CONFIGURED'
+      if (shouldFallback) {
+        return localSignUp({ phone, email, password, confirmPassword, invitationCode })
+      }
+      return { ok: false, error: payload?.error || 'Unable to create account.' }
+    } catch {
+      return localSignUp({ phone, email, password, confirmPassword, invitationCode })
+    }
+  }, [localSignUp, saveSessionToken, users])
+
+  const signIn = useCallback(async ({ emailOrPhone, password }) => {
+    try {
+      const response = await fetch('/api/auth/signin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ emailOrPhone, password }),
+      })
+      const payload = await response.json()
+      if (response.ok && payload?.ok && payload.user) {
+        const serverUser = payload.user
+        setUsers((prev) => {
+          const existing = prev.find((candidate) => candidate.id === serverUser.id || candidate.email === serverUser.email)
+          const normalized = {
+            id: serverUser.id,
+            phone: serverUser.phone || existing?.phone || '',
+            email: normalizeEmail(serverUser.email),
+            password: existing?.password || '',
+            myInvitationCode: serverUser.invitationCode || existing?.myInvitationCode || '',
+            referredByUserId: serverUser.referredByUserId || existing?.referredByUserId || null,
+            createdAt: serverUser.createdAt || existing?.createdAt || new Date().toISOString(),
+          }
+          const withoutDuplicate = prev.filter((candidate) => candidate.id !== normalized.id && candidate.email !== normalized.email)
+          return [normalized, ...withoutDuplicate]
+        })
+        setCurrentUserId(serverUser.id)
+        saveSessionToken(payload.token || '')
+        return { ok: true, user: serverUser }
+      }
+
+      if (response.status === 401) {
+        return localSignIn({ emailOrPhone, password })
+      }
+
+      const shouldFallback =
+        response.status === 503 ||
+        response.status >= 500 ||
+        payload?.code === 'BACKEND_NOT_CONFIGURED'
+      if (shouldFallback) {
+        return localSignIn({ emailOrPhone, password })
+      }
+      return { ok: false, error: payload?.error || 'Unable to sign in.' }
+    } catch {
+      return localSignIn({ emailOrPhone, password })
+    }
+  }, [localSignIn, saveSessionToken])
+
   const signOut = useCallback(() => {
     setCurrentUserId(null)
-  }, [])
+    saveSessionToken('')
+  }, [saveSessionToken])
 
   const resetPassword = useCallback(({ emailOrPhone, newPassword, confirmPassword }) => {
     const identifier = String(emailOrPhone || '').trim()
