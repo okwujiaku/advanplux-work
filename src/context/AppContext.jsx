@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, useEffect } from 'react'
+import { createContext, useContext, useState, useCallback, useEffect, useMemo } from 'react'
 
 const AppContext = createContext(null)
 
@@ -32,6 +32,8 @@ const DEFAULT_AD_VIDEO_IDS = [
 ]
 
 const EARN_PER_AD_USD = 0.4
+const AUTH_USERS_KEY = 'authUsers'
+const AUTH_CURRENT_USER_KEY = 'authCurrentUserId'
 
 function getInitialValue(key, fallback) {
   if (typeof window === 'undefined' || !window.localStorage) return fallback
@@ -48,7 +50,29 @@ function newId(prefix) {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
 }
 
+function normalizeEmail(value) {
+  return String(value || '').trim().toLowerCase()
+}
+
+function normalizePhone(value) {
+  return String(value || '').replace(/\D/g, '')
+}
+
+function generateInvitationCode(existingUsers) {
+  const existingCodes = new Set(existingUsers.map((user) => user.myInvitationCode))
+  let code = ''
+  do {
+    code = `ADV${Math.random().toString(36).slice(2, 8).toUpperCase()}`
+  } while (existingCodes.has(code))
+  return code
+}
+
 export function AppProvider({ children }) {
+  const [users, setUsers] = useState(() => {
+    const initial = getInitialValue(AUTH_USERS_KEY, [])
+    return Array.isArray(initial) ? initial : []
+  })
+  const [currentUserId, setCurrentUserId] = useState(() => getInitialValue(AUTH_CURRENT_USER_KEY, null))
   const [userPack, setUserPack] = useState(() => getInitialValue('userPack', null))
   const [savedAccount, setSavedAccount] = useState(() => getInitialValue('savedAccount', null)) // legacy single saved account for compatibility
   const [savedDepositDetails, setSavedDepositDetails] = useState(() => getInitialValue('savedDepositDetails', []))
@@ -59,7 +83,6 @@ export function AppProvider({ children }) {
   const [teamGenerated, setTeamGenerated] = useState(0) // total generated for platform by team
   const [teamCount, setTeamCount] = useState(0)
   const [referralEarnings, setReferralEarnings] = useState({ level1: 0, level2: 0, level3: 0 })
-  const [referralCount] = useState({ level1: 0, level2: 0, level3: 0 })
   const [claimedSalary, setClaimedSalary] = useState(0)
   const [adsViewedToday, setAdsViewedToday] = useState(0)
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(() => typeof window !== 'undefined' && window.localStorage?.getItem('adminLoggedIn') === 'true')
@@ -75,6 +98,91 @@ export function AppProvider({ children }) {
     }
   })
 
+  const currentUser = users.find((user) => user.id === currentUserId) || null
+  const isAuthenticated = !!currentUser
+
+  const referralCount = useMemo(() => {
+    if (!currentUser) return { level1: 0, level2: 0, level3: 0 }
+    const level1Users = users.filter((user) => user.referredByUserId === currentUser.id)
+    const level1Ids = new Set(level1Users.map((user) => user.id))
+    const level2Users = users.filter((user) => user.referredByUserId && level1Ids.has(user.referredByUserId))
+    const level2Ids = new Set(level2Users.map((user) => user.id))
+    const level3Users = users.filter((user) => user.referredByUserId && level2Ids.has(user.referredByUserId))
+    return {
+      level1: level1Users.length,
+      level2: level2Users.length,
+      level3: level3Users.length,
+    }
+  }, [currentUser, users])
+
+  const signUp = useCallback(({ phone, email, password, confirmPassword, invitationCode }) => {
+    const normalizedPhone = normalizePhone(phone)
+    const normalizedEmail = normalizeEmail(email)
+    const cleanPassword = String(password || '')
+    const cleanConfirmPassword = String(confirmPassword || '')
+    const cleanInvitationCode = String(invitationCode || '').trim().toUpperCase()
+
+    if (!normalizedPhone || !normalizedEmail || !cleanPassword || !cleanConfirmPassword) {
+      return { ok: false, error: 'All fields are required.' }
+    }
+    if (cleanPassword !== cleanConfirmPassword) {
+      return { ok: false, error: 'Password and confirm password must match.' }
+    }
+    if (users.some((user) => normalizeEmail(user.email) === normalizedEmail)) {
+      return { ok: false, error: 'Email already exists.' }
+    }
+    if (users.some((user) => normalizePhone(user.phone) === normalizedPhone)) {
+      return { ok: false, error: 'Phone number already exists.' }
+    }
+
+    let referredByUserId = null
+    if (cleanInvitationCode) {
+      const referrer = users.find((user) => user.myInvitationCode === cleanInvitationCode)
+      if (!referrer) {
+        return { ok: false, error: 'Invalid invitation code.' }
+      }
+      referredByUserId = referrer.id
+    }
+
+    const newUser = {
+      id: newId('usr'),
+      phone: normalizedPhone,
+      email: normalizedEmail,
+      password: cleanPassword,
+      myInvitationCode: generateInvitationCode(users),
+      referredByUserId,
+      createdAt: new Date().toISOString(),
+    }
+
+    setUsers((prev) => [newUser, ...prev])
+    setCurrentUserId(newUser.id)
+    return { ok: true, user: newUser }
+  }, [users])
+
+  const signIn = useCallback(({ emailOrPhone, password }) => {
+    const identifier = String(emailOrPhone || '').trim()
+    const cleanPassword = String(password || '')
+    if (!identifier || !cleanPassword) return { ok: false, error: 'Email/phone and password are required.' }
+
+    const normalizedEmail = normalizeEmail(identifier)
+    const normalizedPhone = normalizePhone(identifier)
+
+    const user = users.find((candidate) =>
+      normalizeEmail(candidate.email) === normalizedEmail || normalizePhone(candidate.phone) === normalizedPhone,
+    )
+
+    if (!user || user.password !== cleanPassword) {
+      return { ok: false, error: 'Invalid login details.' }
+    }
+
+    setCurrentUserId(user.id)
+    return { ok: true, user }
+  }, [users])
+
+  const signOut = useCallback(() => {
+    setCurrentUserId(null)
+  }, [])
+
   useEffect(() => {
     if (typeof window !== 'undefined' && window.localStorage) {
       window.localStorage.setItem('adVideoIds', JSON.stringify(adVideoIds))
@@ -83,6 +191,8 @@ export function AppProvider({ children }) {
 
   useEffect(() => {
     if (typeof window !== 'undefined' && window.localStorage) {
+      window.localStorage.setItem(AUTH_USERS_KEY, JSON.stringify(users))
+      window.localStorage.setItem(AUTH_CURRENT_USER_KEY, JSON.stringify(currentUserId))
       window.localStorage.setItem('userPack', JSON.stringify(userPack))
       window.localStorage.setItem('savedAccount', JSON.stringify(savedAccount))
       window.localStorage.setItem('savedDepositDetails', JSON.stringify(savedDepositDetails))
@@ -91,7 +201,7 @@ export function AppProvider({ children }) {
       window.localStorage.setItem('withdrawals', JSON.stringify(withdrawals))
       window.localStorage.setItem('walletUsd', JSON.stringify(walletUsd))
     }
-  }, [deposits, savedAccount, savedDepositDetails, savedWithdrawalDetails, userPack, walletUsd, withdrawals])
+  }, [currentUserId, deposits, savedAccount, savedDepositDetails, savedWithdrawalDetails, userPack, users, walletUsd, withdrawals])
 
   const saveDepositDetail = useCallback((detail) => {
     if (!detail?.accountNumber?.trim()) return null
@@ -286,6 +396,12 @@ export function AppProvider({ children }) {
   }, [])
 
   const value = {
+    users,
+    currentUser,
+    isAuthenticated,
+    signUp,
+    signIn,
+    signOut,
     userPack,
     setUserPack,
     savedAccount,

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Outlet, NavLink, Link } from 'react-router-dom'
+import { useApp } from '../context/AppContext'
 
 const navItems = [
   { to: '/dashboard', end: true, label: 'Home' },
@@ -12,6 +13,7 @@ const navItems = [
 
 function Dashboard() {
   const [menuOpen, setMenuOpen] = useState(false)
+  const { signOut } = useApp()
   const menuItems = [
     { label: 'My profile', to: '/dashboard' },
     { label: 'Add withdrawal details', to: '/dashboard/withdrawal' },
@@ -20,6 +22,7 @@ function Dashboard() {
     { label: 'Deposit history', to: '/dashboard/deposit' },
     { label: 'Withdrawal history', to: '/dashboard/withdrawal' },
     { label: 'Change password', to: '/dashboard/change-password' },
+    { label: 'Logout', to: '/' },
   ]
 
   return (
@@ -33,6 +36,13 @@ function Dashboard() {
               </Link>
               <span className="text-slate-500 text-sm hidden sm:inline">Dashboard</span>
             </div>
+            <button
+              type="button"
+              onClick={() => signOut()}
+              className="hidden sm:inline-flex px-3 py-1.5 text-xs font-semibold rounded-md border border-slate-300 text-slate-700 hover:bg-slate-50"
+            >
+              Logout
+            </button>
           </div>
         </div>
         {menuOpen && (
@@ -42,7 +52,10 @@ function Dashboard() {
                 <Link
                   key={item.label}
                   to={item.to}
-                  onClick={() => setMenuOpen(false)}
+                  onClick={() => {
+                    if (item.label === 'Logout') signOut()
+                    setMenuOpen(false)
+                  }}
                   className="px-3 py-2 rounded-lg text-sm text-slate-700 hover:bg-sky-50"
                 >
                   {item.label}

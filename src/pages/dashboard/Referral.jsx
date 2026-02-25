@@ -11,8 +11,9 @@ const NGN_TO_USD = 1 / 1450
 
 function Referral() {
   const [copied, setCopied] = useState(false)
-  const { referralEarnings, referralCount } = useApp()
-  const referralLink = 'https://advanplux.com/ref/ABC123XYZ'
+  const { referralEarnings, referralCount, currentUser } = useApp()
+  const code = currentUser?.myInvitationCode || 'N/A'
+  const referralLink = `https://advanplux.com/sign-up?invite=${code}`
 
   const handleCopy = () => {
     navigator.clipboard.writeText(referralLink)
@@ -34,6 +35,7 @@ function Referral() {
 
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Your referral link</h2>
+        <p className="text-sm text-gray-600 mb-2">Your invitation code: <span className="font-semibold text-primary-700">{code}</span></p>
         <div className="flex flex-col sm:flex-row gap-3">
           <input
             type="text"

@@ -1,5 +1,4 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
-import { SignIn, SignUp, useAuth } from '@clerk/clerk-react'
 import HomePage from './pages/HomePage'
 import Dashboard from './pages/Dashboard'
 import DashboardHome from './pages/dashboard/DashboardHome'
@@ -23,18 +22,19 @@ import AdminToolsPage from './pages/admin/AdminToolsPage'
 import AdminHistoryPage from './pages/admin/AdminHistoryPage'
 import AdminActionSectionPage from './pages/admin/AdminActionSectionPage'
 import AdminHistorySectionPage from './pages/admin/AdminHistorySectionPage'
+import SignInPage from './pages/auth/SignInPage'
+import SignUpPage from './pages/auth/SignUpPage'
+import { useApp } from './context/AppContext'
 
 function RequireAuth({ children }) {
-  const { isLoaded, userId } = useAuth()
-  if (!isLoaded) return <div className="min-h-screen grid place-items-center text-sm text-gray-600">Loading...</div>
-  if (!userId) return <Navigate to="/sign-in" replace />
+  const { isAuthenticated } = useApp()
+  if (!isAuthenticated) return <Navigate to="/sign-in" replace />
   return children
 }
 
 function GuestOnly({ children }) {
-  const { isLoaded, userId } = useAuth()
-  if (!isLoaded) return <div className="min-h-screen grid place-items-center text-sm text-gray-600">Loading...</div>
-  if (userId) return <Navigate to="/dashboard" replace />
+  const { isAuthenticated } = useApp()
+  if (isAuthenticated) return <Navigate to="/dashboard" replace />
   return children
 }
 
@@ -44,22 +44,18 @@ function App() {
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route
-          path="/sign-in/*"
+          path="/sign-in"
           element={
             <GuestOnly>
-              <div className="min-h-screen grid place-items-center p-4">
-                <SignIn path="/sign-in" routing="path" signUpUrl="/sign-up" forceRedirectUrl="/dashboard" />
-              </div>
+              <SignInPage />
             </GuestOnly>
           }
         />
         <Route
-          path="/sign-up/*"
+          path="/sign-up"
           element={
             <GuestOnly>
-              <div className="min-h-screen grid place-items-center p-4">
-                <SignUp path="/sign-up" routing="path" signInUrl="/sign-in" forceRedirectUrl="/dashboard" />
-              </div>
+              <SignUpPage />
             </GuestOnly>
           }
         />
