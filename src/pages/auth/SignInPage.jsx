@@ -42,8 +42,8 @@ function SignInPage() {
     <div className="min-h-screen bg-[linear-gradient(135deg,#143D59_0%,#1B4965_100%)] px-4 py-6 flex items-center justify-center">
       <div className="max-w-md mx-auto w-full">
         <div className="text-center mb-5 text-white">
-          <p className="text-3xl font-bold tracking-tight">Advanplux</p>
-          <p className="text-sm text-white/85 mt-1">Watch ads and get paid</p>
+          <p className="text-4xl sm:text-5xl font-bold tracking-tight">Advanplux</p>
+          <p className="text-lg sm:text-xl text-white/90 mt-1.5">Watch ads and get paid</p>
         </div>
         <div className="bg-white rounded-3xl border border-slate-200 shadow-xl p-6">
           <h1 className="text-3xl font-bold text-slate-900">Sign In</h1>
