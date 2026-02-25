@@ -49,6 +49,7 @@ function AdminLayout() {
   const [adminAccounts, setAdminAccounts] = useState(() => getInitialValue('adminAccounts', [{ email: ADMIN_EMAIL, password: ADMIN_PASSWORD }]))
 
   const [selectedMemberId, setSelectedMemberId] = useState(DEFAULT_MEMBER.id)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   const {
     users,
@@ -190,7 +191,6 @@ function AdminLayout() {
     { to: '/admin/edit-users', icon: '✏️', label: 'Edit Users Info.', count: members.length },
     { to: '/admin/deposits', icon: '$', label: 'Confirm Pending Deposit', count: pendingDepositsCount },
     { to: '/admin/withdrawals', icon: '📥', label: 'Members withdrawals', count: pendingWithdrawalsCount },
-    { to: '/admin/bonus-withdrawals', icon: '📥', label: 'Bonus withdrawals', count: pendingBonusWithdrawalsCount },
     { to: '/admin/gift-code', icon: '🎁', label: 'Generate Gift Code' },
     { to: '/admin/account-topup', icon: '➕', label: 'Account Top up' },
     { to: '/admin/deduct-account', icon: '➖', label: 'Deduct Account' },
@@ -199,10 +199,8 @@ function AdminLayout() {
     { to: '/admin/register-admin', icon: '👥', label: 'Register Admin' },
     { to: '/admin/change-password', icon: '🔒', label: 'Change Password' },
     { to: '/admin/announcement', icon: '🔔', label: 'Make Announcement' },
-    { to: '/admin/investment-history', icon: '↻', label: 'Investment History', count: investmentHistory.length },
     { to: '/admin/deposit-history', icon: '↻', label: 'Deposit History' },
     { to: '/admin/withdrawal-history', icon: '↻', label: 'Withdrawal History', count: withdrawals.length },
-    { to: '/admin/bonus-history', icon: '↻', label: 'Bonus Withdrawal History', count: bonusWithdrawals.length },
   ]
 
   const handleLogin = (e) => {
@@ -224,6 +222,8 @@ function AdminLayout() {
     setIsAdminLoggedIn(false)
     if (typeof window !== 'undefined' && window.localStorage) window.localStorage.removeItem('adminLoggedIn')
   }
+
+  const closeMobileMenu = () => setMobileMenuOpen(false)
 
   const updateMember = (memberId, updater) => {
     setMembers((prev) => prev.map((m) => (m.id === memberId ? updater(m) : m)))
@@ -355,7 +355,17 @@ function AdminLayout() {
     <div className="h-screen bg-[#eaf1f7] overflow-hidden">
       <header className="h-16 text-white border-b border-[#2b607f]" style={{ backgroundColor: '#143D59' }}>
         <div className="h-full px-4 sm:px-6 flex items-center justify-between">
-          <h1 className="text-3xl font-bold text-[#2EC4B6]">Advanplux</h1>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen((prev) => !prev)}
+              className="lg:hidden inline-flex h-9 w-9 items-center justify-center rounded border border-white/30 text-white hover:bg-white/10"
+              aria-label="Toggle admin menu"
+            >
+              <span className="text-lg leading-none">☰</span>
+            </button>
+            <h1 className="text-2xl sm:text-3xl font-bold text-[#2EC4B6]">Advanplux</h1>
+          </div>
           <div className="text-right">
             <p className="font-semibold">Welcome Admin</p>
             <div className="flex gap-2 justify-end mt-1">
@@ -367,13 +377,28 @@ function AdminLayout() {
         </div>
       </header>
 
-      <div className="h-[calc(100vh-4rem)] flex">
-        <aside className="w-[260px] shrink-0 border-r border-[#2b607f] text-white overflow-y-auto" style={{ backgroundColor: '#143D59' }}>
+      <div className="h-[calc(100vh-4rem)] flex relative">
+        {mobileMenuOpen && (
+          <button
+            type="button"
+            aria-label="Close admin menu backdrop"
+            onClick={closeMobileMenu}
+            className="lg:hidden absolute inset-0 bg-black/30 z-30"
+          />
+        )}
+
+        <aside
+          className={`w-[280px] shrink-0 border-r border-[#2b607f] text-white overflow-y-auto z-40 transition-transform duration-200 fixed lg:static top-16 bottom-0 left-0 ${
+            mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+          }`}
+          style={{ backgroundColor: '#143D59' }}
+        >
           <nav className="p-3 space-y-1">
             {menuItems.map((item) => (
               <NavLink
                 key={item.to}
                 to={item.to}
+                onClick={closeMobileMenu}
                 className={({ isActive }) =>
                   `block px-3 py-2 rounded border text-sm font-medium transition-colors ${
                     isActive ? 'text-[#2EC4B6] border-[#2EC4B6] bg-[#1B4965]' : 'text-white border-[#2b607f] hover:bg-[#1B4965]'
@@ -390,7 +415,7 @@ function AdminLayout() {
           </nav>
         </aside>
 
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6">
+        <main className="flex-1 overflow-y-auto p-3 sm:p-6 w-full">
           <Outlet context={contextValue} />
         </main>
       </div>
