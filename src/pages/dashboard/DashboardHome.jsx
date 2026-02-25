@@ -37,28 +37,28 @@ function DashboardHome() {
   ]
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      <div className="relative overflow-hidden bg-[linear-gradient(135deg,#0f3d9a_0%,#1d4ed8_55%,#2563eb_100%)] rounded-xl text-white p-6 shadow-xl border border-blue-700">
+    <div className="max-w-4xl mx-auto space-y-4 sm:space-y-6">
+      <div className="relative overflow-hidden bg-[linear-gradient(135deg,#0f3d9a_0%,#1d4ed8_55%,#2563eb_100%)] rounded-xl text-white p-4 sm:p-6 shadow-xl border border-blue-700">
         <div className="pointer-events-none absolute -top-12 -right-10 w-40 h-40 rounded-full bg-cyan-300/35 blur-2xl" />
         <div className="pointer-events-none absolute -bottom-10 -left-6 w-32 h-32 rounded-full bg-blue-300/25 blur-xl" />
-        <div className="grid sm:grid-cols-2 gap-6">
+        <div className="grid sm:grid-cols-2 gap-3 sm:gap-6">
           <div>
             <p className="text-sm text-white/85">Today earnings</p>
-            <p className="text-3xl font-bold mt-1">${earnedTodayUsd}</p>
-            <p className="text-sm text-white/85 mt-2">
+            <p className="text-2xl sm:text-3xl font-bold mt-1">${earnedTodayUsd}</p>
+            <p className="text-xs sm:text-sm text-white/85 mt-1 sm:mt-2">
               {packInfo ? `${packInfo.planName} · ${packInfo.adsPerDay} ads/day` : 'No package activated yet'}
             </p>
           </div>
           <div className="sm:border-l sm:border-white/30 sm:pl-6">
-            <p className="text-3xl font-bold mt-1">${Number(walletUsd || 0).toFixed(2)}</p>
-            <p className="text-sm text-white/85 mt-2">Total earnings available for withdrawal</p>
+            <p className="text-2xl sm:text-3xl font-bold mt-1">${Number(walletUsd || 0).toFixed(2)}</p>
+            <p className="text-xs sm:text-sm text-white/85 mt-1 sm:mt-2">Total earnings available for withdrawal</p>
           </div>
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-slate-200 px-4 py-3 shadow-sm">
+      <div className="bg-white rounded-xl border border-slate-200 px-3 sm:px-4 py-2.5 sm:py-3 shadow-sm">
         <div className="flex items-center justify-between gap-3">
-          <p key={bannerIndex} className="text-sm sm:text-base font-semibold text-slate-700 transition-all duration-500">
+          <p key={bannerIndex} className="text-xs sm:text-base font-semibold text-slate-700 transition-all duration-500">
             {bannerMessages[bannerIndex]}
           </p>
           <div className="flex items-center gap-1.5">
@@ -74,10 +74,10 @@ function DashboardHome() {
         </div>
       </div>
 
-      <div className="relative overflow-hidden bg-white rounded-xl border border-slate-200 p-5 shadow-lg">
+      <div className="relative overflow-hidden bg-white rounded-xl border border-slate-200 p-3.5 sm:p-5 shadow-lg">
         <div className="pointer-events-none absolute top-0 right-0 h-full w-28 opacity-40 bg-[linear-gradient(180deg,transparent_0%,#dbeafe_100%)]" />
-        <h2 className="text-lg font-semibold text-slate-900 mb-4">Quick links</h2>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+        <h2 className="text-base sm:text-lg font-semibold text-slate-900 mb-3 sm:mb-4">Quick links</h2>
+        <div className="grid grid-cols-2 gap-2.5 sm:gap-3 sm:grid-cols-3 lg:grid-cols-5">
           {actions.map((action) =>
             action.href ? (
               <a
@@ -85,19 +85,19 @@ function DashboardHome() {
                 href={action.href}
                 target="_blank"
                 rel="noreferrer"
-                className="p-4 rounded-xl border border-slate-200 bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_100%)] text-center hover:-translate-y-0.5 hover:shadow-md transition-all"
+                className="p-2.5 sm:p-4 rounded-lg sm:rounded-xl border border-slate-200 bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_100%)] text-center hover:-translate-y-0.5 hover:shadow-md transition-all"
               >
-                <div className="w-10 h-10 mx-auto mb-2 rounded-lg bg-blue-100 flex items-center justify-center text-xl">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 mx-auto mb-1.5 sm:mb-2 rounded-md sm:rounded-lg bg-blue-100 flex items-center justify-center text-base sm:text-xl">
                   <span>{action.icon}</span>
                 </div>
-                <p className="font-semibold text-slate-800 text-sm">{action.label}</p>
+                <p className="font-semibold text-slate-800 text-xs sm:text-sm leading-tight">{action.label}</p>
               </a>
             ) : (
-              <Link key={action.label} to={action.to} className="p-4 rounded-xl border border-slate-200 bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_100%)] text-center hover:-translate-y-0.5 hover:shadow-md transition-all">
-                <div className="w-10 h-10 mx-auto mb-2 rounded-lg bg-blue-100 flex items-center justify-center text-xl">
+              <Link key={action.label} to={action.to} className="p-2.5 sm:p-4 rounded-lg sm:rounded-xl border border-slate-200 bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_100%)] text-center hover:-translate-y-0.5 hover:shadow-md transition-all">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 mx-auto mb-1.5 sm:mb-2 rounded-md sm:rounded-lg bg-blue-100 flex items-center justify-center text-base sm:text-xl">
                   <span>{action.icon}</span>
                 </div>
-                <p className="font-semibold text-slate-800 text-sm">{action.label}</p>
+                <p className="font-semibold text-slate-800 text-xs sm:text-sm leading-tight">{action.label}</p>
               </Link>
             ),
           )}
