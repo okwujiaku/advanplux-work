@@ -12,7 +12,7 @@ function Withdrawal() {
   const handleSave = () => {
     if (!accountName.trim()) return
     if (!accountNumber.trim()) return
-    if (currency === 'NGN' && !bankName.trim()) return
+    if (!bankName.trim()) return
 
     saveWithdrawalDetail({
       currency,
@@ -54,32 +54,6 @@ function Withdrawal() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              {currency === 'NGN' ? 'Account name' : 'Mobile money network'}
-            </label>
-            <input
-              type="text"
-              value={accountName}
-              onChange={(e) => setAccountName(e.target.value)}
-              placeholder={currency === 'NGN' ? 'Your account name' : 'Your mobile money network'}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg"
-            />
-          </div>
-
-          {currency === 'NGN' && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Bank name</label>
-              <input
-                type="text"
-                value={bankName}
-                onChange={(e) => setBankName(e.target.value)}
-                placeholder="Your bank name"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg"
-              />
-            </div>
-          )}
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
               {currency === 'NGN' ? 'Account number' : 'Mobile money number'}
             </label>
             <input
@@ -90,11 +64,37 @@ function Withdrawal() {
               className="w-full px-4 py-3 border border-gray-300 rounded-lg"
             />
           </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              {currency === 'NGN' ? 'Account name' : 'Mobile money name'}
+            </label>
+            <input
+              type="text"
+              value={accountName}
+              onChange={(e) => setAccountName(e.target.value)}
+              placeholder={currency === 'NGN' ? 'Your account name' : 'Your mobile money name'}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              {currency === 'NGN' ? 'Bank name' : 'Mobile money network'}
+            </label>
+            <input
+              type="text"
+              value={bankName}
+              onChange={(e) => setBankName(e.target.value)}
+              placeholder={currency === 'NGN' ? 'Your bank name' : 'Your mobile money network'}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg"
+            />
+          </div>
         </div>
 
         <button
           onClick={handleSave}
-          disabled={!accountName.trim() || !accountNumber.trim() || (currency === 'NGN' && !bankName.trim())}
+          disabled={!accountName.trim() || !accountNumber.trim() || !bankName.trim()}
           className="mt-4 px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50"
         >
           Save details

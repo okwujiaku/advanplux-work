@@ -5,18 +5,38 @@ import { useApp } from '../../context/AppContext'
 const EARN_PER_AD_USD = 0.4
 const REQUIRED_WATCH_SECONDS = 30
 
+function getPlatformFromLink(link) {
+  const value = String(link || '').toLowerCase()
+  if (value.includes('youtube.com') || value.includes('youtu.be')) return 'youtube'
+  if (value.includes('tiktok.com')) return 'tiktok'
+  if (value.includes('instagram.com')) return 'instagram'
+  return 'other'
+}
+
+function getYoutubeEmbedUrl(link) {
+  const value = String(link || '').trim()
+  if (!value) return ''
+  if (value.includes('youtu.be/')) {
+    const videoId = value.split('youtu.be/')[1]?.split(/[?&]/)[0]
+    return videoId ? `https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1` : ''
+  }
+  try {
+    const url = new URL(value)
+    const videoId = url.searchParams.get('v')
+    return videoId ? `https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1` : ''
+  } catch {
+    return ''
+  }
+}
+
 function WatchEarn() {
   const { userPack, PACKS_USD, adsViewedToday, watchAd, isAdminLoggedIn, freeAccessForSetup, adVideoIds } = useApp()
   const [lastEarned, setLastEarned] = useState(null)
   const [currentAdIndex, setCurrentAdIndex] = useState(0)
-  const [watchedSeconds, setWatchedSeconds] = useState(0)
-  const [videoDuration, setVideoDuration] = useState(0)
-  const [isPlayerReady, setIsPlayerReady] = useState(false)
-  const [playerMessage, setPlayerMessage] = useState('Press play and watch to unlock credit.')
-  const videoRef = useRef(null)
-  const lastPlayerSecondRef = useRef(0)
-  const watchedSecondsRef = useRef(0)
-  const completionTargetRef = useRef(REQUIRED_WATCH_SECONDS)
+  const [countdown, setCountdown] = useState(REQUIRED_WATCH_SECONDS)
+  const [timerRunning, setTimerRunning] = useState(false)
+  const [canClaim, setCanClaim] = useState(false)
+  const [playerMessage, setPlayerMessage] = useState('Start timer and watch this ad to claim reward.')
   const lastCreditedAdKeyRef = useRef(null)
 
   const hasAccess = userPack || isAdminLoggedIn || freeAccessForSetup
@@ -26,93 +46,55 @@ function WatchEarn() {
   const adsRemaining = dailyLimit - adsViewedToday
   const totalEarnedToday = adsViewedToday * EARN_PER_AD_USD
   const hasVideos = adVideoIds.length > 0
-  const currentVideoUrl = hasVideos ? adVideoIds[currentAdIndex % adVideoIds.length] : ''
-  const currentAdKey = `${currentAdIndex}-${currentVideoUrl || 'none'}`
-  const completionTarget = Math.max(1, Math.min(REQUIRED_WATCH_SECONDS, Math.floor(videoDuration || REQUIRED_WATCH_SECONDS)))
-  const canCredit = watchedSeconds >= completionTarget
+  const currentAdLink = hasVideos ? adVideoIds[currentAdIndex % adVideoIds.length] : ''
+  const currentAdKey = `${currentAdIndex}-${currentAdLink || 'none'}`
+  const currentPlatform = getPlatformFromLink(currentAdLink)
+  const youtubeEmbedUrl = currentPlatform === 'youtube' ? getYoutubeEmbedUrl(currentAdLink) : ''
 
   useEffect(() => {
-    watchedSecondsRef.current = watchedSeconds
-  }, [watchedSeconds])
+    if (!hasAccess || adsRemaining <= 0 || !currentAdLink) return
+    setTimerRunning(false)
+    setCanClaim(false)
+    setCountdown(REQUIRED_WATCH_SECONDS)
+    setPlayerMessage('Start timer and watch this ad to claim reward.')
+  }, [adsRemaining, currentAdKey, currentAdLink, hasAccess])
 
   useEffect(() => {
-    completionTargetRef.current = completionTarget
-  }, [completionTarget])
+    if (!timerRunning) return undefined
+    const interval = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval)
+          setTimerRunning(false)
+          setCanClaim(true)
+          setPlayerMessage('Timer completed. You can now claim this ad reward.')
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [timerRunning])
 
-  useEffect(() => {
-    if (!hasAccess || adsRemaining <= 0 || !currentVideoUrl) return
-    setWatchedSeconds(0)
-    setVideoDuration(0)
-    setIsPlayerReady(false)
-    setPlayerMessage('Press play and watch to unlock credit.')
-    lastPlayerSecondRef.current = 0
-  }, [adsRemaining, currentAdKey, currentVideoUrl, hasAccess])
-
-  const handleLoadedMetadata = () => {
-    const video = videoRef.current
-    if (!video) return
-    setIsPlayerReady(true)
-    setVideoDuration(Number(video.duration) || 0)
-    setPlayerMessage('Watching in progress...')
-    lastPlayerSecondRef.current = Math.floor(video.currentTime || 0)
+  const startTimer = () => {
+    if (timerRunning || canClaim) return
+    setTimerRunning(true)
+    setPlayerMessage('Timer running... keep watching this ad.')
   }
 
-  const handlePlay = () => {
-    setPlayerMessage('Watching in progress...')
-  }
-
-  const handlePause = () => {
-    if (watchedSecondsRef.current < completionTargetRef.current) {
-      setPlayerMessage('Video paused. Continue watching to get credit.')
-    }
-  }
-
-  const handleTimeUpdate = () => {
-    const video = videoRef.current
-    if (!video) return
-
-    const currentSecond = Math.floor(video.currentTime || 0)
-    const delta = currentSecond - lastPlayerSecondRef.current
-
-    if (delta === 1) {
-      setWatchedSeconds((prev) => Math.min(completionTargetRef.current, prev + 1))
-    } else if (delta >= 2) {
-      setPlayerMessage('Skipping is not counted. Please watch continuously.')
-    }
-
-    lastPlayerSecondRef.current = currentSecond
-  }
-
-  const handleSeeking = () => {
-    const video = videoRef.current
-    if (!video) return
-
-    const seekToSecond = Math.floor(video.currentTime || 0)
-    if (seekToSecond - lastPlayerSecondRef.current > 1) {
-      setPlayerMessage('Skipping is not counted. Please watch continuously.')
-    }
-    lastPlayerSecondRef.current = seekToSecond
-  }
-
-  const handleEnded = () => {
-    if (watchedSecondsRef.current < completionTargetRef.current) {
-      setPlayerMessage('Replay to complete required watch time.')
-    }
-  }
-
-  useEffect(() => {
-    if (!canCredit || !hasVideos || !currentVideoUrl || adsViewedToday >= dailyLimit) return
+  const claimAdReward = () => {
+    if (!canClaim || !hasVideos || !currentAdLink || adsViewedToday >= dailyLimit) return
     if (lastCreditedAdKeyRef.current === currentAdKey) return
 
     lastCreditedAdKeyRef.current = currentAdKey
     watchAd()
     setLastEarned(EARN_PER_AD_USD)
     setCurrentAdIndex((prev) => prev + 1)
-    setWatchedSeconds(0)
-    setVideoDuration(0)
-    setIsPlayerReady(false)
+    setTimerRunning(false)
+    setCanClaim(false)
+    setCountdown(REQUIRED_WATCH_SECONDS)
     setPlayerMessage('Ad completed. Loading next ad...')
-  }, [adsViewedToday, canCredit, currentAdKey, currentVideoUrl, dailyLimit, hasVideos, watchAd])
+  }
 
   if (!hasAccess) {
     return (
@@ -160,53 +142,72 @@ function WatchEarn() {
           {!hasVideos && (
             <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 text-center">
               <p className="text-amber-800 font-medium">No ad videos configured yet.</p>
-              <p className="text-sm text-amber-700 mt-1">Admin should add direct video links (MP4/HLS URLs).</p>
+              <p className="text-sm text-amber-700 mt-1">Admin should add video links in Video Manager.</p>
             </div>
           )}
           {hasVideos && (
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-            <div className="p-6 bg-gray-50 border-b border-gray-200">
-              <p className="text-sm text-gray-500 text-center">
-                Ad {Math.min(adsViewedToday + 1, dailyLimit)} of {dailyLimit}
-              </p>
-              <p className="text-gray-600 text-center mt-2 text-sm">
-                Watch this video ad for {completionTarget} seconds. Credit is added automatically when completed.
-              </p>
-            </div>
-            <div className="p-6 space-y-4">
-              <div className="rounded-lg overflow-hidden border border-gray-200">
-                <video
-                  key={currentAdKey}
-                  ref={videoRef}
-                  src={currentVideoUrl}
-                  controls
-                  playsInline
-                  preload="metadata"
-                  onLoadedMetadata={handleLoadedMetadata}
-                  onPlay={handlePlay}
-                  onPause={handlePause}
-                  onTimeUpdate={handleTimeUpdate}
-                  onSeeking={handleSeeking}
-                  onEnded={handleEnded}
-                  className="w-full aspect-video bg-black"
-                >
-                  Your browser does not support video playback.
-                </video>
-              </div>
-              <div className="bg-gray-50 rounded-lg p-4">
-                <p className="text-sm text-gray-600">
-                  Progress: <span className="font-semibold">{watchedSeconds}</span> / {completionTarget} seconds
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+              <div className="p-6 bg-gray-50 border-b border-gray-200">
+                <p className="text-sm text-gray-500 text-center">
+                  Ad {Math.min(adsViewedToday + 1, dailyLimit)} of {dailyLimit}
                 </p>
-                <div className="w-full h-2 rounded-full bg-gray-200 mt-2 overflow-hidden">
-                  <div className="h-full bg-primary-600" style={{ width: `${Math.min(100, (watchedSeconds / completionTarget) * 100)}%` }} />
-                </div>
-                <p className="text-xs text-gray-500 mt-2">{isPlayerReady ? playerMessage : 'Loading video player...'}</p>
+                <p className="text-gray-600 text-center mt-2 text-sm">
+                  Watch for {REQUIRED_WATCH_SECONDS} seconds, then claim your reward.
+                </p>
               </div>
-              <p className={`text-sm font-medium text-center ${canCredit ? 'text-green-600' : 'text-gray-500'}`}>
-                {canCredit ? 'Completed. Adding $0.40 and loading next ad...' : 'Keep watching to auto-credit this ad.'}
-              </p>
+              <div className="p-6 space-y-4">
+                <div className="rounded-lg overflow-hidden border border-gray-200">
+                  {currentPlatform === 'youtube' && youtubeEmbedUrl ? (
+                    <iframe
+                      title="Ad video"
+                      src={youtubeEmbedUrl}
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                      allowFullScreen
+                      className="w-full aspect-video bg-black"
+                    />
+                  ) : (
+                    <div className="p-6 bg-gray-50 space-y-3">
+                      <p className="text-sm text-gray-700">
+                        This ad opens on {currentPlatform === 'tiktok' ? 'TikTok' : currentPlatform === 'instagram' ? 'Instagram' : 'external video page'}.
+                      </p>
+                      <a
+                        href={currentAdLink}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-block px-4 py-2 bg-primary-600 text-white rounded-lg text-sm"
+                      >
+                        Open ad video
+                      </a>
+                    </div>
+                  )}
+                </div>
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <p className="text-sm text-gray-600">
+                    Timer: <span className="font-semibold">{countdown}s</span> / {REQUIRED_WATCH_SECONDS}s
+                  </p>
+                  <div className="w-full h-2 rounded-full bg-gray-200 mt-2 overflow-hidden">
+                    <div className="h-full bg-primary-600" style={{ width: `${Math.min(100, ((REQUIRED_WATCH_SECONDS - countdown) / REQUIRED_WATCH_SECONDS) * 100)}%` }} />
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">{playerMessage}</p>
+                </div>
+                <div className="flex flex-wrap items-center justify-center gap-2">
+                  <button
+                    onClick={startTimer}
+                    disabled={timerRunning || canClaim}
+                    className="px-4 py-2 bg-gray-900 text-white rounded-lg text-sm disabled:opacity-50"
+                  >
+                    {timerRunning ? 'Timer running...' : canClaim ? 'Timer completed' : 'Start timer'}
+                  </button>
+                  <button
+                    onClick={claimAdReward}
+                    disabled={!canClaim}
+                    className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm disabled:opacity-50"
+                  >
+                    Claim $0.40
+                  </button>
+                </div>
+              </div>
             </div>
-          </div>
           )}
 
           {/* Show amount earned after each watch */}
