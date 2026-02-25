@@ -32,64 +32,83 @@ function SignUpPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[linear-gradient(180deg,#eef4ff_0%,#ffffff_100%)] px-4 py-10">
-      <div className="max-w-md mx-auto bg-white rounded-2xl border border-slate-200 shadow-lg p-6">
-        <h1 className="text-2xl font-bold text-slate-900">Create account</h1>
-        <p className="text-sm text-slate-600 mt-1">Simple access signup. No email or code verification.</p>
+    <div className="min-h-screen bg-[linear-gradient(180deg,#f2f5fa_0%,#ffffff_100%)] px-4 py-8 sm:py-10">
+      <div className="max-w-md mx-auto">
+        <div className="w-24 h-24 mx-auto rounded-full bg-white border border-slate-200 shadow flex items-center justify-center text-slate-800 font-bold text-xl">
+          ADV
+        </div>
+        <div className="mt-6 bg-white rounded-3xl border border-slate-200 shadow-xl p-6">
+          <h1 className="text-3xl font-bold text-slate-900">Sign Up</h1>
 
-        <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
-          <input
-            type="tel"
-            value={form.phone}
-            onChange={handleChange('phone')}
-            placeholder="Phone number"
-            className="w-full px-4 py-3 border border-slate-300 rounded-lg"
-          />
-          <input
-            type="email"
-            value={form.email}
-            onChange={handleChange('email')}
-            placeholder="Email"
-            className="w-full px-4 py-3 border border-slate-300 rounded-lg"
-          />
-          <input
-            type="password"
-            value={form.password}
-            onChange={handleChange('password')}
-            placeholder="Create password"
-            className="w-full px-4 py-3 border border-slate-300 rounded-lg"
-          />
-          <input
-            type="password"
-            value={form.confirmPassword}
-            onChange={handleChange('confirmPassword')}
-            placeholder="Confirm password"
-            className="w-full px-4 py-3 border border-slate-300 rounded-lg"
-          />
-          <input
-            type="text"
-            value={form.invitationCode}
-            onChange={handleChange('invitationCode')}
-            placeholder="Invitation code (optional)"
-            className="w-full px-4 py-3 border border-slate-300 rounded-lg uppercase"
-          />
+          <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
+            <div className="flex items-center gap-3 px-4 py-3 border border-slate-200 rounded-2xl shadow-sm">
+              <span className="text-slate-400">📱</span>
+              <input
+                type="tel"
+                value={form.phone}
+                onChange={handleChange('phone')}
+                placeholder="Phone number"
+                className="w-full outline-none text-slate-700 placeholder:text-slate-400"
+              />
+            </div>
+            <div className="flex items-center gap-3 px-4 py-3 border border-slate-200 rounded-2xl shadow-sm">
+              <span className="text-slate-400">✉️</span>
+              <input
+                type="email"
+                value={form.email}
+                onChange={handleChange('email')}
+                placeholder="Email"
+                className="w-full outline-none text-slate-700 placeholder:text-slate-400"
+              />
+            </div>
+            <div className="flex items-center gap-3 px-4 py-3 border border-slate-200 rounded-2xl shadow-sm">
+              <span className="text-slate-400">🔒</span>
+              <input
+                type="password"
+                value={form.password}
+                onChange={handleChange('password')}
+                placeholder="Create password"
+                className="w-full outline-none text-slate-700 placeholder:text-slate-400"
+              />
+            </div>
+            <div className="flex items-center gap-3 px-4 py-3 border border-slate-200 rounded-2xl shadow-sm">
+              <span className="text-slate-400">🔐</span>
+              <input
+                type="password"
+                value={form.confirmPassword}
+                onChange={handleChange('confirmPassword')}
+                placeholder="Confirm password"
+                className="w-full outline-none text-slate-700 placeholder:text-slate-400"
+              />
+            </div>
+            <div className="flex items-center gap-3 px-4 py-3 border border-slate-200 rounded-2xl shadow-sm">
+              <span className="text-slate-400">👤</span>
+              <input
+                type="text"
+                value={form.invitationCode}
+                onChange={handleChange('invitationCode')}
+                placeholder="Invitation code (optional)"
+                className="w-full outline-none text-slate-700 placeholder:text-slate-400 uppercase"
+              />
+            </div>
 
-          {error && <p className="text-sm text-red-600">{error}</p>}
+            {error && <p className="text-sm text-red-600">{error}</p>}
 
-          <button
-            type="submit"
-            className="w-full py-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold"
-          >
-            Create account
-          </button>
-        </form>
+            <button
+              type="submit"
+              className="w-full py-3.5 rounded-2xl bg-[linear-gradient(135deg,#05080f_0%,#0e2a47_55%,#0f4f85_100%)] hover:opacity-95 text-white font-semibold shadow-lg"
+            >
+              Sign Up
+            </button>
+          </form>
 
-        <p className="text-sm text-slate-600 mt-4">
-          Already have an account?{' '}
-          <Link to="/sign-in" className="text-blue-600 font-semibold">
-            Sign in
-          </Link>
-        </p>
+          <p className="text-sm text-slate-500 mt-5 text-center">
+            Already Signed Up?{' '}
+            <Link to="/sign-in" className="text-[#0f4f85] font-semibold">
+              Sign In
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   )
