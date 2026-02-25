@@ -13,6 +13,14 @@ function isYouTubeUrl(link) {
 function getYoutubeEmbedUrl(link) {
   const value = String(link || '').trim()
   if (!value) return ''
+  if (value.includes('/shorts/')) {
+    const videoId = value.split('/shorts/')[1]?.split(/[?&/]/)[0]
+    return videoId ? `https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1` : ''
+  }
+  if (value.includes('/embed/')) {
+    const videoId = value.split('/embed/')[1]?.split(/[?&/]/)[0]
+    return videoId ? `https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1` : ''
+  }
   if (value.includes('youtu.be/')) {
     const videoId = value.split('youtu.be/')[1]?.split(/[?&]/)[0]
     return videoId ? `https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1` : ''

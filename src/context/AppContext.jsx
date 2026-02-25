@@ -351,24 +351,40 @@ export function AppProvider({ children }) {
 
   const saveWithdrawalDetail = useCallback((detail) => {
     if (!detail?.accountNumber?.trim()) return null
+    const normalizedCurrency = detail.currency || 'NGN'
+    const digitsOnlyAccountNumber = detail.accountNumber.replace(/\D/g, '')
+    const normalizedAccountNumber =
+      normalizedCurrency === 'NGN' && digitsOnlyAccountNumber.length === 11 && digitsOnlyAccountNumber.startsWith('0')
+        ? digitsOnlyAccountNumber.slice(1)
+        : digitsOnlyAccountNumber || detail.accountNumber.replace(/\s+/g, '')
+    const normalizedBankName = detail.bankName?.trim().toLowerCase() || ''
     const normalized = {
       id: detail.id || newId('wdacc'),
-      currency: detail.currency || 'NGN',
+      currency: normalizedCurrency,
       accountName: detail.accountName?.trim() || '',
-      accountNumber: detail.accountNumber.trim(),
+      accountNumber: normalizedAccountNumber,
       bankName: detail.bankName?.trim() || '',
       createdAt: detail.createdAt || new Date().toISOString(),
     }
 
     setSavedWithdrawalDetails((prev) => {
-      const exists = prev.some((item) =>
-        item.currency === normalized.currency &&
-        item.accountNumber === normalized.accountNumber &&
-        item.accountName === normalized.accountName &&
-        item.bankName === normalized.bankName,
-      )
-      if (exists) return prev
-      return [normalized, ...prev]
+      const next = []
+      let reusedId = normalized.id
+
+      prev.forEach((item) => {
+        const isSameDetail =
+          item.currency === normalized.currency &&
+          item.accountNumber.replace(/\s+/g, '') === normalizedAccountNumber &&
+          (item.bankName?.trim().toLowerCase() || '') === normalizedBankName
+
+        if (isSameDetail) {
+          reusedId = item.id
+          return
+        }
+        next.push(item)
+      })
+
+      return [{ ...normalized, id: reusedId }, ...next]
     })
     return normalized.id
   }, [])

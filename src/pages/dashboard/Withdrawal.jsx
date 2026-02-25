@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useApp } from '../../context/AppContext'
 
 function Withdrawal() {
@@ -8,6 +8,16 @@ function Withdrawal() {
   const [accountNumber, setAccountNumber] = useState('')
   const [bankName, setBankName] = useState('')
   const [saved, setSaved] = useState(false)
+  const uniqueSavedWithdrawalDetails = useMemo(() => {
+    const seen = new Set()
+    return savedWithdrawalDetails.filter((detail) => {
+      const normalizedNumber = String(detail.accountNumber || '').replace(/\D/g, '')
+      const key = `${detail.currency}|${normalizedNumber}|${String(detail.bankName || '').trim().toLowerCase()}`
+      if (seen.has(key)) return false
+      seen.add(key)
+      return true
+    })
+  }, [savedWithdrawalDetails])
 
   const handleSave = () => {
     if (!accountName.trim()) return
@@ -102,11 +112,11 @@ function Withdrawal() {
         {saved && <p className="text-green-600 font-medium mt-3">Withdrawal details saved successfully.</p>}
       </div>
 
-      {savedWithdrawalDetails.length > 0 && (
+      {uniqueSavedWithdrawalDetails.length > 0 && (
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-3">Saved withdrawal details</h2>
           <div className="space-y-2">
-            {savedWithdrawalDetails.map((detail) => (
+            {uniqueSavedWithdrawalDetails.map((detail) => (
               <div key={detail.id} className="rounded-lg border border-gray-200 p-3 text-sm text-gray-700">
                 <p><span className="font-medium">Currency:</span> {detail.currency}</p>
                 <p><span className="font-medium">Name:</span> {detail.accountName || '-'}</p>
