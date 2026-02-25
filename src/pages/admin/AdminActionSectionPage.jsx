@@ -97,30 +97,37 @@ function AdminActionSectionPage() {
         .map((line) => line.trim())
         .filter(Boolean)
       const validUrls = parsedUrls.filter((line) => /^https?:\/\//i.test(line))
-      if (validUrls.length === 0) {
-        alert('Please add at least one valid http(s) video URL.')
+      const youtubeUrls = validUrls.filter((line) => {
+        const lowered = line.toLowerCase()
+        return lowered.includes('youtube.com') || lowered.includes('youtu.be')
+      })
+      if (youtubeUrls.length === 0) {
+        alert('Please add at least one valid YouTube link.')
         return
       }
-      setAdVideoIds(validUrls)
-      alert('Video links saved successfully.')
+      if (youtubeUrls.length !== validUrls.length) {
+        alert('Only YouTube links are allowed. Non-YouTube links were ignored.')
+      }
+      setAdVideoIds(youtubeUrls)
+      alert('YouTube links saved successfully.')
     }
 
     return (
       <section className="bg-white rounded-xl border border-gray-200 p-6">
         <h2 className="text-lg font-semibold mb-2">Video Manager</h2>
         <p className="text-sm text-gray-600 mb-3">
-          Paste one video link per line from YouTube, TikTok, Instagram, or any public video page.
+          Paste one YouTube link per line. Only YouTube links are supported.
         </p>
         <textarea
           value={videoUrlsText}
           onChange={(e) => setVideoUrlsText(e.target.value)}
           rows={10}
           className="w-full px-4 py-3 border border-gray-300 rounded-lg"
-          placeholder={'https://www.youtube.com/watch?v=example\nhttps://www.tiktok.com/@user/video/123456'}
+          placeholder={'https://www.youtube.com/watch?v=example\nhttps://youtu.be/example'}
         />
         <div className="mt-3 flex items-center gap-2">
           <button onClick={saveVideoUrls} className="px-4 py-2 bg-primary-600 text-white rounded-lg">
-            Save video links
+            Save YouTube links
           </button>
           <span className="text-sm text-gray-500">Current links: {Array.isArray(adVideoIds) ? adVideoIds.length : 0}</span>
         </div>

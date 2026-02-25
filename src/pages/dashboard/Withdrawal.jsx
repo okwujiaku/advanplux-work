@@ -102,11 +102,9 @@ function Withdrawal() {
         {saved && <p className="text-green-600 font-medium mt-3">Withdrawal details saved successfully.</p>}
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-3">Saved withdrawal details</h2>
-        {savedWithdrawalDetails.length === 0 ? (
-          <p className="text-sm text-gray-500">No saved withdrawal details yet.</p>
-        ) : (
+      {savedWithdrawalDetails.length > 0 && (
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-3">Saved withdrawal details</h2>
           <div className="space-y-2">
             {savedWithdrawalDetails.map((detail) => (
               <div key={detail.id} className="rounded-lg border border-gray-200 p-3 text-sm text-gray-700">
@@ -117,14 +115,12 @@ function Withdrawal() {
               </div>
             ))}
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-3">Your withdrawal history</h2>
-        {withdrawals.filter((w) => w.userId === 'current-user').length === 0 ? (
-          <p className="text-sm text-gray-500">No withdrawal requests yet.</p>
-        ) : (
+      {withdrawals.filter((w) => w.userId === 'current-user').length > 0 && (
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-3">Your withdrawal history</h2>
           <div className="space-y-2">
             {withdrawals
               .filter((w) => w.userId === 'current-user')
@@ -151,8 +147,8 @@ function Withdrawal() {
                 </div>
               ))}
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   )
 }

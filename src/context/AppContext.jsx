@@ -60,6 +60,11 @@ function generateInvitationCode(existingUsers) {
   return code
 }
 
+function isYouTubeUrl(value) {
+  const link = String(value || '').toLowerCase()
+  return link.includes('youtube.com') || link.includes('youtu.be')
+}
+
 export function AppProvider({ children }) {
   const [users, setUsers] = useState(() => {
     const initial = getInitialValue(AUTH_USERS_KEY, [])
@@ -88,7 +93,7 @@ export function AppProvider({ children }) {
       if (!Array.isArray(parsed) || parsed.length === 0) return DEFAULT_AD_VIDEO_IDS
       const normalizedUrls = parsed
         .map((item) => String(item || '').trim())
-        .filter((item) => /^https?:\/\//i.test(item))
+        .filter((item) => /^https?:\/\//i.test(item) && isYouTubeUrl(item))
       return normalizedUrls.length > 0 ? normalizedUrls : DEFAULT_AD_VIDEO_IDS
     } catch {
       return DEFAULT_AD_VIDEO_IDS

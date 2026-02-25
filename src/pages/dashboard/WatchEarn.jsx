@@ -5,12 +5,9 @@ import { useApp } from '../../context/AppContext'
 const EARN_PER_AD_USD = 0.4
 const REQUIRED_WATCH_SECONDS = 30
 
-function getPlatformFromLink(link) {
+function isYouTubeUrl(link) {
   const value = String(link || '').toLowerCase()
-  if (value.includes('youtube.com') || value.includes('youtu.be')) return 'youtube'
-  if (value.includes('tiktok.com')) return 'tiktok'
-  if (value.includes('instagram.com')) return 'instagram'
-  return 'other'
+  return value.includes('youtube.com') || value.includes('youtu.be')
 }
 
 function getYoutubeEmbedUrl(link) {
@@ -45,11 +42,11 @@ function WatchEarn() {
   const dailyLimit = packInfo ? packInfo.adsPerDay : (freeAccessForSetup ? setupLimit : 0)
   const adsRemaining = dailyLimit - adsViewedToday
   const totalEarnedToday = adsViewedToday * EARN_PER_AD_USD
-  const hasVideos = adVideoIds.length > 0
-  const currentAdLink = hasVideos ? adVideoIds[currentAdIndex % adVideoIds.length] : ''
+  const youtubeAdLinks = adVideoIds.filter(isYouTubeUrl)
+  const hasVideos = youtubeAdLinks.length > 0
+  const currentAdLink = hasVideos ? youtubeAdLinks[currentAdIndex % youtubeAdLinks.length] : ''
   const currentAdKey = `${currentAdIndex}-${currentAdLink || 'none'}`
-  const currentPlatform = getPlatformFromLink(currentAdLink)
-  const youtubeEmbedUrl = currentPlatform === 'youtube' ? getYoutubeEmbedUrl(currentAdLink) : ''
+  const youtubeEmbedUrl = getYoutubeEmbedUrl(currentAdLink)
 
   useEffect(() => {
     if (!hasAccess || adsRemaining <= 0 || !currentAdLink) return
@@ -141,8 +138,8 @@ function WatchEarn() {
         <>
           {!hasVideos && (
             <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 text-center">
-              <p className="text-amber-800 font-medium">No ad videos configured yet.</p>
-              <p className="text-sm text-amber-700 mt-1">Admin should add video links in Video Manager.</p>
+              <p className="text-amber-800 font-medium">No YouTube ad videos configured yet.</p>
+              <p className="text-sm text-amber-700 mt-1">Admin should add YouTube links in Video Manager.</p>
             </div>
           )}
           {hasVideos && (
@@ -157,7 +154,7 @@ function WatchEarn() {
               </div>
               <div className="p-6 space-y-4">
                 <div className="rounded-lg overflow-hidden border border-gray-200">
-                  {currentPlatform === 'youtube' && youtubeEmbedUrl ? (
+                  {youtubeEmbedUrl ? (
                     <iframe
                       title="Ad video"
                       src={youtubeEmbedUrl}
@@ -167,17 +164,9 @@ function WatchEarn() {
                     />
                   ) : (
                     <div className="p-6 bg-gray-50 space-y-3">
-                      <p className="text-sm text-gray-700">
-                        This ad opens on {currentPlatform === 'tiktok' ? 'TikTok' : currentPlatform === 'instagram' ? 'Instagram' : 'external video page'}.
+                      <p className="text-sm text-red-700">
+                        Invalid YouTube link. Please update this ad link in Video Manager.
                       </p>
-                      <a
-                        href={currentAdLink}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-block px-4 py-2 bg-primary-600 text-white rounded-lg text-sm"
-                      >
-                        Open ad video
-                      </a>
                     </div>
                   )}
                 </div>
