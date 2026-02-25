@@ -1,5 +1,4 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
-import HomePage from './pages/HomePage'
 import Dashboard from './pages/Dashboard'
 import DashboardHome from './pages/dashboard/DashboardHome'
 import AdGenerator from './pages/dashboard/AdGenerator'
@@ -24,6 +23,7 @@ import AdminActionSectionPage from './pages/admin/AdminActionSectionPage'
 import AdminHistorySectionPage from './pages/admin/AdminHistorySectionPage'
 import SignInPage from './pages/auth/SignInPage'
 import SignUpPage from './pages/auth/SignUpPage'
+import ForgotPasswordPage from './pages/auth/ForgotPasswordPage'
 import { useApp } from './context/AppContext'
 
 function RequireAuth({ children }) {
@@ -39,10 +39,11 @@ function GuestOnly({ children }) {
 }
 
 function App() {
+  const { isAuthenticated } = useApp()
   return (
     <div className="min-h-screen">
       <Routes>
-        <Route path="/" element={<HomePage />} />
+        <Route path="/" element={<Navigate to={isAuthenticated ? '/dashboard' : '/sign-in'} replace />} />
         <Route
           path="/sign-in"
           element={
@@ -56,6 +57,14 @@ function App() {
           element={
             <GuestOnly>
               <SignUpPage />
+            </GuestOnly>
+          }
+        />
+        <Route
+          path="/forgot-password"
+          element={
+            <GuestOnly>
+              <ForgotPasswordPage />
             </GuestOnly>
           }
         />
@@ -102,6 +111,7 @@ function App() {
           <Route path="tools" element={<AdminToolsPage />} />
           <Route path="history" element={<AdminHistoryPage />} />
         </Route>
+        <Route path="*" element={<Navigate to={isAuthenticated ? '/dashboard' : '/sign-in'} replace />} />
       </Routes>
     </div>
   )

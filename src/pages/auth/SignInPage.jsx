@@ -41,6 +41,10 @@ function SignInPage() {
   return (
     <div className="min-h-screen bg-[linear-gradient(135deg,#143D59_0%,#1B4965_100%)] px-4 py-6 flex items-center justify-center">
       <div className="max-w-md mx-auto w-full">
+        <div className="text-center mb-5 text-white">
+          <p className="text-3xl font-bold tracking-tight">Advanplux</p>
+          <p className="text-sm text-white/85 mt-1">Watch ads and get paid</p>
+        </div>
         <div className="bg-white rounded-3xl border border-slate-200 shadow-xl p-6">
           <h1 className="text-3xl font-bold text-slate-900">Sign In</h1>
 
@@ -64,6 +68,11 @@ function SignInPage() {
                 placeholder="Password"
                 className="w-full outline-none text-slate-700 placeholder:text-slate-400"
               />
+            </div>
+            <div className="text-right -mt-1">
+              <Link to="/forgot-password" className="text-xs font-semibold text-[#143D59] hover:underline">
+                Forgot password?
+              </Link>
             </div>
 
             {error && <p className="text-sm text-red-600">{error}</p>}

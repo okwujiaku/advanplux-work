@@ -183,6 +183,28 @@ export function AppProvider({ children }) {
     setCurrentUserId(null)
   }, [])
 
+  const resetPassword = useCallback(({ emailOrPhone, newPassword, confirmPassword }) => {
+    const identifier = String(emailOrPhone || '').trim()
+    const nextPassword = String(newPassword || '')
+    const confirmNextPassword = String(confirmPassword || '')
+    if (!identifier || !nextPassword || !confirmNextPassword) {
+      return { ok: false, error: 'All fields are required.' }
+    }
+    if (nextPassword !== confirmNextPassword) {
+      return { ok: false, error: 'New password and confirm password must match.' }
+    }
+
+    const normalizedEmail = normalizeEmail(identifier)
+    const normalizedPhone = normalizePhone(identifier)
+    const user = users.find((candidate) =>
+      normalizeEmail(candidate.email) === normalizedEmail || normalizePhone(candidate.phone) === normalizedPhone,
+    )
+    if (!user) return { ok: false, error: 'Account not found.' }
+
+    setUsers((prev) => prev.map((candidate) => (candidate.id === user.id ? { ...candidate, password: nextPassword } : candidate)))
+    return { ok: true }
+  }, [users])
+
   useEffect(() => {
     if (typeof window !== 'undefined' && window.localStorage) {
       window.localStorage.setItem('adVideoIds', JSON.stringify(adVideoIds))
@@ -402,6 +424,7 @@ export function AppProvider({ children }) {
     signUp,
     signIn,
     signOut,
+    resetPassword,
     userPack,
     setUserPack,
     savedAccount,
