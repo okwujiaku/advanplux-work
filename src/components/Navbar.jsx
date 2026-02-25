@@ -38,10 +38,10 @@ function Navbar() {
 
           {/* Auth Buttons */}
           <div className="hidden md:flex items-center space-x-4">
-            <Link to="/dashboard" className="text-white/90 hover:text-white px-4 py-2 rounded-md text-sm font-medium transition-colors">
+            <Link to="/sign-in" className="text-white/90 hover:text-white px-4 py-2 rounded-md text-sm font-medium transition-colors">
               Login
             </Link>
-            <Link to="/dashboard" className="bg-primary-500 hover:bg-primary-600 text-white px-6 py-2 rounded-md text-sm font-medium transition-colors shadow-md">
+            <Link to="/sign-up" className="bg-primary-500 hover:bg-primary-600 text-white px-6 py-2 rounded-md text-sm font-medium transition-colors shadow-md">
               Sign Up
             </Link>
           </div>
@@ -84,10 +84,10 @@ function Navbar() {
               Activities
             </a>
             <div className="pt-4 pb-3 border-t border-[#1B4965]">
-              <Link to="/dashboard" className="text-white/90 hover:text-white block px-3 py-2 rounded-md text-base font-medium">
+              <Link to="/sign-in" className="text-white/90 hover:text-white block px-3 py-2 rounded-md text-base font-medium">
                 Login
               </Link>
-              <Link to="/dashboard" className="bg-primary-500 hover:bg-primary-600 text-white block px-3 py-2 rounded-md text-base font-medium mt-2 text-center">
+              <Link to="/sign-up" className="bg-primary-500 hover:bg-primary-600 text-white block px-3 py-2 rounded-md text-base font-medium mt-2 text-center">
                 Sign Up
               </Link>
             </div>

@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
+import { SignIn, SignUp, useAuth } from '@clerk/clerk-react'
 import HomePage from './pages/HomePage'
 import Dashboard from './pages/Dashboard'
 import DashboardHome from './pages/dashboard/DashboardHome'
@@ -23,12 +24,53 @@ import AdminHistoryPage from './pages/admin/AdminHistoryPage'
 import AdminActionSectionPage from './pages/admin/AdminActionSectionPage'
 import AdminHistorySectionPage from './pages/admin/AdminHistorySectionPage'
 
+function RequireAuth({ children }) {
+  const { isLoaded, userId } = useAuth()
+  if (!isLoaded) return <div className="min-h-screen grid place-items-center text-sm text-gray-600">Loading...</div>
+  if (!userId) return <Navigate to="/sign-in" replace />
+  return children
+}
+
+function GuestOnly({ children }) {
+  const { isLoaded, userId } = useAuth()
+  if (!isLoaded) return <div className="min-h-screen grid place-items-center text-sm text-gray-600">Loading...</div>
+  if (userId) return <Navigate to="/dashboard" replace />
+  return children
+}
+
 function App() {
   return (
     <div className="min-h-screen">
       <Routes>
         <Route path="/" element={<HomePage />} />
-        <Route path="/dashboard" element={<Dashboard />}>
+        <Route
+          path="/sign-in/*"
+          element={
+            <GuestOnly>
+              <div className="min-h-screen grid place-items-center p-4">
+                <SignIn path="/sign-in" routing="path" signUpUrl="/sign-up" forceRedirectUrl="/dashboard" />
+              </div>
+            </GuestOnly>
+          }
+        />
+        <Route
+          path="/sign-up/*"
+          element={
+            <GuestOnly>
+              <div className="min-h-screen grid place-items-center p-4">
+                <SignUp path="/sign-up" routing="path" signInUrl="/sign-in" forceRedirectUrl="/dashboard" />
+              </div>
+            </GuestOnly>
+          }
+        />
+        <Route
+          path="/dashboard"
+          element={(
+            <RequireAuth>
+              <Dashboard />
+            </RequireAuth>
+          )}
+        >
           <Route index element={<DashboardHome />} />
           <Route path="purchase" element={<AdGenerator />} />
           <Route path="watch" element={<WatchEarn />} />
