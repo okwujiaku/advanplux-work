@@ -43,6 +43,10 @@ function WatchEarn() {
   const [canClaim, setCanClaim] = useState(false)
   const [playerMessage, setPlayerMessage] = useState('Start timer and watch this ad to claim reward.')
   const lastCreditedAdKeyRef = useRef(null)
+  const timerIntervalRef = useRef(null)
+  const countdownRef = useRef(REQUIRED_WATCH_SECONDS)
+  const adsViewedTodayRef = useRef(0)
+  const dailyLimitRef = useRef(0)
 
   const hasAccess = userPack || isAdminLoggedIn || freeAccessForSetup
   const packInfo = userPack ? PACKS_USD.find((p) => p.usd === userPack) : null
@@ -57,48 +61,80 @@ function WatchEarn() {
   const youtubeEmbedUrl = getYoutubeEmbedUrl(currentAdLink)
 
   useEffect(() => {
-    if (!hasAccess || adsRemaining <= 0 || !currentAdLink) return
+    countdownRef.current = countdown
+  }, [countdown])
+
+  useEffect(() => {
+    adsViewedTodayRef.current = adsViewedToday
+  }, [adsViewedToday])
+
+  useEffect(() => {
+    dailyLimitRef.current = dailyLimit
+  }, [dailyLimit])
+
+  const stopTimer = () => {
+    if (timerIntervalRef.current) {
+      clearInterval(timerIntervalRef.current)
+      timerIntervalRef.current = null
+    }
     setTimerRunning(false)
+  }
+
+  useEffect(() => {
+    if (!hasAccess || adsRemaining <= 0 || !currentAdLink) return
+    stopTimer()
     setCanClaim(false)
     setCountdown(REQUIRED_WATCH_SECONDS)
     setPlayerMessage('Start timer and watch this ad to claim reward.')
   }, [adsRemaining, currentAdKey, currentAdLink, hasAccess])
 
   useEffect(() => {
-    if (!timerRunning) return undefined
-    const interval = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          clearInterval(interval)
-          setTimerRunning(false)
-          setCanClaim(true)
-          setPlayerMessage('Timer completed. You can now claim this ad reward.')
-          return 0
-        }
-        return prev - 1
-      })
-    }, 1000)
-    return () => clearInterval(interval)
-  }, [timerRunning])
+    return () => {
+      if (timerIntervalRef.current) {
+        clearInterval(timerIntervalRef.current)
+        timerIntervalRef.current = null
+      }
+    }
+  }, [])
 
-  const startTimer = () => {
-    if (timerRunning || canClaim) return
-    setTimerRunning(true)
-    setPlayerMessage('Timer running... keep watching this ad.')
-  }
-
-  const claimAdReward = () => {
-    if (!canClaim || !hasVideos || !currentAdLink || adsViewedToday >= dailyLimit) return
+  const claimAdReward = (force = false) => {
+    if (!force && !canClaim) return
+    if (!hasVideos || !currentAdLink || adsViewedTodayRef.current >= dailyLimitRef.current) return
     if (lastCreditedAdKeyRef.current === currentAdKey) return
 
     lastCreditedAdKeyRef.current = currentAdKey
     watchAd()
     setLastEarned(EARN_PER_AD_USD)
     setCurrentAdIndex((prev) => prev + 1)
-    setTimerRunning(false)
+    stopTimer()
     setCanClaim(false)
     setCountdown(REQUIRED_WATCH_SECONDS)
     setPlayerMessage('Ad completed. Loading next ad...')
+  }
+
+  const startTimer = () => {
+    if (timerRunning || canClaim) return
+    if (timerIntervalRef.current) {
+      clearInterval(timerIntervalRef.current)
+      timerIntervalRef.current = null
+    }
+
+    setTimerRunning(true)
+    setPlayerMessage('Timer running... keep watching this ad.')
+
+    timerIntervalRef.current = setInterval(() => {
+      const next = countdownRef.current - 1
+      const safeNext = Math.max(0, next)
+      setCountdown(safeNext)
+      countdownRef.current = safeNext
+
+      if (next <= 0) {
+        stopTimer()
+        setCanClaim(true)
+        setPlayerMessage('Ad completed. Loading next ad...')
+        claimAdReward(true)
+      }
+    }, 1000)
   }
 
   if (!hasAccess) {
@@ -157,7 +193,7 @@ function WatchEarn() {
                   Ad {Math.min(adsViewedToday + 1, dailyLimit)} of {dailyLimit}
                 </p>
                 <p className="text-gray-600 text-center mt-2 text-sm">
-                  Watch for {REQUIRED_WATCH_SECONDS} seconds, then claim your reward.
+                  Watch for {REQUIRED_WATCH_SECONDS} seconds. Reward is added and next ad loads automatically.
                 </p>
               </div>
               <div className="p-6 space-y-4">
@@ -200,7 +236,7 @@ function WatchEarn() {
                     disabled={!canClaim}
                     className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm disabled:opacity-50"
                   >
-                    Claim $0.40
+                    Claim manually
                   </button>
                 </div>
               </div>
