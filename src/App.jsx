@@ -98,6 +98,7 @@ function App() {
           <Route path="add-bank" element={<AdminActionSectionPage />} />
           <Route path="edit-users" element={<AdminActionSectionPage />} />
           <Route path="gift-code" element={<AdminActionSectionPage />} />
+          <Route path="video-manager" element={<AdminActionSectionPage />} />
           <Route path="account-topup" element={<AdminActionSectionPage />} />
           <Route path="deduct-account" element={<AdminActionSectionPage />} />
           <Route path="lock-withdrawal" element={<AdminActionSectionPage />} />

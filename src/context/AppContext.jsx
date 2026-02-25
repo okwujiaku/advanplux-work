@@ -16,19 +16,11 @@ export const PACKS_USD = [
 ]
 
 const DEFAULT_AD_VIDEO_IDS = [
-  'XqNKXOqQaKg',
-  'ZgNkU0EgbmY',
-  'd3Q1nPjTKs4',
-  'JUUMzploWs4',
-  'ayunWvACnMU',
-  'St1Pkz6MG9U',
-  'qlnbJyH2QHI',
-  'u1wHZRGXa-A',
-  'RuTrQe8lybM',
-  'y7SMe1CtwfM',
-  'GfbdIycDxeA',
-  '6JyxH6fhtao',
-  'LyBZisruNZo',
+  'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+  'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
+  'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+  'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
+  'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
 ]
 
 const EARN_PER_AD_USD = 0.4
@@ -68,6 +60,14 @@ function generateInvitationCode(existingUsers) {
   return code
 }
 
+function detectVideoPlatform(url) {
+  const value = String(url || '').toLowerCase()
+  if (value.includes('youtube.com') || value.includes('youtu.be')) return 'YouTube'
+  if (value.includes('tiktok.com')) return 'TikTok'
+  if (value.includes('instagram.com')) return 'Instagram'
+  return 'Other'
+}
+
 export function AppProvider({ children }) {
   const [users, setUsers] = useState(() => {
     const initial = getInitialValue(AUTH_USERS_KEY, [])
@@ -93,10 +93,18 @@ export function AppProvider({ children }) {
     if (!raw) return DEFAULT_AD_VIDEO_IDS
     try {
       const parsed = JSON.parse(raw)
-      return Array.isArray(parsed) && parsed.length > 0 ? parsed : DEFAULT_AD_VIDEO_IDS
+      if (!Array.isArray(parsed) || parsed.length === 0) return DEFAULT_AD_VIDEO_IDS
+      const normalizedUrls = parsed
+        .map((item) => String(item || '').trim())
+        .filter((item) => /^https?:\/\//i.test(item))
+      return normalizedUrls.length > 0 ? normalizedUrls : DEFAULT_AD_VIDEO_IDS
     } catch {
       return DEFAULT_AD_VIDEO_IDS
     }
+  })
+  const [videoImportJobs, setVideoImportJobs] = useState(() => {
+    const initial = getInitialValue('videoImportJobs', [])
+    return Array.isArray(initial) ? initial : []
   })
 
   const saveSessionToken = useCallback((token) => {
@@ -311,6 +319,12 @@ export function AppProvider({ children }) {
 
   useEffect(() => {
     if (typeof window !== 'undefined' && window.localStorage) {
+      window.localStorage.setItem('videoImportJobs', JSON.stringify(videoImportJobs))
+    }
+  }, [videoImportJobs])
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.localStorage) {
       window.localStorage.setItem(AUTH_USERS_KEY, JSON.stringify(users))
       window.localStorage.setItem(AUTH_CURRENT_USER_KEY, JSON.stringify(currentUserId))
       window.localStorage.setItem('userPack', JSON.stringify(userPack))
@@ -515,6 +529,71 @@ export function AppProvider({ children }) {
     setWalletUsd((prev) => Number((prev + EARN_PER_AD_USD).toFixed(2)))
   }, [])
 
+  const createVideoImportJob = useCallback(({ sourceUrl, note }) => {
+    const normalizedSourceUrl = String(sourceUrl || '').trim()
+    if (!/^https?:\/\//i.test(normalizedSourceUrl)) {
+      return { ok: false, error: 'Please provide a valid source URL.' }
+    }
+
+    const job = {
+      id: newId('vimp'),
+      sourceUrl: normalizedSourceUrl,
+      hostedUrl: '',
+      platform: detectVideoPlatform(normalizedSourceUrl),
+      note: String(note || '').trim(),
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      error: '',
+    }
+    setVideoImportJobs((prev) => [job, ...prev])
+    return { ok: true, job }
+  }, [])
+
+  const markVideoImportReady = useCallback((jobId, hostedUrl) => {
+    const normalizedHostedUrl = String(hostedUrl || '').trim()
+    if (!/^https?:\/\//i.test(normalizedHostedUrl)) {
+      return { ok: false, error: 'Please provide a valid hosted MP4/HLS URL.' }
+    }
+
+    let changed = false
+    setVideoImportJobs((prev) =>
+      prev.map((job) => {
+        if (job.id !== jobId) return job
+        changed = true
+        return {
+          ...job,
+          hostedUrl: normalizedHostedUrl,
+          status: 'ready',
+          error: '',
+          updatedAt: new Date().toISOString(),
+        }
+      }),
+    )
+
+    if (!changed) return { ok: false, error: 'Import job not found.' }
+
+    setAdVideoIds((prev) => (prev.includes(normalizedHostedUrl) ? prev : [normalizedHostedUrl, ...prev]))
+    return { ok: true }
+  }, [])
+
+  const markVideoImportFailed = useCallback((jobId, reason) => {
+    let changed = false
+    setVideoImportJobs((prev) =>
+      prev.map((job) => {
+        if (job.id !== jobId) return job
+        changed = true
+        return {
+          ...job,
+          status: 'failed',
+          error: String(reason || '').trim() || 'Import failed.',
+          updatedAt: new Date().toISOString(),
+        }
+      }),
+    )
+    return changed ? { ok: true } : { ok: false, error: 'Import job not found.' }
+  }, [])
+
   const value = {
     users,
     currentUser,
@@ -562,6 +641,10 @@ export function AppProvider({ children }) {
     freeAccessForSetup: FREE_ACCESS_FOR_SETUP,
     adVideoIds,
     setAdVideoIds,
+    videoImportJobs,
+    createVideoImportJob,
+    markVideoImportReady,
+    markVideoImportFailed,
   }
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>
 }

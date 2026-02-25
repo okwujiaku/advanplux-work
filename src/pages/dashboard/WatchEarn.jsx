@@ -12,10 +12,8 @@ function WatchEarn() {
   const [watchedSeconds, setWatchedSeconds] = useState(0)
   const [videoDuration, setVideoDuration] = useState(0)
   const [isPlayerReady, setIsPlayerReady] = useState(false)
-  const [playerMessage, setPlayerMessage] = useState('Play and watch to unlock credit.')
-  const playerRef = useRef(null)
-  const playerElementIdRef = useRef(`ad-player-${Math.random().toString(36).slice(2, 10)}`)
-  const watchIntervalRef = useRef(null)
+  const [playerMessage, setPlayerMessage] = useState('Press play and watch to unlock credit.')
+  const videoRef = useRef(null)
   const lastPlayerSecondRef = useRef(0)
   const watchedSecondsRef = useRef(0)
   const completionTargetRef = useRef(REQUIRED_WATCH_SECONDS)
@@ -28,8 +26,8 @@ function WatchEarn() {
   const adsRemaining = dailyLimit - adsViewedToday
   const totalEarnedToday = adsViewedToday * EARN_PER_AD_USD
   const hasVideos = adVideoIds.length > 0
-  const currentVideoId = hasVideos ? adVideoIds[currentAdIndex % adVideoIds.length] : null
-  const currentAdKey = `${currentAdIndex}-${currentVideoId || 'none'}`
+  const currentVideoUrl = hasVideos ? adVideoIds[currentAdIndex % adVideoIds.length] : ''
+  const currentAdKey = `${currentAdIndex}-${currentVideoUrl || 'none'}`
   const completionTarget = Math.max(1, Math.min(REQUIRED_WATCH_SECONDS, Math.floor(videoDuration || REQUIRED_WATCH_SECONDS)))
   const canCredit = watchedSeconds >= completionTarget
 
@@ -42,96 +40,68 @@ function WatchEarn() {
   }, [completionTarget])
 
   useEffect(() => {
-    if (!hasAccess || adsRemaining <= 0 || !currentVideoId) return undefined
+    if (!hasAccess || adsRemaining <= 0 || !currentVideoUrl) return
+    setWatchedSeconds(0)
+    setVideoDuration(0)
+    setIsPlayerReady(false)
+    setPlayerMessage('Press play and watch to unlock credit.')
+    lastPlayerSecondRef.current = 0
+  }, [adsRemaining, currentAdKey, currentVideoUrl, hasAccess])
 
-    let isMounted = true
-    const mountPlayer = () => {
-      if (!isMounted || !window.YT || !window.YT.Player) return
-      if (playerRef.current?.destroy) playerRef.current.destroy()
+  const handleLoadedMetadata = () => {
+    const video = videoRef.current
+    if (!video) return
+    setIsPlayerReady(true)
+    setVideoDuration(Number(video.duration) || 0)
+    setPlayerMessage('Watching in progress...')
+    lastPlayerSecondRef.current = Math.floor(video.currentTime || 0)
+  }
 
-      playerRef.current = new window.YT.Player(playerElementIdRef.current, {
-        videoId: currentVideoId,
-        playerVars: {
-          rel: 0,
-          modestbranding: 1,
-          playsinline: 1,
-        },
-        events: {
-          onReady: (event) => {
-            if (!isMounted) return
-            setIsPlayerReady(true)
-            setVideoDuration(event.target.getDuration() || 0)
-            setPlayerMessage('Play and watch to unlock credit.')
-            lastPlayerSecondRef.current = 0
-          },
-          onStateChange: (event) => {
-            if (!isMounted) return
-            const state = event.data
-            if (state === window.YT.PlayerState.PLAYING) {
-              setPlayerMessage('Watching in progress...')
-              if (watchIntervalRef.current) clearInterval(watchIntervalRef.current)
-              watchIntervalRef.current = setInterval(() => {
-                if (!playerRef.current?.getCurrentTime) return
-                const currentSecond = Math.floor(playerRef.current.getCurrentTime())
-                const delta = currentSecond - lastPlayerSecondRef.current
+  const handlePlay = () => {
+    setPlayerMessage('Watching in progress...')
+  }
 
-                if (delta === 1) {
-                  setWatchedSeconds((prev) => Math.min(completionTargetRef.current, prev + 1))
-                }
+  const handlePause = () => {
+    if (watchedSecondsRef.current < completionTargetRef.current) {
+      setPlayerMessage('Video paused. Continue watching to get credit.')
+    }
+  }
 
-                if (delta >= 2) {
-                  setPlayerMessage('Skipping is not counted. Please watch continuously.')
-                }
+  const handleTimeUpdate = () => {
+    const video = videoRef.current
+    if (!video) return
 
-                lastPlayerSecondRef.current = currentSecond
-              }, 1000)
-            } else {
-              if (watchIntervalRef.current) {
-                clearInterval(watchIntervalRef.current)
-                watchIntervalRef.current = null
-              }
-            }
+    const currentSecond = Math.floor(video.currentTime || 0)
+    const delta = currentSecond - lastPlayerSecondRef.current
 
-            if (state === window.YT.PlayerState.ENDED && watchedSecondsRef.current < completionTargetRef.current) {
-              setPlayerMessage('Replay to complete required watch time.')
-            }
-          },
-        },
-      })
+    if (delta === 1) {
+      setWatchedSeconds((prev) => Math.min(completionTargetRef.current, prev + 1))
+    } else if (delta >= 2) {
+      setPlayerMessage('Skipping is not counted. Please watch continuously.')
     }
 
-    if (window.YT?.Player) {
-      mountPlayer()
-    } else {
-      const existingScript = document.querySelector('script[src="https://www.youtube.com/iframe_api"]')
-      if (!existingScript) {
-        const script = document.createElement('script')
-        script.src = 'https://www.youtube.com/iframe_api'
-        document.body.appendChild(script)
-      }
+    lastPlayerSecondRef.current = currentSecond
+  }
 
-      const previousReady = window.onYouTubeIframeAPIReady
-      window.onYouTubeIframeAPIReady = () => {
-        if (typeof previousReady === 'function') previousReady()
-        mountPlayer()
-      }
-    }
+  const handleSeeking = () => {
+    const video = videoRef.current
+    if (!video) return
 
-    return () => {
-      isMounted = false
-      if (watchIntervalRef.current) {
-        clearInterval(watchIntervalRef.current)
-        watchIntervalRef.current = null
-      }
-      if (playerRef.current?.destroy) {
-        playerRef.current.destroy()
-        playerRef.current = null
-      }
+    const seekToSecond = Math.floor(video.currentTime || 0)
+    if (seekToSecond - lastPlayerSecondRef.current > 1) {
+      setPlayerMessage('Skipping is not counted. Please watch continuously.')
     }
-  }, [currentVideoId, hasAccess, adsRemaining])
+    lastPlayerSecondRef.current = seekToSecond
+  }
+
+  const handleEnded = () => {
+    if (watchedSecondsRef.current < completionTargetRef.current) {
+      setPlayerMessage('Replay to complete required watch time.')
+    }
+  }
 
   useEffect(() => {
-    if (!canCredit || !hasVideos || !currentVideoId || adsViewedToday >= dailyLimit) return
+    if (!canCredit || !hasVideos || !currentVideoUrl || adsViewedToday >= dailyLimit) return
     if (lastCreditedAdKeyRef.current === currentAdKey) return
 
     lastCreditedAdKeyRef.current = currentAdKey
@@ -142,7 +112,7 @@ function WatchEarn() {
     setVideoDuration(0)
     setIsPlayerReady(false)
     setPlayerMessage('Ad completed. Loading next ad...')
-  }, [adsViewedToday, canCredit, currentAdKey, currentVideoId, dailyLimit, hasVideos, watchAd])
+  }, [adsViewedToday, canCredit, currentAdKey, currentVideoUrl, dailyLimit, hasVideos, watchAd])
 
   if (!hasAccess) {
     return (
@@ -190,7 +160,7 @@ function WatchEarn() {
           {!hasVideos && (
             <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 text-center">
               <p className="text-amber-800 font-medium">No ad videos configured yet.</p>
-              <p className="text-sm text-amber-700 mt-1">Admin should add YouTube video IDs in Video Manager.</p>
+              <p className="text-sm text-amber-700 mt-1">Admin should add direct video links (MP4/HLS URLs).</p>
             </div>
           )}
           {hasVideos && (
@@ -205,7 +175,23 @@ function WatchEarn() {
             </div>
             <div className="p-6 space-y-4">
               <div className="rounded-lg overflow-hidden border border-gray-200">
-                <div id={playerElementIdRef.current} className="w-full aspect-video bg-black" />
+                <video
+                  key={currentAdKey}
+                  ref={videoRef}
+                  src={currentVideoUrl}
+                  controls
+                  playsInline
+                  preload="metadata"
+                  onLoadedMetadata={handleLoadedMetadata}
+                  onPlay={handlePlay}
+                  onPause={handlePause}
+                  onTimeUpdate={handleTimeUpdate}
+                  onSeeking={handleSeeking}
+                  onEnded={handleEnded}
+                  className="w-full aspect-video bg-black"
+                >
+                  Your browser does not support video playback.
+                </video>
               </div>
               <div className="bg-gray-50 rounded-lg p-4">
                 <p className="text-sm text-gray-600">

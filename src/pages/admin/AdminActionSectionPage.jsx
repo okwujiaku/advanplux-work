@@ -13,6 +13,12 @@ function AdminActionSectionPage() {
     updateMember,
     platformBankAccounts,
     giftCodes,
+    adVideoIds,
+    setAdVideoIds,
+    videoImportJobs,
+    createVideoImportJob,
+    markVideoImportReady,
+    markVideoImportFailed,
     announcements,
     adminAccounts,
     submitBankAccount,
@@ -29,6 +35,10 @@ function AdminActionSectionPage() {
   const [topupForm, setTopupForm] = useState({ memberId: selectedMemberId, amount: '' })
   const [deductForm, setDeductForm] = useState({ memberId: selectedMemberId, amount: '' })
   const [giftForm, setGiftForm] = useState({ value: '', note: '' })
+  const [importForm, setImportForm] = useState({ sourceUrl: '', note: '' })
+  const [videoUrlsText, setVideoUrlsText] = useState(() => (Array.isArray(adVideoIds) ? adVideoIds.join('\n') : ''))
+  const [hostedUrlInputs, setHostedUrlInputs] = useState({})
+  const [failureReasonInputs, setFailureReasonInputs] = useState({})
   const [announcementText, setAnnouncementText] = useState('')
   const [registerAdminForm, setRegisterAdminForm] = useState({ email: '', password: '' })
   const [changePasswordForm, setChangePasswordForm] = useState({ oldPassword: '', newPassword: '' })
@@ -36,6 +46,10 @@ function AdminActionSectionPage() {
   useEffect(() => {
     if (selectedMember) setEditForm({ name: selectedMember.name, email: selectedMember.email })
   }, [selectedMember])
+
+  useEffect(() => {
+    setVideoUrlsText(Array.isArray(adVideoIds) ? adVideoIds.join('\n') : '')
+  }, [adVideoIds])
 
   if (section === 'add-bank') {
     return (
@@ -80,6 +94,152 @@ function AdminActionSectionPage() {
         <button onClick={() => { generateGiftCode(giftForm); setGiftForm({ value: '', note: '' }) }} className="mt-3 px-4 py-2 bg-primary-600 text-white rounded-lg">Generate</button>
         {giftCodes.map((gift) => (<div key={gift.id} className="p-3 border border-gray-200 rounded-lg text-sm mt-2"><p><span className="font-semibold">{gift.code}</span> - ₦{gift.value.toLocaleString()}</p></div>))}
       </section>
+    )
+  }
+
+  if (section === 'video-manager') {
+    const createImportRequest = () => {
+      const result = createVideoImportJob(importForm)
+      if (!result.ok) {
+        alert(result.error || 'Unable to create import request.')
+        return
+      }
+      setImportForm({ sourceUrl: '', note: '' })
+      alert('Import request created. Add hosted URL when ready.')
+    }
+
+    const saveVideoUrls = () => {
+      const parsedUrls = videoUrlsText
+        .split('\n')
+        .map((line) => line.trim())
+        .filter(Boolean)
+      const validUrls = parsedUrls.filter((line) => /^https?:\/\//i.test(line))
+      if (validUrls.length === 0) {
+        alert('Please add at least one valid http(s) video URL.')
+        return
+      }
+      setAdVideoIds(validUrls)
+      alert('Video links saved successfully.')
+    }
+
+    const completeImport = (jobId) => {
+      const hostedUrl = hostedUrlInputs[jobId] || ''
+      const result = markVideoImportReady(jobId, hostedUrl)
+      if (!result.ok) {
+        alert(result.error || 'Unable to complete import request.')
+        return
+      }
+      setHostedUrlInputs((prev) => ({ ...prev, [jobId]: '' }))
+      alert('Import marked ready and added to Watch & Earn.')
+    }
+
+    const failImport = (jobId) => {
+      const reason = failureReasonInputs[jobId] || ''
+      const result = markVideoImportFailed(jobId, reason)
+      if (!result.ok) {
+        alert(result.error || 'Unable to mark import as failed.')
+        return
+      }
+      setFailureReasonInputs((prev) => ({ ...prev, [jobId]: '' }))
+    }
+
+    return (
+      <div className="space-y-4">
+        <section className="bg-white rounded-xl border border-gray-200 p-6">
+          <h2 className="text-lg font-semibold mb-2">Video Manager</h2>
+          <p className="text-sm text-gray-600 mb-4">
+            Phase 2 flow: paste source link (YouTube/TikTok/Instagram), then add your hosted MP4/HLS URL once imported.
+          </p>
+          <div className="grid gap-3">
+            <input
+              value={importForm.sourceUrl}
+              onChange={(e) => setImportForm((prev) => ({ ...prev, sourceUrl: e.target.value }))}
+              placeholder="Source video URL (YouTube/TikTok/Instagram)"
+              className="px-4 py-3 border border-gray-300 rounded-lg"
+            />
+            <input
+              value={importForm.note}
+              onChange={(e) => setImportForm((prev) => ({ ...prev, note: e.target.value }))}
+              placeholder="Note (optional)"
+              className="px-4 py-3 border border-gray-300 rounded-lg"
+            />
+          </div>
+          <button onClick={createImportRequest} className="mt-3 px-4 py-2 bg-primary-600 text-white rounded-lg">
+            Create import request
+          </button>
+        </section>
+
+        <section className="bg-white rounded-xl border border-gray-200 p-6">
+          <h3 className="text-lg font-semibold mb-3">Import requests</h3>
+          {videoImportJobs.length === 0 ? (
+            <p className="text-sm text-gray-500">No import requests yet.</p>
+          ) : (
+            <div className="space-y-3">
+              {videoImportJobs.map((job) => (
+                <div key={job.id} className="border border-gray-200 rounded-lg p-3 space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-sm font-medium text-gray-900">{job.platform} - {job.status}</p>
+                    <span className="text-xs text-gray-500">{new Date(job.updatedAt || job.createdAt).toLocaleString()}</span>
+                  </div>
+                  <p className="text-xs text-gray-600 break-all">Source: {job.sourceUrl}</p>
+                  {job.note && <p className="text-xs text-gray-500">Note: {job.note}</p>}
+                  {job.status === 'ready' && job.hostedUrl && (
+                    <p className="text-xs text-green-700 break-all">Hosted URL: {job.hostedUrl}</p>
+                  )}
+                  {job.status === 'failed' && job.error && (
+                    <p className="text-xs text-red-600">Error: {job.error}</p>
+                  )}
+
+                  {job.status !== 'ready' && (
+                    <div className="space-y-2 pt-1">
+                      <input
+                        value={hostedUrlInputs[job.id] || ''}
+                        onChange={(e) => setHostedUrlInputs((prev) => ({ ...prev, [job.id]: e.target.value }))}
+                        placeholder="Hosted MP4/HLS URL (https://...)"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                      />
+                      <div className="flex flex-wrap gap-2">
+                        <button onClick={() => completeImport(job.id)} className="px-3 py-1.5 bg-green-600 text-white rounded text-sm">
+                          Mark ready
+                        </button>
+                        <input
+                          value={failureReasonInputs[job.id] || ''}
+                          onChange={(e) => setFailureReasonInputs((prev) => ({ ...prev, [job.id]: e.target.value }))}
+                          placeholder="Failure reason (optional)"
+                          className="flex-1 min-w-[180px] px-3 py-1.5 border border-gray-300 rounded text-sm"
+                        />
+                        <button onClick={() => failImport(job.id)} className="px-3 py-1.5 bg-red-600 text-white rounded text-sm">
+                          Mark failed
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
+        <section className="bg-white rounded-xl border border-gray-200 p-6">
+          <h3 className="text-lg font-semibold mb-2">Direct links list (manual override)</h3>
+          <p className="text-sm text-gray-600 mb-3">
+            You can still paste direct MP4/HLS links here directly.
+          </p>
+          <textarea
+            value={videoUrlsText}
+            onChange={(e) => setVideoUrlsText(e.target.value)}
+            rows={8}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg"
+            placeholder={'https://your-cdn.com/ad-1.mp4\nhttps://your-cdn.com/ad-2.m3u8'}
+          />
+          <div className="mt-3 flex items-center gap-2">
+            <button onClick={saveVideoUrls} className="px-4 py-2 bg-primary-600 text-white rounded-lg">
+              Save direct video links
+            </button>
+            <span className="text-sm text-gray-500">Current links: {Array.isArray(adVideoIds) ? adVideoIds.length : 0}</span>
+          </div>
+        </section>
+      </div>
     )
   }
 
