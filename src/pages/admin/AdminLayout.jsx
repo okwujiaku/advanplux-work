@@ -9,6 +9,10 @@ const DEFAULT_MEMBER = {
   id: 'current-user',
   name: 'Main User',
   email: 'user@advanplux.com',
+  phone: '',
+  invitationCode: '',
+  referredByUserId: '',
+  joinedAt: '',
   balance: 0,
   bonusBalance: 0,
   withdrawalLocked: false,
@@ -46,6 +50,7 @@ function AdminLayout() {
   const [selectedMemberId, setSelectedMemberId] = useState(DEFAULT_MEMBER.id)
 
   const {
+    users,
     deposits,
     withdrawals,
     approveDeposit,
@@ -93,26 +98,56 @@ function AdminLayout() {
   }, [adminAccounts])
 
   useEffect(() => {
-    const ids = new Set([DEFAULT_MEMBER.id, ...deposits.map((d) => d.userId), ...withdrawals.map((w) => w.userId)])
+    const authUserById = new Map(users.map((user) => [user.id, user]))
+    const ids = new Set([DEFAULT_MEMBER.id, ...users.map((user) => user.id), ...deposits.map((d) => d.userId), ...withdrawals.map((w) => w.userId)])
     setMembers((prev) => {
       let changed = false
       const next = [...prev]
       ids.forEach((id) => {
         if (!next.some((m) => m.id === id)) {
+          const authUser = authUserById.get(id)
+          const derivedName = authUser?.email ? authUser.email.split('@')[0] : id
           changed = true
           next.push({
             id,
-            name: id === DEFAULT_MEMBER.id ? DEFAULT_MEMBER.name : id,
-            email: `${id}@advanplux.com`,
+            name: id === DEFAULT_MEMBER.id ? DEFAULT_MEMBER.name : derivedName,
+            email: authUser?.email || `${id}@advanplux.com`,
+            phone: authUser?.phone || '',
+            invitationCode: authUser?.myInvitationCode || '',
+            referredByUserId: authUser?.referredByUserId || '',
+            joinedAt: authUser?.createdAt || '',
             balance: 0,
             bonusBalance: 0,
             withdrawalLocked: false,
           })
         }
       })
-      return changed ? next : prev
+      const merged = next.map((member) => {
+        const authUser = authUserById.get(member.id)
+        if (!authUser) return member
+        const updatedMember = {
+          ...member,
+          email: authUser.email || member.email,
+          phone: authUser.phone || '',
+          invitationCode: authUser.myInvitationCode || '',
+          referredByUserId: authUser.referredByUserId || '',
+          joinedAt: authUser.createdAt || member.joinedAt || '',
+        }
+        if (
+          updatedMember.email !== member.email ||
+          updatedMember.phone !== member.phone ||
+          updatedMember.invitationCode !== member.invitationCode ||
+          updatedMember.referredByUserId !== member.referredByUserId ||
+          updatedMember.joinedAt !== member.joinedAt
+        ) {
+          changed = true
+          return updatedMember
+        }
+        return member
+      })
+      return changed ? merged : prev
     })
-  }, [deposits, withdrawals])
+  }, [deposits, users, withdrawals])
 
   const selectedMember = useMemo(
     () => members.find((member) => member.id === selectedMemberId) || members[0] || DEFAULT_MEMBER,
