@@ -70,7 +70,7 @@ function SignInPage() {
 
             <button
               type="submit"
-              className="w-full py-3.5 rounded-2xl bg-[linear-gradient(135deg,#063b24_0%,#0b4f30_55%,#126c44_100%)] hover:opacity-95 text-white font-semibold shadow-lg"
+              className="w-full py-3.5 rounded-2xl bg-[linear-gradient(135deg,#143D59_0%,#1B4965_100%)] hover:opacity-95 text-white font-semibold shadow-lg"
             >
               Sign In
             </button>
