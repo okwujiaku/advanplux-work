@@ -24,6 +24,7 @@ const DEFAULT_AD_VIDEO_IDS = [
 ]
 
 const EARN_PER_AD_USD = 0.4
+const NGN_TO_USD = 1 / 1450
 const AUTH_USERS_KEY = 'authUsers'
 const AUTH_CURRENT_USER_KEY = 'authCurrentUserId'
 const AUTH_SESSION_TOKEN_KEY = 'authSessionToken'
@@ -80,9 +81,21 @@ export function AppProvider({ children }) {
   const [walletUsd, setWalletUsd] = useState(() => getInitialValue('walletUsd', 0))
   const [teamGenerated, setTeamGenerated] = useState(0) // total generated for platform by team
   const [teamCount, setTeamCount] = useState(0)
+  const [securityPins, setSecurityPins] = useState(() => {
+    if (typeof window === 'undefined' || !window.localStorage) return {}
+    try {
+      const raw = window.localStorage.getItem('securityPins')
+      const parsed = raw ? JSON.parse(raw) : {}
+      return parsed && typeof parsed === 'object' ? parsed : {}
+    } catch {
+      return {}
+    }
+  })
+  const [remoteHasPin, setRemoteHasPin] = useState(null)
   const [referralEarnings, setReferralEarnings] = useState({ level1: 0, level2: 0, level3: 0 })
   const [claimedSalary, setClaimedSalary] = useState(0)
   const [adsViewedToday, setAdsViewedToday] = useState(0)
+  const [earningsHistory, setEarningsHistory] = useState(() => getInitialValue('earningsHistory', []))
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(() => typeof window !== 'undefined' && window.localStorage?.getItem('adminLoggedIn') === 'true')
   const [adVideoIds, setAdVideoIds] = useState(() => {
     if (typeof window === 'undefined' || !window.localStorage) return DEFAULT_AD_VIDEO_IDS
@@ -282,33 +295,112 @@ export function AppProvider({ children }) {
     saveSessionToken('')
   }, [saveSessionToken])
 
-  const resetPassword = useCallback(({ emailOrPhone, newPassword, confirmPassword }) => {
-    const identifier = String(emailOrPhone || '').trim()
-    const nextPassword = String(newPassword || '')
-    const confirmNextPassword = String(confirmPassword || '')
-    if (!identifier || !nextPassword || !confirmNextPassword) {
-      return { ok: false, error: 'All fields are required.' }
-    }
-    if (nextPassword !== confirmNextPassword) {
-      return { ok: false, error: 'New password and confirm password must match.' }
-    }
+  const resetPassword = useCallback(
+    async ({ emailOrPhone, pin, newPassword, confirmPassword }) => {
+      const identifier = String(emailOrPhone || '').trim()
+      const pinStr = String(pin ?? '').trim()
+      const nextPassword = String(newPassword || '')
+      const confirmNextPassword = String(confirmPassword || '')
+      if (!identifier || !nextPassword || !confirmNextPassword) {
+        return { ok: false, error: 'All fields are required.' }
+      }
+      if (nextPassword !== confirmNextPassword) {
+        return { ok: false, error: 'New password and confirm password must match.' }
+      }
+      if (!/^\d{4}$/.test(pinStr)) {
+        return { ok: false, error: 'Security PIN must be 4 digits.' }
+      }
 
-    const normalizedEmail = normalizeEmail(identifier)
-    const normalizedPhone = normalizePhone(identifier)
-    const user = users.find((candidate) =>
-      normalizeEmail(candidate.email) === normalizedEmail || normalizePhone(candidate.phone) === normalizedPhone,
-    )
-    if (!user) return { ok: false, error: 'Account not found.' }
-
-    setUsers((prev) => prev.map((candidate) => (candidate.id === user.id ? { ...candidate, password: nextPassword } : candidate)))
-    return { ok: true }
-  }, [users])
+      try {
+        const res = await fetch('/api/auth/reset-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            emailOrPhone: identifier,
+            pin: pinStr,
+            newPassword: nextPassword,
+            confirmPassword: confirmNextPassword,
+          }),
+        })
+        const payload = await res.json().catch(() => ({}))
+        if (res.ok && payload?.ok) {
+          return { ok: true }
+        }
+        if (res.status === 503 || res.status >= 500) {
+          return { ok: false, error: payload?.error || 'Password reset is not available. Contact support.' }
+        }
+        return { ok: false, error: payload?.error || 'Could not reset password.' }
+      } catch {
+        return { ok: false, error: 'Password reset is not available. Contact support.' }
+      }
+    },
+    [],
+  )
 
   useEffect(() => {
     if (typeof window !== 'undefined' && window.localStorage) {
       window.localStorage.setItem('adVideoIds', JSON.stringify(adVideoIds))
     }
   }, [adVideoIds])
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.localStorage) return
+    try {
+      window.localStorage.setItem('securityPins', JSON.stringify(securityPins))
+    } catch {
+      // ignore
+    }
+  }, [securityPins])
+
+  useEffect(() => {
+    if (!currentUserId) {
+      setRemoteHasPin(null)
+      return
+    }
+    const token =
+      typeof window !== 'undefined' && window.localStorage
+        ? window.localStorage.getItem(AUTH_SESSION_TOKEN_KEY)
+        : null
+    if (!token) {
+      setRemoteHasPin(null)
+      return
+    }
+    fetch('/api/auth/pin-status', { headers: { Authorization: `Bearer ${token}` } })
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.ok) setRemoteHasPin(!!d.hasPin)
+      })
+      .catch(() => setRemoteHasPin(false))
+  }, [currentUserId])
+
+  // When authenticated, fetch withdrawal details from Supabase
+  useEffect(() => {
+    const token =
+      typeof window !== 'undefined' && window.localStorage
+        ? window.localStorage.getItem(AUTH_SESSION_TOKEN_KEY)
+        : null
+    if (!currentUserId || !token) return
+    fetch('/api/user/withdrawal-details', { headers: { Authorization: `Bearer ${token}` } })
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.ok && d.detail) {
+          const d2 = d.detail
+          setSavedWithdrawalDetails([
+            {
+              id: 'wdacc-supabase',
+              currency: d2.currency || 'NGN',
+              accountName: d2.accountName || '',
+              accountNumber: d2.accountNumber || '',
+              bankName: d2.bankName || '',
+              createdAt: d2.createdAt || new Date().toISOString(),
+            },
+          ])
+        } else if (d.ok && !d.detail) {
+          setSavedWithdrawalDetails([])
+        }
+      })
+      .catch(() => {})
+  }, [currentUserId])
 
   useEffect(() => {
     if (typeof window !== 'undefined' && window.localStorage) {
@@ -321,8 +413,9 @@ export function AppProvider({ children }) {
       window.localStorage.setItem('deposits', JSON.stringify(deposits))
       window.localStorage.setItem('withdrawals', JSON.stringify(withdrawals))
       window.localStorage.setItem('walletUsd', JSON.stringify(walletUsd))
+      window.localStorage.setItem('earningsHistory', JSON.stringify(earningsHistory))
     }
-  }, [currentUserId, deposits, savedAccount, savedDepositDetails, savedWithdrawalDetails, userPack, users, walletUsd, withdrawals])
+  }, [currentUserId, deposits, earningsHistory, savedAccount, savedDepositDetails, savedWithdrawalDetails, userPack, users, walletUsd, withdrawals])
 
   const saveDepositDetail = useCallback((detail) => {
     if (!detail?.accountNumber?.trim()) return null
@@ -349,45 +442,59 @@ export function AppProvider({ children }) {
     return normalized.id
   }, [])
 
-  const saveWithdrawalDetail = useCallback((detail) => {
-    if (!detail?.accountNumber?.trim()) return null
-    const normalizedCurrency = detail.currency || 'NGN'
-    const digitsOnlyAccountNumber = detail.accountNumber.replace(/\D/g, '')
-    const normalizedAccountNumber =
-      normalizedCurrency === 'NGN' && digitsOnlyAccountNumber.length === 11 && digitsOnlyAccountNumber.startsWith('0')
-        ? digitsOnlyAccountNumber.slice(1)
-        : digitsOnlyAccountNumber || detail.accountNumber.replace(/\s+/g, '')
-    const normalizedBankName = detail.bankName?.trim().toLowerCase() || ''
-    const normalized = {
-      id: detail.id || newId('wdacc'),
-      currency: normalizedCurrency,
-      accountName: detail.accountName?.trim() || '',
-      accountNumber: normalizedAccountNumber,
-      bankName: detail.bankName?.trim() || '',
-      createdAt: detail.createdAt || new Date().toISOString(),
-    }
+  const saveWithdrawalDetail = useCallback(
+    async (detail) => {
+      if (!detail?.accountNumber?.trim()) return null
+      const normalizedCurrency = detail.currency || 'NGN'
+      const digitsOnlyAccountNumber = detail.accountNumber.replace(/\D/g, '')
+      const normalizedAccountNumber =
+        normalizedCurrency === 'NGN' && digitsOnlyAccountNumber.length === 11 && digitsOnlyAccountNumber.startsWith('0')
+          ? digitsOnlyAccountNumber.slice(1)
+          : digitsOnlyAccountNumber || detail.accountNumber.replace(/\s+/g, '')
+      const normalized = {
+        id: detail.id || newId('wdacc'),
+        currency: normalizedCurrency,
+        accountName: detail.accountName?.trim() || '',
+        accountNumber: normalizedAccountNumber,
+        bankName: detail.bankName?.trim() || '',
+        createdAt: detail.createdAt || new Date().toISOString(),
+      }
 
-    setSavedWithdrawalDetails((prev) => {
-      const next = []
-      let reusedId = normalized.id
-
-      prev.forEach((item) => {
-        const isSameDetail =
-          item.currency === normalized.currency &&
-          item.accountNumber.replace(/\s+/g, '') === normalizedAccountNumber &&
-          (item.bankName?.trim().toLowerCase() || '') === normalizedBankName
-
-        if (isSameDetail) {
-          reusedId = item.id
-          return
+      const token =
+        typeof window !== 'undefined' && window.localStorage
+          ? window.localStorage.getItem(AUTH_SESSION_TOKEN_KEY)
+          : null
+      if (token) {
+        try {
+          const res = await fetch('/api/user/withdrawal-details', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify({
+              currency: normalized.currency,
+              accountName: normalized.accountName,
+              accountNumber: normalized.accountNumber,
+              bankName: normalized.bankName,
+            }),
+          })
+          const data = await res.json().catch(() => ({}))
+          if (!data.ok) return null
+          setSavedWithdrawalDetails([{ ...normalized, id: 'wdacc-supabase' }])
+          return normalized.id
+        } catch {
+          return null
         }
-        next.push(item)
-      })
+      }
 
-      return [{ ...normalized, id: reusedId }, ...next]
-    })
-    return normalized.id
-  }, [])
+      let savedId = normalized.id
+      setSavedWithdrawalDetails((prev) => {
+        const existing = prev[0]
+        savedId = existing?.id || normalized.id
+        return [{ ...normalized, id: savedId }]
+      })
+      return savedId
+    },
+    [],
+  )
 
   const addDeposit = useCallback((data) => {
     const now = new Date().toISOString()
@@ -429,28 +536,100 @@ export function AppProvider({ children }) {
     return id
   }, [saveDepositDetail])
 
-  const addWithdrawal = useCallback((data) => {
-    const now = new Date().toISOString()
-    const id = newId('wd')
-    if (data.saveDetail) {
-      saveWithdrawalDetail({
-        currency: data.currency,
-        accountName: data.accountName,
-        accountNumber: data.accountNumber,
-        bankName: data.bankName,
-      })
-    }
-    setWithdrawals((prev) => [
-      {
-        ...data,
-        id,
-        date: now,
-        status: 'pending',
-      },
-      ...prev,
-    ])
-    return id
-  }, [saveWithdrawalDetail])
+  const addWithdrawal = useCallback(
+    async (data) => {
+      const now = new Date().toISOString()
+      const id = newId('wd')
+      if (data.saveDetail) {
+        await saveWithdrawalDetail({
+          currency: data.currency,
+          accountName: data.accountName,
+          accountNumber: data.accountNumber,
+          bankName: data.bankName,
+        })
+      }
+      setWithdrawals((prev) => [
+        {
+          ...data,
+          id,
+          date: now,
+          status: 'pending',
+        },
+        ...prev,
+      ])
+      return id
+    },
+    [saveWithdrawalDetail],
+  )
+
+  const hasToken = useMemo(() => {
+    if (typeof window === 'undefined' || !window.localStorage) return false
+    return !!window.localStorage.getItem(AUTH_SESSION_TOKEN_KEY)
+  }, [currentUserId])
+
+  const hasSecurityPin = useMemo(() => {
+    if (!currentUserId) return false
+    if (hasToken) return remoteHasPin === true
+    return !!(securityPins[currentUserId])
+  }, [currentUserId, hasToken, remoteHasPin, securityPins])
+
+  const setSecurityPinForCurrentUser = useCallback(
+    async (pin) => {
+      const normalized = String(pin || '').trim()
+      if (!currentUserId || !/^\d{4}$/.test(normalized)) return false
+      const token =
+        typeof window !== 'undefined' && window.localStorage
+          ? window.localStorage.getItem(AUTH_SESSION_TOKEN_KEY)
+          : null
+      if (token) {
+        try {
+          const res = await fetch('/api/auth/set-pin', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ pin: normalized }),
+          })
+          const data = await res.json().catch(() => ({}))
+          if (data.ok) {
+            setRemoteHasPin(true)
+            return true
+          }
+          return false
+        } catch {
+          return false
+        }
+      }
+      setSecurityPins((prev) => ({ ...prev, [currentUserId]: normalized }))
+      return true
+    },
+    [currentUserId],
+  )
+
+  const verifySecurityPinForCurrentUser = useCallback(
+    async (pin) => {
+      const normalized = String(pin || '').trim()
+      if (!currentUserId || !/^\d{4}$/.test(normalized)) return false
+      const token =
+        typeof window !== 'undefined' && window.localStorage
+          ? window.localStorage.getItem(AUTH_SESSION_TOKEN_KEY)
+          : null
+      if (token) {
+        try {
+          const res = await fetch('/api/auth/verify-pin', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ pin: normalized }),
+          })
+          const data = await res.json()
+          return !!data?.verified
+        } catch {
+          return false
+        }
+      }
+      const expected = securityPins[currentUserId]
+      return !!expected && String(expected) === normalized
+    },
+    [currentUserId, securityPins],
+  )
 
   const approveDeposit = useCallback((id) => {
     let approvedDeposit = null
@@ -525,12 +704,67 @@ export function AppProvider({ children }) {
 
   const claimSalary = useCallback((amount) => {
     setClaimedSalary((prev) => prev + amount)
+    setEarningsHistory((prev) => [
+      {
+        id: newId('earn'),
+        source: 'team-salary',
+        amountUsd: Number(amount || 0),
+        note: 'Weekly team salary claimed',
+        date: new Date().toISOString(),
+      },
+      ...prev,
+    ])
   }, [])
 
   const watchAd = useCallback(() => {
     setAdsViewedToday((prev) => prev + 1)
     setWalletUsd((prev) => Number((prev + EARN_PER_AD_USD).toFixed(2)))
+    setEarningsHistory((prev) => [
+      {
+        id: newId('earn'),
+        source: 'watch-ads',
+        amountUsd: EARN_PER_AD_USD,
+        note: 'Watched ad and earned reward',
+        date: new Date().toISOString(),
+      },
+      ...prev,
+    ])
   }, [])
+
+  const deleteUserAccount = useCallback((userId) => {
+    if (!userId) return
+    setUsers((prev) => prev.filter((user) => user.id !== userId))
+    if (currentUserId === userId) {
+      setCurrentUserId(null)
+      saveSessionToken('')
+    }
+  }, [currentUserId, saveSessionToken])
+
+  useEffect(() => {
+    const referralTotalNgn = Number(referralEarnings.level1 || 0) + Number(referralEarnings.level2 || 0) + Number(referralEarnings.level3 || 0)
+    const referralTotalUsd = Number((referralTotalNgn * NGN_TO_USD).toFixed(2))
+    if (!referralTotalUsd || referralTotalUsd <= 0) return
+    setEarningsHistory((prev) => {
+      const existing = prev.find((entry) => entry.source === 'referral-total')
+      if (existing) {
+        return prev.map((entry) =>
+          entry.source === 'referral-total'
+            ? { ...entry, amountUsd: referralTotalUsd, date: new Date().toISOString(), note: 'Referral earnings summary' }
+            : entry,
+        )
+      }
+      return [
+        {
+          id: newId('earn'),
+          source: 'referral-total',
+          amountUsd: referralTotalUsd,
+          note: 'Referral earnings summary',
+          date: new Date().toISOString(),
+        },
+        ...prev,
+      ]
+    })
+  }, [referralEarnings])
 
 
   const value = {
@@ -572,7 +806,13 @@ export function AppProvider({ children }) {
     claimSalary,
     adsViewedToday,
     watchAd,
+    hasSecurityPin,
+    setSecurityPinForCurrentUser,
+    verifySecurityPinForCurrentUser,
     setAdsViewedToday,
+    deleteUserAccount,
+    earningsHistory,
+    setEarningsHistory,
     isAdminLoggedIn,
     setIsAdminLoggedIn,
     PACKS_USD,

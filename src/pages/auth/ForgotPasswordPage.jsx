@@ -1,27 +1,35 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { useApp } from '../../context/AppContext'
+import { Link } from 'react-router-dom'
 
 function ForgotPasswordPage() {
-  const navigate = useNavigate()
-  const { resetPassword } = useApp()
-  const [emailOrPhone, setEmailOrPhone] = useState('')
-  const [newPassword, setNewPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
+  const [email, setEmail] = useState('')
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [submitting, setSubmitting] = useState(false)
 
-  const handleSubmit = (event) => {
-    event.preventDefault()
+  const handleSubmit = async (e) => {
+    e.preventDefault()
     setError('')
     setSuccess('')
-    const result = resetPassword({ emailOrPhone, newPassword, confirmPassword })
-    if (!result.ok) {
-      setError(result.error)
-      return
+    setSubmitting(true)
+    try {
+      const res = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim().toLowerCase() }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (res.ok && data?.ok) {
+        setSuccess(data.message || "If an account exists with this email, we've sent you a link to reset your password. Check your inbox and spam folder.")
+        setEmail('')
+      } else {
+        setError(data?.error || 'Something went wrong. Try again later.')
+      }
+    } catch {
+      setError('Something went wrong. Try again later.')
+    } finally {
+      setSubmitting(false)
     }
-    setSuccess('Password updated successfully. You can sign in now.')
-    setTimeout(() => navigate('/sign-in'), 1200)
   }
 
   return (
@@ -32,30 +40,20 @@ function ForgotPasswordPage() {
           <p className="text-sm text-white/85 mt-1">Watch ads and get paid</p>
         </div>
         <div className="bg-white rounded-3xl border border-slate-200 shadow-xl p-6">
-          <h1 className="text-3xl font-bold text-slate-900">Reset Password</h1>
-          <p className="text-sm text-slate-500 mt-1">Use your email or phone number.</p>
+          <h1 className="text-3xl font-bold text-slate-900">Forgot password?</h1>
+          <p className="text-sm text-slate-500 mt-1">
+            Enter your account email.
+          </p>
 
           <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
             <input
-              type="text"
-              value={emailOrPhone}
-              onChange={(event) => setEmailOrPhone(event.target.value)}
-              placeholder="Email or phone number"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Email address"
               className="w-full px-4 py-3 border border-slate-200 rounded-2xl"
-            />
-            <input
-              type="password"
-              value={newPassword}
-              onChange={(event) => setNewPassword(event.target.value)}
-              placeholder="New password"
-              className="w-full px-4 py-3 border border-slate-200 rounded-2xl"
-            />
-            <input
-              type="password"
-              value={confirmPassword}
-              onChange={(event) => setConfirmPassword(event.target.value)}
-              placeholder="Confirm password"
-              className="w-full px-4 py-3 border border-slate-200 rounded-2xl"
+              autoComplete="email"
+              required
             />
 
             {error && <p className="text-sm text-red-600">{error}</p>}
@@ -63,9 +61,10 @@ function ForgotPasswordPage() {
 
             <button
               type="submit"
-              className="w-full py-3.5 rounded-2xl bg-[linear-gradient(135deg,#143D59_0%,#1B4965_100%)] hover:opacity-95 text-white font-semibold shadow-lg"
+              disabled={submitting}
+              className="w-full py-3.5 rounded-2xl bg-[linear-gradient(135deg,#143D59_0%,#1B4965_100%)] hover:opacity-95 text-white font-semibold shadow-lg disabled:opacity-70 disabled:cursor-not-allowed"
             >
-              Update Password
+              {submitting ? 'Sending…' : 'Send reset link'}
             </button>
           </form>
 

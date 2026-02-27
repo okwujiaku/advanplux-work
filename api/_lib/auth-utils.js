@@ -1,6 +1,28 @@
 import { createClient } from '@supabase/supabase-js'
 import jwt from 'jsonwebtoken'
 
+const AUTH_HEADER = 'authorization'
+const BEARER = 'bearer '
+
+/**
+ * Get current user id from request (Bearer JWT). Returns null if missing/invalid.
+ */
+export function getCurrentUserIdFromRequest(req) {
+  const raw = req?.headers?.[AUTH_HEADER] || req?.headers?.['Authorization']
+  const token = typeof raw === 'string' && raw.toLowerCase().startsWith(BEARER)
+    ? raw.slice(BEARER.length).trim()
+    : (raw || '').trim()
+  if (!token) return null
+  const secret = process.env.AUTH_JWT_SECRET
+  if (!secret) return null
+  try {
+    const decoded = jwt.verify(token, secret)
+    return decoded?.sub ?? null
+  } catch {
+    return null
+  }
+}
+
 export function normalizeEmail(value) {
   return String(value || '').trim().toLowerCase()
 }

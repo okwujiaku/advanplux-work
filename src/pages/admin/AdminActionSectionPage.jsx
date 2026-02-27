@@ -18,6 +18,7 @@ function AdminActionSectionPage() {
     announcements,
     adminAccounts,
     submitBankAccount,
+    deleteBankAccount,
     saveMemberEdits,
     applyWalletChange,
     generateGiftCode,
@@ -55,7 +56,19 @@ function AdminActionSectionPage() {
           <select value={bankForm.currency} onChange={(e) => setBankForm((p) => ({ ...p, currency: e.target.value }))} className="px-4 py-3 border border-gray-300 rounded-lg"><option value="NGN">NGN</option><option value="CFA">CFA</option><option value="USD">USD</option></select>
         </div>
         <button onClick={() => { submitBankAccount(bankForm); setBankForm({ bankName: '', accountName: '', accountNumber: '', currency: 'USD' }) }} className="mt-3 px-4 py-2 bg-primary-600 text-white rounded-lg">Add account</button>
-        {platformBankAccounts.map((acc) => <p key={acc.id} className="text-sm text-gray-700 mt-2">{acc.bankName} - {acc.accountName} ({acc.accountNumber}) [{acc.currency}]</p>)}
+        <div className="space-y-2 mt-3">
+          {platformBankAccounts.map((acc) => (
+            <div key={acc.id} className="flex items-center justify-between gap-3 rounded-lg border border-gray-200 p-2 text-sm text-gray-700">
+              <p>{acc.bankName} - {acc.accountName} ({acc.accountNumber}) [{acc.currency}]</p>
+              <button
+                onClick={() => deleteBankAccount(acc.id)}
+                className="px-2 py-1 text-xs bg-red-600 text-white rounded"
+              >
+                Delete
+              </button>
+            </div>
+          ))}
+        </div>
       </section>
     )
   }

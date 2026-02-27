@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Outlet, NavLink, Link } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Outlet, NavLink, Link, useLocation } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
 
 const navItems = [
@@ -14,16 +14,21 @@ const navItems = [
 function Dashboard() {
   const [menuOpen, setMenuOpen] = useState(false)
   const { signOut } = useApp()
+  const location = useLocation()
   const menuItems = [
     { label: 'My profile', to: '/dashboard' },
-    { label: 'Add withdrawal details', to: '/dashboard/withdrawal' },
-    { label: 'My withdrawal details', to: '/dashboard/withdrawal' },
-    { label: 'Earning history', to: '/dashboard/watch' },
-    { label: 'Deposit history', to: '/dashboard/deposit' },
-    { label: 'Withdrawal history', to: '/dashboard/withdrawal' },
+    { label: 'Create withdrawal PIN', to: '/dashboard/withdrawal-pin' },
+    { label: 'Withdrawal details', to: '/dashboard/withdrawal' },
+    { label: 'Earning history', to: '/dashboard/earning-history' },
+    { label: 'Deposit history', to: '/dashboard/deposit-history' },
+    { label: 'Withdrawal history', to: '/dashboard/withdrawal-history' },
     { label: 'Change password', to: '/dashboard/change-password' },
     { label: 'Logout', to: '/' },
   ]
+
+  useEffect(() => {
+    setMenuOpen(false)
+  }, [location.pathname])
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_right,#eef4ff_0%,#ffffff_45%,#f5f9ff_100%)]">
@@ -96,8 +101,8 @@ function Dashboard() {
       {/* Mobile bottom nav */}
       <div className="md:hidden fixed bottom-3 left-1/2 -translate-x-1/2 w-[92%] bg-white border border-slate-200 rounded-2xl shadow-lg z-40">
         <div className="grid grid-cols-3 text-center">
-          <Link to="/dashboard" className="py-3 text-sm font-medium text-slate-800">Home</Link>
-          <Link to="/dashboard/watch" className="py-3 text-xs font-medium text-slate-700 px-2">Watch Ads and get paid</Link>
+          <Link to="/dashboard" onClick={() => setMenuOpen(false)} className="py-3 text-sm font-medium text-slate-800">Home</Link>
+          <Link to="/dashboard/watch" onClick={() => setMenuOpen(false)} className="py-3 text-xs font-medium text-slate-700 px-2">Watch Ads and get paid</Link>
           <button type="button" onClick={() => setMenuOpen((prev) => !prev)} className="py-3 text-sm font-medium text-slate-700">Menu</button>
         </div>
       </div>

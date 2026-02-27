@@ -10,7 +10,7 @@ function formatAccountId(member) {
 }
 
 function AdminUsersPage() {
-  const { members } = useOutletContext()
+  const { members, deleteUserAccount } = useOutletContext()
   const [searchTerm, setSearchTerm] = useState('')
   const displayMembers = members.filter((member) => member.id !== 'current-user')
   const filteredMembers = useMemo(() => {
@@ -60,6 +60,7 @@ function AdminUsersPage() {
                 <th className="p-3">Account ID</th>
                 <th className="p-3">Wallet</th>
                 <th className="p-3">Bonus</th>
+                <th className="p-3">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -69,7 +70,7 @@ function AdminUsersPage() {
                 </tr>
               ) : filteredMembers.length === 0 ? (
                 <tr className="border-t">
-                  <td className="p-4 text-gray-500" colSpan={10}>No members match your search.</td>
+                  <td className="p-4 text-gray-500" colSpan={11}>No members match your search.</td>
                 </tr>
               ) : (
                 filteredMembers.map((member, index) => (
@@ -82,8 +83,61 @@ function AdminUsersPage() {
                     <td className="p-3 font-mono">{member.referredByUserId || '-'}</td>
                     <td className="p-3">{member.joinedAt ? new Date(member.joinedAt).toLocaleString() : '-'}</td>
                     <td className="p-3 font-mono">{formatAccountId(member)}</td>
-                    <td className="p-3">₦{Number(member.balance || 0).toLocaleString()}</td>
-                    <td className="p-3">₦{Number(member.bonusBalance || 0).toLocaleString()}</td>
+                    <td className="p-3">${Number(member.balance || 0).toLocaleString()}</td>
+                    <td className="p-3">${Number(member.bonusBalance || 0).toLocaleString()}</td>
+                    <td className="p-3 space-y-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (typeof window === 'undefined') return
+                          try {
+                            const storage = window.localStorage
+                            storage.setItem('authCurrentUserId', JSON.stringify(member.id))
+                            const nextSession = { userId: member.id, email: member.email }
+                            storage.setItem('authSession', JSON.stringify(nextSession))
+                            let authUsers = []
+                            try {
+                              const raw = storage.getItem('authUsers')
+                              authUsers = raw ? JSON.parse(raw) : []
+                            } catch {
+                              authUsers = []
+                            }
+                            if (!Array.isArray(authUsers)) authUsers = []
+                            const exists = authUsers.some((u) => u.id === member.id)
+                            if (!exists) {
+                              authUsers.push({
+                                id: member.id,
+                                email: member.email || '',
+                                phone: member.phone || '',
+                                password: '',
+                                myInvitationCode: member.invitationCode || '',
+                                referredByUserId: member.referredByUserId || null,
+                                createdAt: member.joinedAt || new Date().toISOString(),
+                              })
+                              storage.setItem('authUsers', JSON.stringify(authUsers))
+                            }
+                          } catch {
+                            // ignore storage errors
+                          }
+                          window.open('/dashboard', '_blank')
+                        }}
+                        className="block w-full rounded bg-primary-600 px-2 py-1 text-xs font-medium text-white hover:bg-primary-700"
+                      >
+                        View dashboard
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (member.id === 'current-user') return
+                          if (window.confirm('Are you sure you want to permanently delete this user account?')) {
+                            deleteUserAccount?.(member.id)
+                          }
+                        }}
+                        className="block w-full rounded border border-red-500 px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50"
+                      >
+                        Delete account
+                      </button>
+                    </td>
                   </tr>
                 ))
               )}

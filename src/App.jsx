@@ -11,6 +11,10 @@ import RedeemGiftCode from './pages/dashboard/RedeemGiftCode'
 import SupportCenter from './pages/dashboard/SupportCenter'
 import Announcements from './pages/dashboard/Announcements'
 import ChangePassword from './pages/dashboard/ChangePassword'
+import EarningHistory from './pages/dashboard/EarningHistory'
+import DepositHistory from './pages/dashboard/DepositHistory'
+import WithdrawalHistory from './pages/dashboard/WithdrawalHistory'
+import WithdrawalPin from './pages/dashboard/WithdrawalPin'
 import AdminLayout from './pages/admin/AdminLayout'
 import AdminUsersPage from './pages/admin/AdminUsersPage'
 import AdminDepositsPage from './pages/admin/AdminDepositsPage'
@@ -24,6 +28,7 @@ import AdminHistorySectionPage from './pages/admin/AdminHistorySectionPage'
 import SignInPage from './pages/auth/SignInPage'
 import SignUpPage from './pages/auth/SignUpPage'
 import ForgotPasswordPage from './pages/auth/ForgotPasswordPage'
+import ResetPasswordWithTokenPage from './pages/auth/ResetPasswordWithTokenPage'
 import { useApp } from './context/AppContext'
 
 function RequireAuth({ children }) {
@@ -69,6 +74,14 @@ function App() {
           }
         />
         <Route
+          path="/reset-password"
+          element={
+            <GuestOnly>
+              <ResetPasswordWithTokenPage />
+            </GuestOnly>
+          }
+        />
+        <Route
           path="/dashboard"
           element={(
             <RequireAuth>
@@ -81,12 +94,16 @@ function App() {
           <Route path="watch" element={<WatchEarn />} />
           <Route path="deposit" element={<Deposit />} />
           <Route path="withdrawal" element={<Withdrawal />} />
+          <Route path="withdrawal-pin" element={<WithdrawalPin />} />
           <Route path="referral" element={<ReferralDashboard />} />
           <Route path="team" element={<Team />} />
           <Route path="redeem-gift-code" element={<RedeemGiftCode />} />
           <Route path="support-center" element={<SupportCenter />} />
           <Route path="announcements" element={<Announcements />} />
           <Route path="change-password" element={<ChangePassword />} />
+          <Route path="earning-history" element={<EarningHistory />} />
+          <Route path="deposit-history" element={<DepositHistory />} />
+          <Route path="withdrawal-history" element={<WithdrawalHistory />} />
         </Route>
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<Navigate to="users" replace />} />

@@ -57,6 +57,7 @@ function AdminLayout() {
     withdrawals,
     adVideoIds,
     setAdVideoIds,
+    deleteUserAccount,
     approveDeposit,
     rejectDeposit,
     reverseDeposit,
@@ -237,6 +238,11 @@ function AdminLayout() {
     setPlatformBankAccounts((prev) => [{ ...form, id: newId('bank'), createdAt: new Date().toISOString() }, ...prev])
   }
 
+  const deleteBankAccount = (bankAccountId) => {
+    if (!bankAccountId) return
+    setPlatformBankAccounts((prev) => prev.filter((account) => account.id !== bankAccountId))
+  }
+
   const saveMemberEdits = (memberId, payload) => {
     updateMember(memberId, (m) => ({ ...m, name: payload.name.trim() || m.name, email: payload.email.trim() || m.email }))
   }
@@ -344,6 +350,7 @@ function AdminLayout() {
     rejectWithdrawal,
     reverseWithdrawal,
     submitBankAccount,
+    deleteBankAccount,
     saveMemberEdits,
     applyWalletChange,
     createBonusWithdrawal,
@@ -351,6 +358,7 @@ function AdminLayout() {
     generateGiftCode,
     adVideoIds,
     setAdVideoIds,
+    deleteUserAccount,
     registerAdmin,
     changePassword,
     postAnnouncement,

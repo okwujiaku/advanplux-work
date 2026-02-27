@@ -3,9 +3,15 @@ import { Link } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
 
 function DashboardHome() {
-  const { userPack, PACKS_USD, adsViewedToday, walletUsd } = useApp()
+  const { userPack, PACKS_USD, adsViewedToday, walletUsd, referralEarnings, claimedSalary } = useApp()
   const packInfo = userPack ? PACKS_USD.find((p) => p.usd === userPack) : null
   const earnedTodayUsd = (adsViewedToday * 0.4).toFixed(2)
+  const referralTotalNgn =
+    Number(referralEarnings.level1 || 0) +
+    Number(referralEarnings.level2 || 0) +
+    Number(referralEarnings.level3 || 0)
+  const referralTotalUsd = referralTotalNgn > 0 ? referralTotalNgn / 1450 : 0
+  const totalBalanceUsd = Number(walletUsd || 0) + Number(referralTotalUsd || 0) + Number(claimedSalary || 0)
   const bannerMessages = [
     'Watch ads and get paid in dollars on Advanplux.',
     'Start making money on Advanplux by watching ads daily.',
@@ -50,8 +56,8 @@ function DashboardHome() {
             </p>
           </div>
           <div className="sm:border-l sm:border-white/30 sm:pl-6">
-            <p className="text-2xl sm:text-3xl font-bold mt-1">${Number(walletUsd || 0).toFixed(2)}</p>
-            <p className="text-xs sm:text-sm text-white/85 mt-1 sm:mt-2">Total earnings available for withdrawal</p>
+            <p className="text-2xl sm:text-3xl font-bold mt-1">${totalBalanceUsd.toFixed(2)}</p>
+            <p className="text-xs sm:text-sm text-white/85 mt-1 sm:mt-2">Total balance</p>
           </div>
         </div>
       </div>

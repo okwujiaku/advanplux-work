@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
 
@@ -10,9 +10,6 @@ const COUNTRIES = [
   { id: 'kenya', name: 'Kenya', currency: 'KES', paymentType: 'M-Pesa', ready: false },
   { id: 'uganda', name: 'Uganda', currency: 'UGX', paymentType: 'Mobile Money', ready: false },
 ]
-
-const NIGERIA_ACCOUNT = { name: 'Account name will be dropped here', number: 'Account number will be dropped here', bank: 'Bank name will be dropped here' }
-const CAMEROON_MOBILE_MONEY = { name: 'Mobile money network will be dropped here', number: 'Mobile Money number will be dropped here' }
 
 function Deposit() {
   const navigate = useNavigate()
@@ -26,26 +23,66 @@ function Deposit() {
   const [country, setCountry] = useState('nigeria')
   const [fullName, setFullName] = useState('')
   const [submitted, setSubmitted] = useState(false)
+  const [platformBankAccounts, setPlatformBankAccounts] = useState(() => {
+    if (typeof window === 'undefined' || !window.localStorage) return []
+    try {
+      const raw = window.localStorage.getItem('platformBankAccounts')
+      const parsed = raw ? JSON.parse(raw) : []
+      return Array.isArray(parsed) ? parsed : []
+    } catch {
+      return []
+    }
+  })
+  const [selectedPaymentAccountId, setSelectedPaymentAccountId] = useState('')
 
   const nairaAmount = packInfo.naira
   const cfaAmount = packInfo.cfa
 
   const countryConfig = COUNTRIES.find((c) => c.id === country)
   const isReady = countryConfig?.ready
+  const selectedCurrency = country === 'nigeria' ? 'NGN' : 'CFA'
+  const availablePaymentAccounts = useMemo(
+    () => platformBankAccounts.filter((account) => account.currency === selectedCurrency),
+    [platformBankAccounts, selectedCurrency],
+  )
+  const selectedPaymentAccount =
+    availablePaymentAccounts.find((account) => account.id === selectedPaymentAccountId) ||
+    availablePaymentAccounts[0] ||
+    null
+
+  useEffect(() => {
+    setSelectedPaymentAccountId(availablePaymentAccounts[0]?.id || '')
+  }, [country, availablePaymentAccounts])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined
+    const syncAccounts = () => {
+      try {
+        const raw = window.localStorage.getItem('platformBankAccounts')
+        const parsed = raw ? JSON.parse(raw) : []
+        setPlatformBankAccounts(Array.isArray(parsed) ? parsed : [])
+      } catch {
+        setPlatformBankAccounts([])
+      }
+    }
+    window.addEventListener('storage', syncAccounts)
+    return () => window.removeEventListener('storage', syncAccounts)
+  }, [])
 
   const handleSubmitPayment = () => {
     if (!isReady) return
     if (!fullName.trim()) return
+    if (!selectedPaymentAccount) return
     addDeposit({
       userId: 'current-user',
       amount: country === 'nigeria' ? nairaAmount : cfaAmount,
       currency: country === 'nigeria' ? 'NGN' : 'CFA',
       country: countryConfig.name,
       paymentType: countryConfig.paymentType,
-      accountNumber: '',
+      accountNumber: selectedPaymentAccount.accountNumber || '',
       accountName: fullName.trim(),
-      bankName: '',
-      accountUsed: '',
+      bankName: selectedPaymentAccount.bankName || '',
+      accountUsed: selectedPaymentAccount.accountNumber || '',
       saveDetail: false,
       pack: selectedPackUsd,
     })
@@ -122,31 +159,56 @@ function Deposit() {
           <h2 className="text-lg font-semibold text-gray-900 mb-4">
             {country === 'nigeria' ? 'Bank account (Nigeria)' : 'Mobile Money (Cameroon)'}
           </h2>
-          {country === 'nigeria' && (
+          {availablePaymentAccounts.length > 1 && (
+            <div className="mb-4">
+              <label className="block text-sm text-gray-500 mb-1">Select payment account</label>
+              <select
+                value={selectedPaymentAccountId}
+                onChange={(e) => setSelectedPaymentAccountId(e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg"
+              >
+                {availablePaymentAccounts.map((account) => (
+                  <option key={account.id} value={account.id}>
+                    {account.bankName} - {account.accountNumber}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+          {!selectedPaymentAccount && (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-700">
+              No payment account configured for {selectedCurrency}. Add one from Admin &gt; Add Bank Account.
+            </div>
+          )}
+          {country === 'nigeria' && selectedPaymentAccount && (
             <div className="space-y-4">
               <div>
                 <p className="text-sm text-gray-500">Account name</p>
-                <p className="font-medium">{NIGERIA_ACCOUNT.name}</p>
+                <p className="font-medium">{selectedPaymentAccount.accountName || '-'}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-500">Account number</p>
-                <p className="font-mono font-medium">{NIGERIA_ACCOUNT.number}</p>
+                <p className="font-mono font-medium">{selectedPaymentAccount.accountNumber || '-'}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-500">Bank</p>
-                <p className="font-medium">{NIGERIA_ACCOUNT.bank}</p>
+                <p className="font-medium">{selectedPaymentAccount.bankName || '-'}</p>
               </div>
             </div>
           )}
-          {country === 'cameroon' && (
+          {country === 'cameroon' && selectedPaymentAccount && (
             <div className="space-y-4">
               <div>
                 <p className="text-sm text-gray-500">Mobile money network</p>
-                <p className="font-medium">{CAMEROON_MOBILE_MONEY.name}</p>
+                <p className="font-medium">{selectedPaymentAccount.bankName || '-'}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-500">Mobile Money number</p>
-                <p className="font-mono font-medium">{CAMEROON_MOBILE_MONEY.number}</p>
+                <p className="font-mono font-medium">{selectedPaymentAccount.accountNumber || '-'}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Account name</p>
+                <p className="font-medium">{selectedPaymentAccount.accountName || '-'}</p>
               </div>
             </div>
           )}
@@ -174,7 +236,7 @@ function Deposit() {
           </button>
           <button
             onClick={handleSubmitPayment}
-            disabled={!isReady || !fullName.trim()}
+            disabled={!isReady || !fullName.trim() || !selectedPaymentAccount}
             className="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             I have made the payment
