@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useOutletContext, useParams } from 'react-router-dom'
 
 function AdminActionSectionPage() {
@@ -29,6 +29,18 @@ function AdminActionSectionPage() {
 
   const [bankForm, setBankForm] = useState({ bankName: '', accountName: '', accountNumber: '', currency: 'USD' })
   const [editForm, setEditForm] = useState({ name: '', email: '' })
+  const [editUserSearch, setEditUserSearch] = useState('')
+  const editUserFiltered = useMemo(() => {
+    const q = editUserSearch.trim().toLowerCase()
+    if (!q) return members
+    return members.filter((m) => {
+      const joined = m.joinedAt ? new Date(m.joinedAt).toLocaleString() : ''
+      const s = [m.id, m.name, m.email, m.phone, m.invitationCode, m.referredByUserId, joined]
+        .map((v) => String(v || '').toLowerCase())
+        .join(' ')
+      return s.includes(q)
+    })
+  }, [members, editUserSearch])
   const [topupForm, setTopupForm] = useState({ memberId: selectedMemberId, amount: '' })
   const [deductForm, setDeductForm] = useState({ memberId: selectedMemberId, amount: '' })
   const [giftForm, setGiftForm] = useState({ value: '', note: '' })
@@ -74,17 +86,68 @@ function AdminActionSectionPage() {
   }
 
   if (section === 'edit-users') {
+    const showSearchResults = editUserSearch.trim().length > 0
+
     return (
       <section className="bg-white rounded-xl border border-gray-200 p-6">
         <h2 className="text-lg font-semibold mb-4">Edit Users Info.</h2>
-        <select value={selectedMemberId} onChange={(e) => setSelectedMemberId(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-lg mb-3">
-          {members.map((member) => <option key={member.id} value={member.id}>{member.id} ({member.name})</option>)}
-        </select>
-        <div className="grid sm:grid-cols-2 gap-3">
-          <input value={editForm.name} onChange={(e) => setEditForm((p) => ({ ...p, name: e.target.value }))} placeholder="Name" className="px-4 py-3 border border-gray-300 rounded-lg" />
-          <input value={editForm.email} onChange={(e) => setEditForm((p) => ({ ...p, email: e.target.value }))} placeholder="Email" className="px-4 py-3 border border-gray-300 rounded-lg" />
-        </div>
-        <button onClick={() => saveMemberEdits(selectedMemberId, editForm)} className="mt-3 px-4 py-2 bg-primary-600 text-white rounded-lg">Save changes</button>
+
+        <label className="block text-sm font-medium text-gray-700 mb-1">Search member</label>
+        <input
+          type="text"
+          value={editUserSearch}
+          onChange={(e) => setEditUserSearch(e.target.value)}
+          placeholder="Search by name, email, phone, invitation code, account ID..."
+          className="w-full px-4 py-3 border border-gray-300 rounded-lg mb-2"
+        />
+        {showSearchResults && (
+          <ul className="border border-gray-200 rounded-lg max-h-48 overflow-y-auto mb-4">
+            {editUserFiltered.length === 0 ? (
+              <li className="p-3 text-gray-500 text-sm">No members match.</li>
+            ) : (
+              editUserFiltered.map((m) => (
+                <li key={m.id}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedMemberId(m.id)
+                      setEditForm({ name: m.name || '', email: m.email || '' })
+                      setEditUserSearch('')
+                    }}
+                    className={`w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 border-b border-gray-100 last:border-0 ${selectedMemberId === m.id ? 'bg-primary-50 text-primary-800' : ''}`}
+                  >
+                    {m.name || m.email || m.id} — {m.email || m.id}
+                  </button>
+                </li>
+              ))
+            )}
+          </ul>
+        )}
+
+        {selectedMember && (
+          <>
+            <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 mb-4">
+              <h3 className="text-sm font-semibold text-gray-700 mb-3">Member details</h3>
+              <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                <div><dt className="text-gray-500">Account ID</dt><dd className="font-mono">{selectedMember.id}</dd></div>
+                <div><dt className="text-gray-500">Joined</dt><dd>{selectedMember.joinedAt ? new Date(selectedMember.joinedAt).toLocaleString() : '–'}</dd></div>
+                <div><dt className="text-gray-500">Phone</dt><dd>{selectedMember.phone || '–'}</dd></div>
+                <div><dt className="text-gray-500">Invitation code</dt><dd className="font-mono">{selectedMember.invitationCode || '–'}</dd></div>
+                <div><dt className="text-gray-500">Referred by (user ID)</dt><dd className="font-mono truncate">{selectedMember.referredByUserId || '–'}</dd></div>
+                <div><dt className="text-gray-500">Wallet balance</dt><dd>${Number(selectedMember.balance ?? 0).toLocaleString()}</dd></div>
+                <div><dt className="text-gray-500">Bonus balance</dt><dd>${Number(selectedMember.bonusBalance ?? 0).toLocaleString()}</dd></div>
+                <div><dt className="text-gray-500">Withdrawal</dt><dd>{selectedMember.withdrawalLocked ? 'Locked' : 'Unlocked'}</dd></div>
+              </dl>
+            </div>
+
+            <h3 className="text-sm font-semibold text-gray-700 mb-2">Editable fields</h3>
+            <div className="grid sm:grid-cols-2 gap-3">
+              <input value={editForm.name} onChange={(e) => setEditForm((p) => ({ ...p, name: e.target.value }))} placeholder="Name" className="px-4 py-3 border border-gray-300 rounded-lg" />
+              <input value={editForm.email} onChange={(e) => setEditForm((p) => ({ ...p, email: e.target.value }))} placeholder="Email" className="px-4 py-3 border border-gray-300 rounded-lg" />
+            </div>
+            <button onClick={() => saveMemberEdits(selectedMemberId, editForm)} className="mt-3 px-4 py-2 bg-primary-600 text-white rounded-lg">Save changes</button>
+          </>
+        )}
       </section>
     )
   }

@@ -402,6 +402,29 @@ export function AppProvider({ children }) {
       .catch(() => {})
   }, [currentUserId])
 
+  // When authenticated, fetch wallet, deposits, withdrawals, earnings from Supabase
+  useEffect(() => {
+    const token =
+      typeof window !== 'undefined' && window.localStorage
+        ? window.localStorage.getItem(AUTH_SESSION_TOKEN_KEY)
+        : null
+    if (!currentUserId || !token) return
+    const headers = { Authorization: `Bearer ${token}` }
+    Promise.all([
+      fetch('/api/user/wallet', { headers }).then((r) => r.json()),
+      fetch('/api/user/deposits', { headers }).then((r) => r.json()),
+      fetch('/api/user/withdrawals', { headers }).then((r) => r.json()),
+      fetch('/api/user/earnings', { headers }).then((r) => r.json()),
+    ])
+      .then(([w, d, wd, e]) => {
+        if (w?.ok && w.balanceUsd != null) setWalletUsd(w.balanceUsd)
+        if (d?.ok && Array.isArray(d.deposits)) setDeposits(d.deposits)
+        if (wd?.ok && Array.isArray(wd.withdrawals)) setWithdrawals(wd.withdrawals)
+        if (e?.ok && Array.isArray(e.earnings)) setEarningsHistory(e.earnings)
+      })
+      .catch(() => {})
+  }, [currentUserId])
+
   useEffect(() => {
     if (typeof window !== 'undefined' && window.localStorage) {
       window.localStorage.setItem(AUTH_USERS_KEY, JSON.stringify(users))
@@ -496,28 +519,11 @@ export function AppProvider({ children }) {
     [],
   )
 
-  const addDeposit = useCallback((data) => {
-    const now = new Date().toISOString()
-    const id = newId('dep')
-    const detailToSave = data.saveDetail
-      ? {
-          country: data.country,
-          methodType: data.paymentType,
-          accountName: data.accountName,
-          accountNumber: data.accountNumber,
-          bankName: data.bankName,
-        }
-      : null
-
-    if (detailToSave) {
-      saveDepositDetail(detailToSave)
-      setSavedAccount({ country: data.country, accountNumber: data.accountNumber })
-    }
-
-    setDeposits((prev) => [
-      {
-        id,
-        userId: data.userId || 'current-user',
+  const addDeposit = useCallback(
+    async (data) => {
+      const now = new Date().toISOString()
+      const payload = {
+        userId: data.userId || currentUserId || 'current-user',
         amount: data.amount,
         amountUsd: Number(data.pack) || Number(data.amountUsd) || 0,
         currency: data.currency,
@@ -528,17 +534,97 @@ export function AppProvider({ children }) {
         bankName: data.bankName || '',
         accountUsed: data.accountNumber || data.accountUsed || '',
         pack: data.pack,
-        date: now,
-        status: 'pending',
-      },
-      ...prev,
-    ])
-    return id
-  }, [saveDepositDetail])
+      }
+      const token =
+        typeof window !== 'undefined' && window.localStorage
+          ? window.localStorage.getItem(AUTH_SESSION_TOKEN_KEY)
+          : null
+      if (token) {
+        try {
+          const res = await fetch('/api/user/deposits', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify(payload),
+          })
+          const out = await res.json().catch(() => ({}))
+          if (out?.ok && out.deposit) {
+            setDeposits((prev) => [out.deposit, ...prev])
+            if (data.saveDetail) {
+              saveDepositDetail({
+                country: data.country,
+                methodType: data.paymentType,
+                accountName: data.accountName,
+                accountNumber: data.accountNumber,
+                bankName: data.bankName,
+              })
+              setSavedAccount({ country: data.country, accountNumber: data.accountNumber })
+            }
+            return out.deposit.id
+          }
+        } catch {
+          // fall through to local
+        }
+      }
+      const id = newId('dep')
+      if (data.saveDetail) {
+        saveDepositDetail({
+          country: data.country,
+          methodType: data.paymentType,
+          accountName: data.accountName,
+          accountNumber: data.accountNumber,
+          bankName: data.bankName,
+        })
+        setSavedAccount({ country: data.country, accountNumber: data.accountNumber })
+      }
+      setDeposits((prev) => [
+        { ...payload, id, date: now, status: 'pending' },
+        ...prev,
+      ])
+      return id
+    },
+    [currentUserId, saveDepositDetail],
+  )
 
   const addWithdrawal = useCallback(
     async (data) => {
       const now = new Date().toISOString()
+      const payload = {
+        amountUsd: data.amountUsd,
+        feeUsd: data.feeUsd,
+        netAmountUsd: data.netAmountUsd,
+        currency: data.currency,
+        accountNumber: data.accountNumber,
+        accountName: data.accountName,
+        bankName: data.bankName,
+      }
+      const token =
+        typeof window !== 'undefined' && window.localStorage
+          ? window.localStorage.getItem(AUTH_SESSION_TOKEN_KEY)
+          : null
+      if (token) {
+        try {
+          const res = await fetch('/api/user/withdrawals', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify(payload),
+          })
+          const out = await res.json().catch(() => ({}))
+          if (out?.ok && out.withdrawal) {
+            setWithdrawals((prev) => [out.withdrawal, ...prev])
+            if (data.saveDetail) {
+              await saveWithdrawalDetail({
+                currency: data.currency,
+                accountName: data.accountName,
+                accountNumber: data.accountNumber,
+                bankName: data.bankName,
+              })
+            }
+            return out.withdrawal.id
+          }
+        } catch {
+          // fall through to local
+        }
+      }
       const id = newId('wd')
       if (data.saveDetail) {
         await saveWithdrawalDetail({
@@ -548,15 +634,7 @@ export function AppProvider({ children }) {
           bankName: data.bankName,
         })
       }
-      setWithdrawals((prev) => [
-        {
-          ...data,
-          id,
-          date: now,
-          status: 'pending',
-        },
-        ...prev,
-      ])
+      setWithdrawals((prev) => [{ ...data, id, date: now, status: 'pending' }, ...prev])
       return id
     },
     [saveWithdrawalDetail],
@@ -717,6 +795,31 @@ export function AppProvider({ children }) {
   }, [])
 
   const watchAd = useCallback(() => {
+    const token =
+      typeof window !== 'undefined' && window.localStorage
+        ? window.localStorage.getItem(AUTH_SESSION_TOKEN_KEY)
+        : null
+    if (token) {
+      fetch('/api/user/earnings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          source: 'watch-ads',
+          amountUsd: EARN_PER_AD_USD,
+          note: 'Watched ad and earned reward',
+        }),
+      }).catch(() => {})
+      fetch('/api/user/wallet', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ addUsd: EARN_PER_AD_USD }),
+      })
+        .then((r) => r.json())
+        .then((d) => {
+          if (d?.ok && d.balanceUsd != null) setWalletUsd(d.balanceUsd)
+        })
+        .catch(() => {})
+    }
     setAdsViewedToday((prev) => prev + 1)
     setWalletUsd((prev) => Number((prev + EARN_PER_AD_USD).toFixed(2)))
     setEarningsHistory((prev) => [

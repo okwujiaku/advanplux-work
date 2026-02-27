@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
 
 function DashboardHome() {
-  const { userPack, PACKS_USD, adsViewedToday, walletUsd, referralEarnings, claimedSalary } = useApp()
+  const { currentUser, users, userPack, PACKS_USD, adsViewedToday, walletUsd, referralEarnings, claimedSalary } = useApp()
   const packInfo = userPack ? PACKS_USD.find((p) => p.usd === userPack) : null
   const earnedTodayUsd = (adsViewedToday * 0.4).toFixed(2)
   const referralTotalNgn =
@@ -12,6 +12,7 @@ function DashboardHome() {
     Number(referralEarnings.level3 || 0)
   const referralTotalUsd = referralTotalNgn > 0 ? referralTotalNgn / 1450 : 0
   const totalBalanceUsd = Number(walletUsd || 0) + Number(referralTotalUsd || 0) + Number(claimedSalary || 0)
+  const referrer = currentUser?.referredByUserId ? users.find((u) => u.id === currentUser.referredByUserId) : null
   const bannerMessages = [
     'Watch ads and get paid in dollars on Advanplux.',
     'Start making money on Advanplux by watching ads daily.',
@@ -44,6 +45,49 @@ function DashboardHome() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-4 sm:space-y-6">
+      {/* Profile – registration details */}
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <h2 className="text-base sm:text-lg font-semibold text-slate-900 px-4 py-3 border-b border-slate-100 bg-slate-50/80">
+          My profile
+        </h2>
+        <div className="p-4 sm:p-5">
+          {currentUser ? (
+            <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 text-sm">
+              <div>
+                <dt className="text-slate-500 font-medium">Email</dt>
+                <dd className="mt-0.5 text-slate-900 break-all">{currentUser.email || '–'}</dd>
+              </div>
+              <div>
+                <dt className="text-slate-500 font-medium">Phone</dt>
+                <dd className="mt-0.5 text-slate-900">{currentUser.phone || '–'}</dd>
+              </div>
+              <div>
+                <dt className="text-slate-500 font-medium">Account ID</dt>
+                <dd className="mt-0.5 font-mono text-slate-900 break-all">{currentUser.id || '–'}</dd>
+              </div>
+              <div>
+                <dt className="text-slate-500 font-medium">My invitation code</dt>
+                <dd className="mt-0.5 font-mono font-semibold text-primary-600">{currentUser.myInvitationCode || '–'}</dd>
+              </div>
+              <div>
+                <dt className="text-slate-500 font-medium">Referred by</dt>
+                <dd className="mt-0.5 text-slate-900">
+                  {referrer ? `${referrer.email || referrer.id} (${referrer.myInvitationCode || referrer.id})` : currentUser.referredByUserId ? currentUser.referredByUserId : '–'}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-slate-500 font-medium">Joined</dt>
+                <dd className="mt-0.5 text-slate-900">
+                  {currentUser.createdAt ? new Date(currentUser.createdAt).toLocaleString() : '–'}
+                </dd>
+              </div>
+            </dl>
+          ) : (
+            <p className="text-slate-500 text-sm">Not signed in.</p>
+          )}
+        </div>
+      </div>
+
       <div className="relative overflow-hidden bg-[linear-gradient(135deg,#0f3d9a_0%,#1d4ed8_55%,#2563eb_100%)] rounded-xl text-white p-4 sm:p-6 shadow-xl border border-blue-700">
         <div className="pointer-events-none absolute -top-12 -right-10 w-40 h-40 rounded-full bg-cyan-300/35 blur-2xl" />
         <div className="pointer-events-none absolute -bottom-10 -left-6 w-32 h-32 rounded-full bg-blue-300/25 blur-xl" />

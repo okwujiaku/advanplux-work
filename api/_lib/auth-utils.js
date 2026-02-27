@@ -72,3 +72,14 @@ export function json(res, status, payload) {
   res.status(status).json(payload)
 }
 
+const ADMIN_HEADER = 'x-admin-key'
+
+/**
+ * Check admin API key (for admin-only routes). Returns true if valid.
+ */
+export function isAdminRequest(req) {
+  const key = req?.headers?.[ADMIN_HEADER] || req?.headers?.['X-Admin-Key']
+  const secret = process.env.ADMIN_SECRET
+  return !!secret && typeof key === 'string' && key.trim() === secret.trim()
+}
+
