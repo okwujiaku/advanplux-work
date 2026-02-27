@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import Dashboard from './pages/Dashboard'
 import DashboardHome from './pages/dashboard/DashboardHome'
+import Profile from './pages/dashboard/Profile'
 import AdGenerator from './pages/dashboard/AdGenerator'
 import Deposit from './pages/dashboard/Deposit'
 import Withdrawal from './pages/dashboard/Withdrawal'
@@ -90,6 +91,7 @@ function App() {
           )}
         >
           <Route index element={<DashboardHome />} />
+          <Route path="profile" element={<Profile />} />
           <Route path="purchase" element={<AdGenerator />} />
           <Route path="watch" element={<WatchEarn />} />
           <Route path="deposit" element={<Deposit />} />
