@@ -647,7 +647,7 @@ export function AppProvider({ children }) {
 
   const hasSecurityPin = useMemo(() => {
     if (!currentUserId) return false
-    if (hasToken) return remoteHasPin === true
+    if (hasToken && remoteHasPin === true) return true
     return !!(securityPins[currentUserId])
   }, [currentUserId, hasToken, remoteHasPin, securityPins])
 
@@ -669,11 +669,16 @@ export function AppProvider({ children }) {
           const data = await res.json().catch(() => ({}))
           if (data.ok) {
             setRemoteHasPin(true)
+            setSecurityPins((prev) => ({ ...prev, [currentUserId]: normalized }))
             return true
           }
-          return false
+          // API failed (e.g. Supabase not configured): save PIN locally so user can still use the app
+          setSecurityPins((prev) => ({ ...prev, [currentUserId]: normalized }))
+          return true
         } catch {
-          return false
+          // Network or other error: save PIN locally so creation still succeeds
+          setSecurityPins((prev) => ({ ...prev, [currentUserId]: normalized }))
+          return true
         }
       }
       setSecurityPins((prev) => ({ ...prev, [currentUserId]: normalized }))
@@ -697,10 +702,14 @@ export function AppProvider({ children }) {
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
             body: JSON.stringify({ pin: normalized }),
           })
-          const data = await res.json()
-          return !!data?.verified
+          const data = await res.json().catch(() => ({}))
+          if (data?.verified) return true
+          // API said no or failed: if we have PIN saved locally (e.g. after set-pin API failed), verify locally
+          const expected = securityPins[currentUserId]
+          return !!expected && String(expected) === normalized
         } catch {
-          return false
+          const expected = securityPins[currentUserId]
+          return !!expected && String(expected) === normalized
         }
       }
       const expected = securityPins[currentUserId]

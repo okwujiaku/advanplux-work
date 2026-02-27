@@ -93,40 +93,19 @@ function Dashboard() {
             ))}
           </nav>
         </aside>
-        <main className="flex-1 p-4 pb-28 md:p-6 md:pb-6 lg:px-8">
+        <main className="flex-1 p-4 pb-32 md:p-6 md:pb-6 lg:px-8">
           <Outlet />
         </main>
       </div>
 
-      {/* Mobile bottom nav – fixed, equal columns, short labels so it doesn’t overlap content */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-slate-200 shadow-[0_-2px_10px_rgba(0,0,0,0.06)]">
-        <div className="flex items-stretch justify-around min-h-14 max-w-lg mx-auto">
-          <Link
-            to="/dashboard"
-            onClick={() => setMenuOpen(false)}
-            className="flex-1 flex flex-col items-center justify-center gap-0.5 py-2 px-1 min-w-0 text-center"
-          >
-            <span className="text-lg leading-none" aria-hidden>🏠</span>
-            <span className="text-[11px] font-medium text-slate-700 truncate w-full max-w-[80px]">Home</span>
-          </Link>
-          <Link
-            to="/dashboard/watch"
-            onClick={() => setMenuOpen(false)}
-            className="flex-1 flex flex-col items-center justify-center gap-0.5 py-2 px-1 min-w-0 text-center"
-          >
-            <span className="text-lg leading-none" aria-hidden>▶️</span>
-            <span className="text-[10px] font-medium text-slate-700 leading-tight w-full px-0.5 line-clamp-2">Watch Ads and get paid</span>
-          </Link>
-          <button
-            type="button"
-            onClick={() => setMenuOpen((prev) => !prev)}
-            className="flex-1 flex flex-col items-center justify-center gap-0.5 py-2 px-1 min-w-0 text-center border-none bg-transparent cursor-pointer"
-          >
-            <span className="text-lg leading-none" aria-hidden>☰</span>
-            <span className="text-[11px] font-medium text-slate-700 truncate w-full max-w-[80px]">Menu</span>
-          </button>
+      {/* Mobile bottom nav – main has pb-32 so content never sits under this */}
+      <div className="md:hidden fixed bottom-3 left-1/2 -translate-x-1/2 w-[92%] bg-white border border-slate-200 rounded-2xl shadow-lg z-40">
+        <div className="grid grid-cols-3 text-center">
+          <Link to="/dashboard" onClick={() => setMenuOpen(false)} className="py-3 text-sm font-medium text-slate-800">Home</Link>
+          <Link to="/dashboard/watch" onClick={() => setMenuOpen(false)} className="py-3 text-xs font-medium text-slate-700 px-2">Watch Ads and get paid</Link>
+          <button type="button" onClick={() => setMenuOpen((prev) => !prev)} className="py-3 text-sm font-medium text-slate-700">Menu</button>
         </div>
-      </nav>
+      </div>
     </div>
   )
 }
