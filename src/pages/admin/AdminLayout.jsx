@@ -180,10 +180,17 @@ function AdminLayout() {
     })
   }, [deposits, remoteUsers, users, withdrawals])
 
-  const selectedMember = useMemo(
-    () => members.find((member) => member.id === selectedMemberId) || members[0] || DEFAULT_MEMBER,
-    [members, selectedMemberId],
+  const editableMembers = useMemo(
+    () => members.filter((member) => member.id !== DEFAULT_MEMBER.id),
+    [members],
   )
+
+  const selectedMember = useMemo(() => {
+    const match = members.find((member) => member.id === selectedMemberId)
+    if (match && match.id !== DEFAULT_MEMBER.id) return match
+    if (editableMembers.length > 0) return editableMembers[0]
+    return DEFAULT_MEMBER
+  }, [editableMembers, members, selectedMemberId])
 
   const pendingDepositsCount = deposits.filter((d) => d.status === 'pending').length
   const pendingWithdrawalsCount = withdrawals.filter((w) => w.status === 'pending').length
@@ -244,7 +251,12 @@ function AdminLayout() {
   }
 
   const saveMemberEdits = (memberId, payload) => {
-    updateMember(memberId, (m) => ({ ...m, name: payload.name.trim() || m.name, email: payload.email.trim() || m.email }))
+    updateMember(memberId, (m) => ({
+      ...m,
+      name: payload.name.trim() || m.name,
+      email: payload.email.trim() || m.email,
+      phone: (payload.phone || '').trim() || m.phone,
+    }))
   }
 
   const applyWalletChange = (form, mode, source) => {

@@ -28,19 +28,23 @@ function AdminActionSectionPage() {
   } = useOutletContext()
 
   const [bankForm, setBankForm] = useState({ bankName: '', accountName: '', accountNumber: '', currency: 'USD' })
-  const [editForm, setEditForm] = useState({ name: '', email: '' })
+  const [editForm, setEditForm] = useState({ name: '', email: '', phone: '' })
   const [editUserSearch, setEditUserSearch] = useState('')
+  const editableMembers = useMemo(
+    () => members.filter((m) => m.id !== 'current-user'),
+    [members],
+  )
   const editUserFiltered = useMemo(() => {
     const q = editUserSearch.trim().toLowerCase()
-    if (!q) return members
-    return members.filter((m) => {
+    if (!q) return editableMembers
+    return editableMembers.filter((m) => {
       const joined = m.joinedAt ? new Date(m.joinedAt).toLocaleString() : ''
       const s = [m.id, m.name, m.email, m.phone, m.invitationCode, m.referredByUserId, joined]
         .map((v) => String(v || '').toLowerCase())
         .join(' ')
       return s.includes(q)
     })
-  }, [members, editUserSearch])
+  }, [editableMembers, editUserSearch])
   const [topupForm, setTopupForm] = useState({ memberId: selectedMemberId, amount: '' })
   const [deductForm, setDeductForm] = useState({ memberId: selectedMemberId, amount: '' })
   const [giftForm, setGiftForm] = useState({ value: '', note: '' })
@@ -50,7 +54,13 @@ function AdminActionSectionPage() {
   const [changePasswordForm, setChangePasswordForm] = useState({ oldPassword: '', newPassword: '' })
 
   useEffect(() => {
-    if (selectedMember) setEditForm({ name: selectedMember.name, email: selectedMember.email })
+    if (selectedMember && selectedMember.id !== 'current-user') {
+      setEditForm({
+        name: selectedMember.name || '',
+        email: selectedMember.email || '',
+        phone: selectedMember.phone || '',
+      })
+    }
   }, [selectedMember])
 
   useEffect(() => {
@@ -141,9 +151,25 @@ function AdminActionSectionPage() {
             </div>
 
             <h3 className="text-sm font-semibold text-gray-700 mb-2">Editable fields</h3>
-            <div className="grid sm:grid-cols-2 gap-3">
-              <input value={editForm.name} onChange={(e) => setEditForm((p) => ({ ...p, name: e.target.value }))} placeholder="Name" className="px-4 py-3 border border-gray-300 rounded-lg" />
-              <input value={editForm.email} onChange={(e) => setEditForm((p) => ({ ...p, email: e.target.value }))} placeholder="Email" className="px-4 py-3 border border-gray-300 rounded-lg" />
+            <div className="grid sm:grid-cols-3 gap-3">
+              <input
+                value={editForm.name}
+                onChange={(e) => setEditForm((p) => ({ ...p, name: e.target.value }))}
+                placeholder="Name"
+                className="px-4 py-3 border border-gray-300 rounded-lg"
+              />
+              <input
+                value={editForm.email}
+                onChange={(e) => setEditForm((p) => ({ ...p, email: e.target.value }))}
+                placeholder="Email"
+                className="px-4 py-3 border border-gray-300 rounded-lg"
+              />
+              <input
+                value={editForm.phone}
+                onChange={(e) => setEditForm((p) => ({ ...p, phone: e.target.value }))}
+                placeholder="Phone"
+                className="px-4 py-3 border border-gray-300 rounded-lg"
+              />
             </div>
             <button onClick={() => saveMemberEdits(selectedMemberId, editForm)} className="mt-3 px-4 py-2 bg-primary-600 text-white rounded-lg">Save changes</button>
           </>
@@ -216,7 +242,15 @@ function AdminActionSectionPage() {
       <section className="bg-white rounded-xl border border-gray-200 p-6">
         <h2 className="text-lg font-semibold mb-3">Account Top up</h2>
         <div className="grid sm:grid-cols-3 gap-3">
-          <select value={topupForm.memberId} onChange={(e) => setTopupForm((p) => ({ ...p, memberId: e.target.value }))} className="px-4 py-3 border border-gray-300 rounded-lg">{members.map((m) => <option key={m.id} value={m.id}>{m.id}</option>)}</select>
+          <select
+            value={topupForm.memberId}
+            onChange={(e) => setTopupForm((p) => ({ ...p, memberId: e.target.value }))}
+            className="px-4 py-3 border border-gray-300 rounded-lg"
+          >
+            {editableMembers.map((m) => (
+              <option key={m.id} value={m.id}>{m.id}</option>
+            ))}
+          </select>
           <input value={topupForm.amount} onChange={(e) => setTopupForm((p) => ({ ...p, amount: e.target.value }))} placeholder="Top up amount" className="px-4 py-3 border border-gray-300 rounded-lg" />
           <button onClick={() => applyWalletChange(topupForm, 'add', 'topup')} className="px-4 py-2 bg-primary-600 text-white rounded-lg">Top up</button>
         </div>
@@ -229,7 +263,15 @@ function AdminActionSectionPage() {
       <section className="bg-white rounded-xl border border-gray-200 p-6">
         <h2 className="text-lg font-semibold mb-3">Deduct Account</h2>
         <div className="grid sm:grid-cols-3 gap-3">
-          <select value={deductForm.memberId} onChange={(e) => setDeductForm((p) => ({ ...p, memberId: e.target.value }))} className="px-4 py-3 border border-gray-300 rounded-lg">{members.map((m) => <option key={m.id} value={m.id}>{m.id}</option>)}</select>
+          <select
+            value={deductForm.memberId}
+            onChange={(e) => setDeductForm((p) => ({ ...p, memberId: e.target.value }))}
+            className="px-4 py-3 border border-gray-300 rounded-lg"
+          >
+            {editableMembers.map((m) => (
+              <option key={m.id} value={m.id}>{m.id}</option>
+            ))}
+          </select>
           <input value={deductForm.amount} onChange={(e) => setDeductForm((p) => ({ ...p, amount: e.target.value }))} placeholder="Deduct amount" className="px-4 py-3 border border-gray-300 rounded-lg" />
           <button onClick={() => applyWalletChange(deductForm, 'deduct', 'deduct')} className="px-4 py-2 bg-red-600 text-white rounded-lg">Deduct</button>
         </div>
@@ -241,7 +283,7 @@ function AdminActionSectionPage() {
     return (
       <section className="bg-white rounded-xl border border-gray-200 p-6 space-y-2">
         <h2 className="text-lg font-semibold mb-3">Lock/Unlock Withdrawal</h2>
-        {members.map((member) => (
+        {editableMembers.map((member) => (
           <div key={member.id} className="flex items-center justify-between border border-gray-200 rounded-lg p-3">
             <span>{member.id}</span>
             <button onClick={() => updateMember(member.id, (m) => ({ ...m, withdrawalLocked: !m.withdrawalLocked }))} className={`px-3 py-1 rounded text-white ${member.withdrawalLocked ? 'bg-green-600' : 'bg-amber-600'}`}>{member.withdrawalLocked ? 'Unlock' : 'Lock'}</button>
