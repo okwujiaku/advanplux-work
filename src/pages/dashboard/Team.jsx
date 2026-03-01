@@ -1,6 +1,7 @@
 import { useApp } from '../../context/AppContext'
 
 const SALARY_TIERS = [
+  { investors: 10, salary: 2, label: '10 direct active downlines' },
   { investors: 25, salary: 6, label: '25 direct active downlines' },
   { investors: 50, salary: 15, label: '50 direct active downlines' },
   { investors: 100, salary: 40, label: '100 direct active downlines' },

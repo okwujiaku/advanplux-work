@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useOutletContext } from 'react-router-dom'
+import { getMemberDisplay } from './memberDisplay'
 
 function AdminToolsPage() {
   const {
@@ -22,7 +23,7 @@ function AdminToolsPage() {
   const [bankForm, setBankForm] = useState({ bankName: '', accountName: '', accountNumber: '', currency: 'USD' })
   const [topupForm, setTopupForm] = useState({ memberId: selectedMemberId, amount: '' })
   const [deductForm, setDeductForm] = useState({ memberId: selectedMemberId, amount: '' })
-  const [giftForm, setGiftForm] = useState({ value: '', note: '' })
+  const [giftForm, setGiftForm] = useState({ value: '' })
   const [announcementText, setAnnouncementText] = useState('')
   const [registerAdminForm, setRegisterAdminForm] = useState({ email: '', password: '' })
   const [changePasswordForm, setChangePasswordForm] = useState({ oldPassword: '', newPassword: '' })
@@ -43,7 +44,7 @@ function AdminToolsPage() {
 
       <section className="bg-white rounded-xl border border-gray-200 p-6">
         <h2 className="text-lg font-semibold mb-3">Account Top up / Deduct / Lock</h2>
-        <select value={selectedMemberId} onChange={(e) => { setSelectedMemberId(e.target.value); setTopupForm((p) => ({ ...p, memberId: e.target.value })); setDeductForm((p) => ({ ...p, memberId: e.target.value })) }} className="w-full px-4 py-3 border border-gray-300 rounded-lg mb-3">{members.map((m) => <option key={m.id} value={m.id}>{m.id}</option>)}</select>
+        <select value={selectedMemberId} onChange={(e) => { setSelectedMemberId(e.target.value); setTopupForm((p) => ({ ...p, memberId: e.target.value })); setDeductForm((p) => ({ ...p, memberId: e.target.value })) }} className="w-full px-4 py-3 border border-gray-300 rounded-lg mb-3">{members.filter((m) => m.id !== 'current-user').map((m) => <option key={m.id} value={m.id}>{getMemberDisplay(m)}</option>)}</select>
         <div className="grid sm:grid-cols-2 gap-3">
           <div className="border border-gray-200 rounded-lg p-3">
             <input value={topupForm.amount} onChange={(e) => setTopupForm((p) => ({ ...p, amount: e.target.value }))} placeholder="Top up amount" className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
@@ -55,9 +56,9 @@ function AdminToolsPage() {
           </div>
         </div>
         <div className="mt-3 space-y-2">
-          {members.map((member) => (
+          {members.filter((m) => m.id !== 'current-user').map((member) => (
             <div key={member.id} className="flex items-center justify-between border border-gray-200 rounded-lg p-3 text-sm">
-              <span>{member.id}</span>
+              <span>{getMemberDisplay(member)}</span>
               <button onClick={() => updateMember(member.id, (m) => ({ ...m, withdrawalLocked: !m.withdrawalLocked }))} className={`px-3 py-1 rounded text-white ${member.withdrawalLocked ? 'bg-green-600' : 'bg-amber-600'}`}>{member.withdrawalLocked ? 'Unlock' : 'Lock'} Withdrawal</button>
             </div>
           ))}
@@ -67,11 +68,10 @@ function AdminToolsPage() {
       <section className="bg-white rounded-xl border border-gray-200 p-6">
         <h2 className="text-lg font-semibold mb-3">Generate Gift Code</h2>
         <div className="grid sm:grid-cols-2 gap-3">
-          <input value={giftForm.value} onChange={(e) => setGiftForm((p) => ({ ...p, value: e.target.value }))} placeholder="Gift value (NGN)" className="px-4 py-3 border border-gray-300 rounded-lg" />
-          <input value={giftForm.note} onChange={(e) => setGiftForm((p) => ({ ...p, note: e.target.value }))} placeholder="Note (optional)" className="px-4 py-3 border border-gray-300 rounded-lg" />
+          <input value={giftForm.value} onChange={(e) => setGiftForm((p) => ({ ...p, value: e.target.value }))} placeholder="Gift value (Dollar)" className="px-4 py-3 border border-gray-300 rounded-lg" />
         </div>
-        <button onClick={() => { generateGiftCode(giftForm); setGiftForm({ value: '', note: '' }) }} className="mt-3 px-4 py-2 bg-primary-600 text-white rounded-lg">Generate</button>
-        {giftCodes.map((gift) => (<div key={gift.id} className="p-3 border border-gray-200 rounded-lg text-sm mt-2"><p><span className="font-semibold">{gift.code}</span> - ₦{gift.value.toLocaleString()}</p></div>))}
+        <button onClick={() => { generateGiftCode(giftForm); setGiftForm({ value: '' }) }} className="mt-3 px-4 py-2 bg-primary-600 text-white rounded-lg">Generate</button>
+        {giftCodes.map((gift) => (<div key={gift.id} className="p-3 border border-gray-200 rounded-lg text-sm mt-2"><p><span className="font-semibold">{gift.code}</span> - ${Number(gift.value).toLocaleString()}</p></div>))}
       </section>
 
       <section className="bg-white rounded-xl border border-gray-200 p-6">
@@ -92,7 +92,7 @@ function AdminToolsPage() {
           <div>
             <input type="password" value={changePasswordForm.oldPassword} onChange={(e) => setChangePasswordForm((p) => ({ ...p, oldPassword: e.target.value }))} placeholder="Old password" className="w-full px-4 py-3 border border-gray-300 rounded-lg mb-2" />
             <input type="password" value={changePasswordForm.newPassword} onChange={(e) => setChangePasswordForm((p) => ({ ...p, newPassword: e.target.value }))} placeholder="New password" className="w-full px-4 py-3 border border-gray-300 rounded-lg mb-2" />
-            <button onClick={() => { const ok = changePassword(changePasswordForm); if (!ok) alert('Password change failed'); setChangePasswordForm({ oldPassword: '', newPassword: '' }) }} className="px-4 py-2 bg-primary-600 text-white rounded-lg">Change</button>
+            <button onClick={async () => { const ok = await changePassword(changePasswordForm); if (!ok) alert('Password change failed'); setChangePasswordForm({ oldPassword: '', newPassword: '' }) }} className="px-4 py-2 bg-primary-600 text-white rounded-lg">Change</button>
           </div>
         </div>
         <ul className="text-sm text-gray-700 mt-3">{adminAccounts.map((admin) => <li key={admin.email}>{admin.email}</li>)}</ul>

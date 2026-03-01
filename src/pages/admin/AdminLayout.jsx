@@ -2,9 +2,6 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, NavLink, Outlet } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
 
-const ADMIN_EMAIL = 'brunerlisa555@gmail.com'
-const ADMIN_PASSWORD = 'advanplux2026'
-
 const DEFAULT_MEMBER = {
   id: 'current-user',
   name: 'Main User',
@@ -18,17 +15,6 @@ const DEFAULT_MEMBER = {
   withdrawalLocked: false,
 }
 
-function getInitialValue(key, fallback) {
-  if (typeof window === 'undefined' || !window.localStorage) return fallback
-  const raw = window.localStorage.getItem(key)
-  if (!raw) return fallback
-  try {
-    return JSON.parse(raw)
-  } catch {
-    return fallback
-  }
-}
-
 function newId(prefix) {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
 }
@@ -36,20 +22,21 @@ function newId(prefix) {
 function AdminLayout() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [loggedIn, setLoggedIn] = useState(() => typeof window !== 'undefined' && window.localStorage?.getItem('adminLoggedIn') === 'true')
+  const [loggedIn, setLoggedIn] = useState(() => typeof window !== 'undefined' && window.sessionStorage?.getItem('adminLoggedIn') === 'true')
   const [currentAdminEmail, setCurrentAdminEmail] = useState('')
 
-  const [platformBankAccounts, setPlatformBankAccounts] = useState(() => getInitialValue('platformBankAccounts', []))
-  const [members, setMembers] = useState(() => getInitialValue('adminMembers', [DEFAULT_MEMBER]))
+  const [platformBankAccounts, setPlatformBankAccounts] = useState([])
+  const [members, setMembers] = useState([DEFAULT_MEMBER])
   const [remoteUsers, setRemoteUsers] = useState([])
-  const [bonusWithdrawals, setBonusWithdrawals] = useState(() => getInitialValue('bonusWithdrawals', []))
-  const [giftCodes, setGiftCodes] = useState(() => getInitialValue('giftCodes', []))
-  const [announcements, setAnnouncements] = useState(() => getInitialValue('announcements', []))
-  const [investmentHistory, setInvestmentHistory] = useState(() => getInitialValue('investmentHistory', []))
-  const [adminAccounts, setAdminAccounts] = useState(() => getInitialValue('adminAccounts', [{ email: ADMIN_EMAIL, password: ADMIN_PASSWORD }]))
+  const [bonusWithdrawals, setBonusWithdrawals] = useState([])
+  const [giftCodes, setGiftCodes] = useState([])
+  const [announcements, setAnnouncements] = useState([])
+  const [investmentHistory, setInvestmentHistory] = useState([])
+  const [adminAccounts, setAdminAccounts] = useState([])
 
   const [selectedMemberId, setSelectedMemberId] = useState(DEFAULT_MEMBER.id)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [adminDeposits, setAdminDeposits] = useState([])
 
   const {
     users,
@@ -68,41 +55,6 @@ function AdminLayout() {
   } = useApp()
 
   useEffect(() => {
-    if (typeof window === 'undefined' || !window.localStorage) return
-    window.localStorage.setItem('platformBankAccounts', JSON.stringify(platformBankAccounts))
-  }, [platformBankAccounts])
-
-  useEffect(() => {
-    if (typeof window === 'undefined' || !window.localStorage) return
-    window.localStorage.setItem('adminMembers', JSON.stringify(members))
-  }, [members])
-
-  useEffect(() => {
-    if (typeof window === 'undefined' || !window.localStorage) return
-    window.localStorage.setItem('bonusWithdrawals', JSON.stringify(bonusWithdrawals))
-  }, [bonusWithdrawals])
-
-  useEffect(() => {
-    if (typeof window === 'undefined' || !window.localStorage) return
-    window.localStorage.setItem('giftCodes', JSON.stringify(giftCodes))
-  }, [giftCodes])
-
-  useEffect(() => {
-    if (typeof window === 'undefined' || !window.localStorage) return
-    window.localStorage.setItem('announcements', JSON.stringify(announcements))
-  }, [announcements])
-
-  useEffect(() => {
-    if (typeof window === 'undefined' || !window.localStorage) return
-    window.localStorage.setItem('investmentHistory', JSON.stringify(investmentHistory))
-  }, [investmentHistory])
-
-  useEffect(() => {
-    if (typeof window === 'undefined' || !window.localStorage) return
-    window.localStorage.setItem('adminAccounts', JSON.stringify(adminAccounts))
-  }, [adminAccounts])
-
-  useEffect(() => {
     const controller = new AbortController()
     const loadRemoteUsers = async () => {
       try {
@@ -119,6 +71,86 @@ function AdminLayout() {
     return () => controller.abort()
   }, [])
 
+  const getAdminKey = () =>
+    (typeof window !== 'undefined' && window.sessionStorage?.getItem('adminApiKey')) ||
+    (typeof import.meta !== 'undefined' && import.meta.env?.VITE_ADMIN_SECRET) ||
+    ''
+
+  useEffect(() => {
+    if (!loggedIn) return
+    const controller = new AbortController()
+    const key = getAdminKey()
+    const loadAdminDeposits = async () => {
+      try {
+        const response = await fetch('/api/admin/deposits', {
+          signal: controller.signal,
+          headers: key ? { 'X-Admin-Key': key } : {},
+        })
+        const payload = await response.json()
+        if (response.ok && payload?.ok && Array.isArray(payload.deposits)) {
+          setAdminDeposits(payload.deposits)
+        } else {
+          setAdminDeposits([])
+        }
+      } catch {
+        setAdminDeposits([])
+      }
+    }
+    loadAdminDeposits()
+    return () => controller.abort()
+  }, [loggedIn])
+
+  useEffect(() => {
+    if (!loggedIn) return
+    const controller = new AbortController()
+    const key = getAdminKey()
+    const loadPlatformBankAccounts = async () => {
+      try {
+        const response = await fetch('/api/admin/platform-bank-accounts', {
+          signal: controller.signal,
+          headers: key ? { 'X-Admin-Key': key } : {},
+        })
+        const payload = await response.json()
+        if (response.ok && payload?.ok && Array.isArray(payload.accounts)) {
+          setPlatformBankAccounts(payload.accounts)
+        }
+      } catch {
+        // keep existing state if backend unavailable
+      }
+    }
+    loadPlatformBankAccounts()
+    return () => controller.abort()
+  }, [loggedIn])
+
+  useEffect(() => {
+    if (!loggedIn) return
+    const controller = new AbortController()
+    const key = getAdminKey()
+    const headers = key ? { 'X-Admin-Key': key } : {}
+    const load = async () => {
+      try {
+        const [g, a, b, i, ad] = await Promise.all([
+          fetch('/api/admin/gift-codes', { signal: controller.signal, headers }).then((r) => r.json()),
+          fetch('/api/admin/announcements', { signal: controller.signal, headers }).then((r) => r.json()),
+          fetch('/api/admin/bonus-withdrawals', { signal: controller.signal, headers }).then((r) => r.json()),
+          fetch('/api/admin/investment-history', { signal: controller.signal, headers }).then((r) => r.json()),
+          fetch('/api/admin/admin-users', { signal: controller.signal, headers }).then((r) => r.json()),
+        ])
+        if (g?.ok && Array.isArray(g.giftCodes)) setGiftCodes(g.giftCodes)
+        if (a?.ok && Array.isArray(a.announcements)) setAnnouncements(a.announcements)
+        if (b?.ok && Array.isArray(b.bonusWithdrawals)) setBonusWithdrawals(b.bonusWithdrawals)
+        if (i?.ok && Array.isArray(i.investmentHistory)) setInvestmentHistory(i.investmentHistory)
+        if (ad?.ok && Array.isArray(ad.adminAccounts)) setAdminAccounts(ad.adminAccounts)
+      } catch {
+        // keep defaults
+      }
+    }
+    load()
+    return () => controller.abort()
+  }, [loggedIn])
+
+  const depositsForAdmin = adminDeposits.length > 0 ? adminDeposits : deposits
+
   useEffect(() => {
     const normalizedRemoteUsers = remoteUsers.map((user) => ({
       id: user.id,
@@ -130,7 +162,7 @@ function AdminLayout() {
     }))
     const allUsers = [...users, ...normalizedRemoteUsers]
     const authUserById = new Map(allUsers.map((user) => [user.id, user]))
-    const ids = new Set([DEFAULT_MEMBER.id, ...allUsers.map((user) => user.id), ...deposits.map((d) => d.userId), ...withdrawals.map((w) => w.userId)])
+    const ids = new Set([DEFAULT_MEMBER.id, ...allUsers.map((user) => user.id), ...depositsForAdmin.map((d) => d.userId), ...withdrawals.map((w) => w.userId)])
     setMembers((prev) => {
       let changed = false
       const next = [...prev]
@@ -178,7 +210,7 @@ function AdminLayout() {
       })
       return changed ? merged : prev
     })
-  }, [deposits, remoteUsers, users, withdrawals])
+  }, [depositsForAdmin, remoteUsers, users, withdrawals])
 
   const editableMembers = useMemo(
     () => members.filter((member) => member.id !== DEFAULT_MEMBER.id),
@@ -192,9 +224,52 @@ function AdminLayout() {
     return DEFAULT_MEMBER
   }, [editableMembers, members, selectedMemberId])
 
-  const pendingDepositsCount = deposits.filter((d) => d.status === 'pending').length
+  const pendingDepositsCount = depositsForAdmin.filter((d) => d.status === 'pending').length
   const pendingWithdrawalsCount = withdrawals.filter((w) => w.status === 'pending').length
   const pendingBonusWithdrawalsCount = bonusWithdrawals.filter((w) => w.status === 'pending').length
+
+  const approveDepositAdmin = async (id) => {
+    const key = getAdminKey()
+    try {
+      const res = await fetch('/api/admin/deposits', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', ...(key ? { 'X-Admin-Key': key } : {}) },
+        body: JSON.stringify({ id, status: 'approved' }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (res.ok && data?.ok && data.deposit) {
+        setAdminDeposits((prev) =>
+          prev.map((d) => (d.id === id ? { ...d, status: 'approved', approvedAt: data.deposit.approvedAt } : d)),
+        )
+        return
+      }
+    } catch {
+      // fall through to local
+    }
+    approveDeposit(id)
+  }
+
+  const rejectDepositAdmin = async (id) => {
+    const key = getAdminKey()
+    try {
+      const res = await fetch('/api/admin/deposits', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', ...(key ? { 'X-Admin-Key': key } : {}) },
+        body: JSON.stringify({ id, status: 'rejected' }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (res.ok && data?.ok && data.deposit) {
+        setAdminDeposits((prev) =>
+          prev.map((d) => (d.id === id ? { ...d, status: 'rejected', rejectedAt: data.deposit.rejectedAt } : d)),
+        )
+        return
+      }
+    } catch {
+      // fall through to local
+    }
+    rejectDeposit(id)
+  }
+
   const menuItems = [
     { to: '/admin/users', icon: '🏠', label: 'Registered Members', count: members.length },
     { to: '/admin/add-bank', icon: '➕', label: 'Add Bank Account' },
@@ -214,16 +289,25 @@ function AdminLayout() {
     { to: '/admin/withdrawal-history', icon: '↻', label: 'Withdrawal History', count: withdrawals.length },
   ]
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault()
-    const account = adminAccounts.find((admin) => admin.email.toLowerCase() === email.trim().toLowerCase())
-    if (account && account.password === password) {
-      setLoggedIn(true)
-      setCurrentAdminEmail(account.email)
-      setIsAdminLoggedIn(true)
-      if (typeof window !== 'undefined' && window.localStorage) window.localStorage.setItem('adminLoggedIn', 'true')
-    } else {
-      alert('Invalid email or password. Only admin has access.')
+    try {
+      const res = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim(), password }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (res.ok && data?.ok) {
+        setLoggedIn(true)
+        setCurrentAdminEmail(email.trim().toLowerCase())
+        setIsAdminLoggedIn(true)
+        if (typeof window !== 'undefined' && window.sessionStorage) window.sessionStorage.setItem('adminLoggedIn', 'true')
+      } else {
+        alert(data?.error || 'Invalid email or password. Only admin has access.')
+      }
+    } catch {
+      alert('Login failed. Check your connection and try again.')
     }
   }
 
@@ -231,7 +315,7 @@ function AdminLayout() {
     setLoggedIn(false)
     setCurrentAdminEmail('')
     setIsAdminLoggedIn(false)
-    if (typeof window !== 'undefined' && window.localStorage) window.localStorage.removeItem('adminLoggedIn')
+    if (typeof window !== 'undefined' && window.sessionStorage) window.sessionStorage.removeItem('adminLoggedIn')
   }
 
   const closeMobileMenu = () => setMobileMenuOpen(false)
@@ -240,13 +324,47 @@ function AdminLayout() {
     setMembers((prev) => prev.map((m) => (m.id === memberId ? updater(m) : m)))
   }
 
-  const submitBankAccount = (form) => {
+  const submitBankAccount = async (form) => {
     if (!form.bankName || !form.accountName || !form.accountNumber) return
+    const key = getAdminKey()
+    try {
+      const response = await fetch('/api/admin/platform-bank-accounts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(key ? { 'X-Admin-Key': key } : {}) },
+        body: JSON.stringify({
+          bankName: form.bankName,
+          accountName: form.accountName,
+          accountNumber: form.accountNumber,
+          currency: form.currency || 'USD',
+        }),
+      })
+      const data = await response.json().catch(() => ({}))
+      if (response.ok && data?.ok && data?.account) {
+        setPlatformBankAccounts((prev) => [data.account, ...prev])
+        return
+      }
+    } catch {
+      // fallback to local only if backend fails
+    }
     setPlatformBankAccounts((prev) => [{ ...form, id: newId('bank'), createdAt: new Date().toISOString() }, ...prev])
   }
 
-  const deleteBankAccount = (bankAccountId) => {
+  const deleteBankAccount = async (bankAccountId) => {
     if (!bankAccountId) return
+    const key = getAdminKey()
+    try {
+      const response = await fetch(`/api/admin/platform-bank-accounts?id=${encodeURIComponent(bankAccountId)}`, {
+        method: 'DELETE',
+        headers: key ? { 'X-Admin-Key': key } : {},
+      })
+      const data = await response.json().catch(() => ({}))
+      if (response.ok && data?.ok) {
+        setPlatformBankAccounts((prev) => prev.filter((account) => account.id !== bankAccountId))
+        return
+      }
+    } catch {
+      // fallback to local only if backend fails
+    }
     setPlatformBankAccounts((prev) => prev.filter((account) => account.id !== bankAccountId))
   }
 
@@ -259,9 +377,32 @@ function AdminLayout() {
     }))
   }
 
-  const applyWalletChange = (form, mode, source) => {
+  const applyWalletChange = async (form, mode, source) => {
     const amount = Number(form.amount)
     if (!form.memberId || !amount || amount <= 0) return
+    const key = getAdminKey()
+    const addUsd = mode === 'add' ? amount : -amount
+    try {
+      const res = await fetch('/api/admin/user-wallet', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', ...(key ? { 'X-Admin-Key': key } : {}) },
+        body: JSON.stringify({ userId: form.memberId, addUsd, type: source }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (res.ok && data?.ok) {
+        updateMember(form.memberId, (m) => {
+          const nextBalance = mode === 'add' ? m.balance + amount : Math.max(0, m.balance - amount)
+          return { ...m, balance: nextBalance }
+        })
+        setInvestmentHistory((prev) => [
+          { id: newId('hist'), type: source, memberId: form.memberId, amount, date: new Date().toISOString() },
+          ...prev,
+        ])
+        return
+      }
+    } catch {
+      // fallback local
+    }
     updateMember(form.memberId, (m) => {
       const nextBalance = mode === 'add' ? m.balance + amount : Math.max(0, m.balance - amount)
       return { ...m, balance: nextBalance }
@@ -272,16 +413,30 @@ function AdminLayout() {
     ])
   }
 
-  const createBonusWithdrawal = (payload) => {
+  const createBonusWithdrawal = async (payload) => {
     const amount = Number(payload.amount)
-    if (!payload.memberId || !payload.accountNumber || !amount || amount <= 0) return
+    if (!payload.memberId || !amount || amount <= 0) return
+    const key = getAdminKey()
+    try {
+      const res = await fetch('/api/admin/bonus-withdrawals', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(key ? { 'X-Admin-Key': key } : {}) },
+        body: JSON.stringify({ memberId: payload.memberId, amount, accountNumber: payload.accountNumber || null }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (res.ok && data?.ok && data.bonusWithdrawal) {
+        setBonusWithdrawals((prev) => [data.bonusWithdrawal, ...prev])
+        return
+      }
+    } catch {
+      // fallback local
+    }
     setBonusWithdrawals((prev) => [
       {
         id: newId('bwd'),
         userId: payload.memberId,
         amount,
-        currency: 'NGN',
-        accountNumber: payload.accountNumber,
+        accountNumber: payload.accountNumber || '',
         status: 'pending',
         date: new Date().toISOString(),
       },
@@ -289,39 +444,109 @@ function AdminLayout() {
     ])
   }
 
-  const approveBonusWithdrawal = (id) => {
+  const approveBonusWithdrawal = async (id) => {
+    const key = getAdminKey()
+    try {
+      const res = await fetch('/api/admin/bonus-withdrawals', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', ...(key ? { 'X-Admin-Key': key } : {}) },
+        body: JSON.stringify({ id, status: 'approved' }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (res.ok && data?.ok) {
+        setBonusWithdrawals((prev) => prev.map((w) => (w.id === id ? { ...w, status: 'approved' } : w)))
+        return
+      }
+    } catch {
+      // fallback local
+    }
     setBonusWithdrawals((prev) => prev.map((w) => (w.id === id ? { ...w, status: 'approved' } : w)))
   }
 
-  const generateGiftCode = (payload) => {
+  const generateGiftCode = async (payload) => {
     const value = Number(payload.value)
     if (!value || value <= 0) return
-    const code = `GIFT-${Math.random().toString(36).slice(2, 6).toUpperCase()}${Math.random().toString(36).slice(2, 6).toUpperCase()}`
-    setGiftCodes((prev) => [{ id: newId('gift'), code, value, note: payload.note, createdAt: new Date().toISOString() }, ...prev])
+    const key = getAdminKey()
+    try {
+      const res = await fetch('/api/admin/gift-codes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(key ? { 'X-Admin-Key': key } : {}) },
+        body: JSON.stringify({ value }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (res.ok && data?.ok && data.giftCode) {
+        setGiftCodes((prev) => [data.giftCode, ...prev])
+        return
+      }
+    } catch {
+      // fallback local
+    }
+    setGiftCodes((prev) => [
+      { id: newId('gift'), code: `GIFT-${Date.now().toString(36).toUpperCase()}`, value, createdAt: new Date().toISOString() },
+      ...prev,
+    ])
   }
 
-  const registerAdmin = (payload) => {
+  const registerAdmin = async (payload) => {
     const newEmail = payload.email.trim().toLowerCase()
     const newPassword = payload.password.trim()
     if (!newEmail || !newPassword) return
     if (adminAccounts.some((admin) => admin.email.toLowerCase() === newEmail)) return
-    setAdminAccounts((prev) => [...prev, { email: newEmail, password: newPassword }])
+    const key = getAdminKey()
+    try {
+      const res = await fetch('/api/admin/admin-users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(key ? { 'X-Admin-Key': key } : {}) },
+        body: JSON.stringify({ email: newEmail, password: newPassword }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (res.ok && data?.ok) {
+        setAdminAccounts((prev) => [...prev, { email: newEmail }])
+        return
+      }
+    } catch {
+      // fallback local
+    }
+    setAdminAccounts((prev) => [...prev, { email: newEmail }])
   }
 
-  const changePassword = (payload) => {
-    const activeAdmin = adminAccounts.find((admin) => admin.email === currentAdminEmail) || adminAccounts[0]
-    if (!activeAdmin) return false
-    if (payload.oldPassword !== activeAdmin.password) return false
-    if (!payload.newPassword.trim()) return false
-    setAdminAccounts((prev) =>
-      prev.map((admin) => (admin.email === activeAdmin.email ? { ...admin, password: payload.newPassword.trim() } : admin)),
-    )
-    return true
+  const changePassword = async (payload) => {
+    const key = getAdminKey()
+    try {
+      const res = await fetch('/api/admin/change-password', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', ...(key ? { 'X-Admin-Key': key } : {}) },
+        body: JSON.stringify({
+          email: currentAdminEmail,
+          oldPassword: payload.oldPassword,
+          newPassword: payload.newPassword?.trim(),
+        }),
+      })
+      const data = await res.json().catch(() => ({}))
+      return !!(res.ok && data?.ok)
+    } catch {
+      return false
+    }
   }
 
-  const postAnnouncement = (text) => {
+  const postAnnouncement = async (text) => {
     const value = text.trim()
     if (!value) return
+    const key = getAdminKey()
+    try {
+      const res = await fetch('/api/admin/announcements', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(key ? { 'X-Admin-Key': key } : {}) },
+        body: JSON.stringify({ text: value }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (res.ok && data?.ok && data.announcement) {
+        setAnnouncements((prev) => [data.announcement, ...prev])
+        return
+      }
+    } catch {
+      // fallback local
+    }
     setAnnouncements((prev) => [{ id: newId('ann'), text: value, date: new Date().toISOString() }, ...prev])
   }
 
@@ -353,11 +578,11 @@ function AdminLayout() {
     announcements,
     investmentHistory,
     adminAccounts,
-    deposits,
+    deposits: depositsForAdmin,
     withdrawals,
-    approveDeposit,
-    rejectDeposit,
-    reverseDeposit,
+    approveDeposit: approveDepositAdmin,
+    rejectDeposit: rejectDepositAdmin,
+    reverseDeposit: () => {},
     approveWithdrawal,
     rejectWithdrawal,
     reverseWithdrawal,

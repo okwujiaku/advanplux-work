@@ -27,10 +27,6 @@ function Profile() {
                 <dd className="mt-0.5 text-slate-900">{currentUser.phone || '–'}</dd>
               </div>
               <div>
-                <dt className="text-slate-500 font-medium">Account ID</dt>
-                <dd className="mt-0.5 font-mono text-slate-900 break-all">{currentUser.id || '–'}</dd>
-              </div>
-              <div>
                 <dt className="text-slate-500 font-medium">My invitation code</dt>
                 <dd className="mt-0.5 font-mono font-semibold text-primary-600">{currentUser.myInvitationCode || '–'}</dd>
               </div>
@@ -38,9 +34,9 @@ function Profile() {
                 <dt className="text-slate-500 font-medium">Referred by</dt>
                 <dd className="mt-0.5 text-slate-900">
                   {referrer
-                    ? `${referrer.email || referrer.id} (${referrer.myInvitationCode || referrer.id})`
+                    ? (referrer.email || (referrer.email && referrer.email.split('@')[0]) || referrer.phone || referrer.id)
                     : currentUser.referredByUserId
-                      ? currentUser.referredByUserId
+                      ? '–'
                       : '–'}
                 </dd>
               </div>

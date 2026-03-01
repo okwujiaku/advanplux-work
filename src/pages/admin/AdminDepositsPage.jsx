@@ -1,7 +1,9 @@
 import { useOutletContext } from 'react-router-dom'
+import { getUserDisplay } from './memberDisplay'
 
 function AdminDepositsPage() {
-  const { deposits, approveDeposit, rejectDeposit, reverseDeposit } = useOutletContext()
+  const { deposits, approveDeposit, rejectDeposit, members } = useOutletContext()
+  const getUserLabel = (userId) => getUserDisplay(userId, members)
 
   return (
     <section className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
@@ -13,7 +15,7 @@ function AdminDepositsPage() {
             {deposits.length === 0 ? <tr><td colSpan={6} className="p-4 text-gray-500">No deposits yet.</td></tr> : deposits.map((d) => (
               <tr key={d.id} className="border-t">
                 <td className="p-3">{new Date(d.date).toLocaleString()}</td>
-                <td className="p-3">{d.userId}</td>
+                <td className="p-3">{getUserLabel(d.userId)}</td>
                 <td className="p-3">{d.amount?.toLocaleString()}</td>
                 <td className="p-3">{d.currency}</td>
                 <td className="p-3">{d.status}</td>
@@ -25,7 +27,6 @@ function AdminDepositsPage() {
                         <button onClick={() => rejectDeposit(d.id)} className="px-2 py-1 bg-red-600 text-white rounded text-xs">Reject</button>
                       </>
                     )}
-                    {d.status === 'approved' && <button onClick={() => reverseDeposit(d.id)} className="px-2 py-1 bg-gray-700 text-white rounded text-xs">Reverse</button>}
                   </div>
                 </td>
               </tr>

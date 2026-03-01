@@ -5,6 +5,7 @@ import Profile from './pages/dashboard/Profile'
 import AdGenerator from './pages/dashboard/AdGenerator'
 import Deposit from './pages/dashboard/Deposit'
 import Withdrawal from './pages/dashboard/Withdrawal'
+import RequestWithdrawal from './pages/dashboard/RequestWithdrawal'
 import ReferralDashboard from './pages/dashboard/Referral'
 import Team from './pages/dashboard/Team'
 import WatchEarn from './pages/dashboard/WatchEarn'
@@ -96,6 +97,7 @@ function App() {
           <Route path="watch" element={<WatchEarn />} />
           <Route path="deposit" element={<Deposit />} />
           <Route path="withdrawal" element={<Withdrawal />} />
+          <Route path="request-withdrawal" element={<RequestWithdrawal />} />
           <Route path="withdrawal-pin" element={<WithdrawalPin />} />
           <Route path="referral" element={<ReferralDashboard />} />
           <Route path="team" element={<Team />} />

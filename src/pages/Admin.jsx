@@ -73,7 +73,7 @@ function Admin() {
   const [topupForm, setTopupForm] = useState({ memberId: DEFAULT_MEMBER.id, amount: '' })
   const [deductForm, setDeductForm] = useState({ memberId: DEFAULT_MEMBER.id, amount: '' })
   const [bonusWithdrawalForm, setBonusWithdrawalForm] = useState({ memberId: DEFAULT_MEMBER.id, amount: '', accountNumber: '' })
-  const [giftForm, setGiftForm] = useState({ value: '', note: '' })
+  const [giftForm, setGiftForm] = useState({ value: '' })
   const [announcementText, setAnnouncementText] = useState('')
   const [registerAdminForm, setRegisterAdminForm] = useState({ email: '', password: '' })
   const [changePasswordForm, setChangePasswordForm] = useState({ oldPassword: '', newPassword: '' })
@@ -240,8 +240,8 @@ function Admin() {
     const value = Number(giftForm.value)
     if (!value || value <= 0) return
     const code = `GIFT-${Math.random().toString(36).slice(2, 6).toUpperCase()}${Math.random().toString(36).slice(2, 6).toUpperCase()}`
-    setGiftCodes((prev) => [{ id: newId('gift'), code, value, note: giftForm.note, createdAt: new Date().toISOString() }, ...prev])
-    setGiftForm({ value: '', note: '' })
+    setGiftCodes((prev) => [{ id: newId('gift'), code, value, createdAt: new Date().toISOString() }, ...prev])
+    setGiftForm({ value: '' })
   }
 
   const registerAdmin = (e) => {
@@ -442,11 +442,10 @@ function Admin() {
             <section className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 space-y-4">
               <h2 className="text-lg font-semibold text-gray-900">Generate Gift Code</h2>
               <form onSubmit={generateGiftCode} className="grid gap-3">
-                <input value={giftForm.value} onChange={(e) => setGiftForm((p) => ({ ...p, value: e.target.value }))} placeholder="Gift value (NGN)" className="px-4 py-3 border border-gray-300 rounded-lg" />
-                <input value={giftForm.note} onChange={(e) => setGiftForm((p) => ({ ...p, note: e.target.value }))} placeholder="Note (optional)" className="px-4 py-3 border border-gray-300 rounded-lg" />
+                <input value={giftForm.value} onChange={(e) => setGiftForm((p) => ({ ...p, value: e.target.value }))} placeholder="Gift value (Dollar)" className="px-4 py-3 border border-gray-300 rounded-lg" />
                 <button type="submit" className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700">Generate</button>
               </form>
-              {giftCodes.map((gift) => (<div key={gift.id} className="p-3 border border-gray-200 rounded-lg text-sm"><p><span className="font-semibold">{gift.code}</span> - ₦{gift.value.toLocaleString()}</p><p className="text-gray-500">{gift.note || 'No note'} · {new Date(gift.createdAt).toLocaleString()}</p></div>))}
+              {giftCodes.map((gift) => (<div key={gift.id} className="p-3 border border-gray-200 rounded-lg text-sm"><p><span className="font-semibold">{gift.code}</span> - ${Number(gift.value).toLocaleString()}</p><p className="text-gray-500">{new Date(gift.createdAt).toLocaleString()}</p></div>))}
             </section>
           )}
 

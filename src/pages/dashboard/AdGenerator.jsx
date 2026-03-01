@@ -9,8 +9,9 @@ const SOCIAL_PROOF = [
 ]
 
 function AdGenerator() {
-  const { userPack, PACKS_USD } = useApp()
+  const { userPack, PACKS_USD, walletUsd, activatePack } = useApp()
   const [proofIndex, setProofIndex] = useState(0)
+  const [activating, setActivating] = useState(null)
 
   useEffect(() => {
     const t = setInterval(() => setProofIndex((i) => (i + 1) % SOCIAL_PROOF.length), 3500)
@@ -18,14 +19,31 @@ function AdGenerator() {
   }, [])
 
   const hasPack = !!userPack
+  const balance = Number(walletUsd || 0)
+
+  const handleActivate = async (packUsd) => {
+    if (balance < packUsd || activating) return
+    setActivating(packUsd)
+    try {
+      await activatePack(packUsd)
+    } finally {
+      setActivating(null)
+    }
+  }
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-[#143D59]">Ads Engine</h1>
+        <h1 className="text-2xl font-bold text-[#143D59]">Get Ads Engine</h1>
         <p className="text-[#1B4965] mt-1">
-          Buy Ad Engine to unlock daily ads. Watch ads and get paid.
+          Deposit to your balance, then activate a package below to unlock daily ads. Use Watch &amp; Earn to watch ads and get paid.
         </p>
+      </div>
+
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+        <p className="text-sm text-gray-500">Your balance</p>
+        <p className="text-2xl font-bold text-[#143D59]">${balance.toFixed(2)}</p>
+        <Link to="/dashboard/deposit" className="text-sm text-primary-600 hover:underline mt-1 inline-block">Deposit funds →</Link>
       </div>
 
       {/* Social proof */}
@@ -51,14 +69,13 @@ function AdGenerator() {
         </div>
       </div>
 
-      {/* 3 packs: USD primary, Naira/CFA as sub */}
       <div id="purchase-ads-engine">
-        <h2 className="text-lg font-semibold text-[#143D59] mb-4">Choose your package</h2>
+        <h2 className="text-lg font-semibold text-[#143D59] mb-4">Activate a package from your balance</h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {PACKS_USD.map((pack) => {
             const isCurrent = userPack === pack.usd
-            const isUpgrade = userPack && pack.usd > userPack
-            const isBuy = !userPack || isUpgrade
+            const canActivate = balance >= pack.usd && !isCurrent
+            const insufficient = balance < pack.usd && !isCurrent
             return (
               <div
                 key={pack.usd}
@@ -68,7 +85,7 @@ function AdGenerator() {
               >
                 {isCurrent && (
                   <span className="absolute -top-2 left-4 px-2 py-0.5 bg-primary-500 text-white text-xs font-medium rounded">
-                    Current
+                    Active
                   </span>
                 )}
                 <div className="text-center mb-4">
@@ -77,19 +94,30 @@ function AdGenerator() {
                   <p className="text-xs text-primary-400 font-medium mt-2">{pack.planName}</p>
                   <p className="text-xs text-white/80 mt-1">{pack.adsPerDay} ads per day</p>
                 </div>
-                {isBuy ? (
-                  <Link
-                    to="/dashboard/deposit"
-                    state={{ pack: pack.usd }}
-                    className="block w-full py-2.5 bg-primary-500 text-white rounded-lg font-medium hover:bg-primary-600 text-center"
-                  >
-                    {isUpgrade ? 'Upgrade' : 'Activate'}
-                  </Link>
-                ) : (
+                {isCurrent ? (
                   <button disabled className="w-full py-2.5 bg-white/20 text-white/70 rounded-lg font-medium cursor-not-allowed">
                     Active
                   </button>
-                )}
+                ) : canActivate ? (
+                  <button
+                    type="button"
+                    onClick={() => handleActivate(pack.usd)}
+                    disabled={!!activating}
+                    className="w-full py-2.5 bg-primary-500 text-white rounded-lg font-medium hover:bg-primary-600 disabled:opacity-50"
+                  >
+                    {activating === pack.usd ? 'Activating…' : 'Activate'}
+                  </button>
+                ) : insufficient ? (
+                  <div className="text-center">
+                    <p className="text-xs text-white/70 mb-2">Need ${Math.max(0, (pack.usd - balance).toFixed(2))} more</p>
+                    <Link
+                      to="/dashboard/deposit"
+                      className="block w-full py-2.5 bg-white/20 text-white rounded-lg font-medium hover:bg-white/30 text-center"
+                    >
+                      Deposit
+                    </Link>
+                  </div>
+                ) : null}
               </div>
             )
           })}
@@ -98,7 +126,7 @@ function AdGenerator() {
 
       {!hasPack && (
         <p className="text-center text-[#1B4965] py-4">
-          Buy Ad Engine above and complete deposit to start viewing ads.
+          Deposit funds, then activate a package above. After activating, go to <Link to="/dashboard/watch" className="font-semibold text-primary-600 hover:underline">Watch &amp; Earn</Link> to watch ads and earn.
         </p>
       )}
     </div>

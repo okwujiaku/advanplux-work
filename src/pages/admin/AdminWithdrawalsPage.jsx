@@ -1,7 +1,9 @@
 import { useOutletContext } from 'react-router-dom'
+import { getUserDisplay } from './memberDisplay'
 
 function AdminWithdrawalsPage() {
-  const { withdrawals, approveWithdrawal, rejectWithdrawal, reverseWithdrawal } = useOutletContext()
+  const { withdrawals, approveWithdrawal, rejectWithdrawal, reverseWithdrawal, members } = useOutletContext()
+  const getUserLabel = (userId) => getUserDisplay(userId, members)
 
   return (
     <section className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
@@ -13,7 +15,7 @@ function AdminWithdrawalsPage() {
             {withdrawals.length === 0 ? <tr><td colSpan={7} className="p-4 text-gray-500">No withdrawal requests yet.</td></tr> : withdrawals.map((w) => (
               <tr key={w.id} className="border-t">
                 <td className="p-3">{new Date(w.date).toLocaleString()}</td>
-                <td className="p-3">{w.userId}</td>
+                <td className="p-3">{getUserLabel(w.userId)}</td>
                 <td className="p-3">
                   ${Number(w.amountUsd || 0).toFixed(2)}
                   <p className="text-xs text-amber-700">Fee: ${Number(w.feeUsd || 0).toFixed(2)}</p>

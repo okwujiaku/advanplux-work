@@ -32,15 +32,16 @@ function DashboardHome() {
 
   const actions = [
     { label: 'Deposit', to: '/dashboard/deposit', icon: '💳' },
-    { label: 'Withdraw', to: '/dashboard/withdrawal', icon: '💸' },
-    { label: 'Purchase Ads Engine', to: '/dashboard/purchase', icon: '🛒' },
-    { label: 'My Ads Engine', to: '/dashboard/watch', icon: '📺' },
+    { label: 'Withdraw', to: '/dashboard/request-withdrawal', icon: '💸' },
+    { label: 'Get Ads Engine', to: '/dashboard/purchase', icon: '🛒' },
+    { label: 'Watch & Earn', to: '/dashboard/watch', icon: '📺' },
     { label: 'Redeem Gift code', to: '/dashboard/redeem-gift-code', icon: '🎁' },
     { label: 'Announcement', to: '/dashboard/announcements', icon: '📢' },
     { label: 'Referral', to: '/dashboard/referral', icon: '👥' },
     { label: 'Team', to: '/dashboard/team', icon: '🤝' },
-    { label: 'Support - Customer Service', to: '/dashboard/support-center', icon: '🛟' },
+    { label: 'Contact us', to: '/dashboard/support-center', icon: '🛟' },
     { label: 'Community', href: 'https://t.me/Advanplux', icon: '🌐' },
+    { label: 'Promote your business with us', href: 'https://t.me/Advanplux', icon: '📣' },
   ]
 
   return (
@@ -59,6 +60,7 @@ function DashboardHome() {
           <div className="sm:border-l sm:border-white/30 sm:pl-6">
             <p className="text-2xl sm:text-3xl font-bold mt-1">${totalBalanceUsd.toFixed(2)}</p>
             <p className="text-xs sm:text-sm text-white/85 mt-1 sm:mt-2">Total balance</p>
+            <p className="text-xs text-white/70 mt-0.5">Includes approved deposits</p>
           </div>
         </div>
       </div>

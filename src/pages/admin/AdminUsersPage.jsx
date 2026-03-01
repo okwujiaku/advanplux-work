@@ -1,16 +1,10 @@
 import { useMemo, useState } from 'react'
-import { useOutletContext } from 'react-router-dom'
-
-function formatAccountId(member) {
-  const phone = String(member.phone || '').trim()
-  if (phone) return phone
-  const rawId = String(member.id || '')
-  if (rawId.length <= 12) return rawId || '-'
-  return `${rawId.slice(0, 6)}...${rawId.slice(-4)}`
-}
+import { useNavigate, useOutletContext } from 'react-router-dom'
+import { getMemberDisplay } from './memberDisplay'
 
 function AdminUsersPage() {
-  const { members, deleteUserAccount } = useOutletContext()
+  const { members, setSelectedMemberId } = useOutletContext()
+  const navigate = useNavigate()
   const [searchTerm, setSearchTerm] = useState('')
   const displayMembers = members.filter((member) => member.id !== 'current-user')
   const filteredMembers = useMemo(() => {
@@ -42,7 +36,7 @@ function AdminUsersPage() {
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Search by name, email, phone, invitation code, referred by, or account ID..."
+            placeholder="Search by name, email, phone, invitation code, or referred by..."
             className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm"
           />
         </div>
@@ -57,7 +51,7 @@ function AdminUsersPage() {
                 <th className="p-3">Invitation code</th>
                 <th className="p-3">Referred by</th>
                 <th className="p-3">Joined</th>
-                <th className="p-3">Account ID</th>
+                <th className="p-3">Email / Name</th>
                 <th className="p-3">Wallet</th>
                 <th className="p-3">Bonus</th>
                 <th className="p-3">Actions</th>
@@ -82,7 +76,7 @@ function AdminUsersPage() {
                     <td className="p-3 font-mono">{member.invitationCode || '-'}</td>
                     <td className="p-3 font-mono">{member.referredByUserId || '-'}</td>
                     <td className="p-3">{member.joinedAt ? new Date(member.joinedAt).toLocaleString() : '-'}</td>
-                    <td className="p-3 font-mono">{formatAccountId(member)}</td>
+                    <td className="p-3">{getMemberDisplay(member)}</td>
                     <td className="p-3">${Number(member.balance || 0).toLocaleString()}</td>
                     <td className="p-3">${Number(member.bonusBalance || 0).toLocaleString()}</td>
                     <td className="p-3 space-y-1">
@@ -129,13 +123,12 @@ function AdminUsersPage() {
                         type="button"
                         onClick={() => {
                           if (member.id === 'current-user') return
-                          if (window.confirm('Are you sure you want to permanently delete this user account?')) {
-                            deleteUserAccount?.(member.id)
-                          }
+                          setSelectedMemberId?.(member.id)
+                          navigate('/admin/edit-users')
                         }}
-                        className="block w-full rounded border border-red-500 px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50"
+                        className="block w-full rounded border border-amber-500 px-2 py-1 text-xs font-medium text-amber-700 hover:bg-amber-50"
                       >
-                        Delete account
+                        Edit user info
                       </button>
                     </td>
                   </tr>

@@ -6,15 +6,30 @@ const navItems = [
   { to: '/dashboard', end: true, label: 'Home' },
   { to: '/dashboard/purchase', end: false, label: 'Purchase' },
   { to: '/dashboard/deposit', end: false, label: 'Deposit' },
-  { to: '/dashboard/withdrawal', end: false, label: 'Withdrawal' },
+  { to: '/dashboard/request-withdrawal', end: false, label: 'Withdrawal' },
   { to: '/dashboard/referral', end: false, label: 'Referral' },
   { to: '/dashboard/team', end: false, label: 'Team' },
 ]
 
 function Dashboard() {
   const [menuOpen, setMenuOpen] = useState(false)
-  const { signOut } = useApp()
+  const { signOut, refetchWalletAndDeposits } = useApp()
   const location = useLocation()
+
+  // Refetch balance when dashboard is shown or user returns to tab (e.g. after admin approves a deposit)
+  useEffect(() => {
+    refetchWalletAndDeposits?.()
+  }, [refetchWalletAndDeposits])
+  useEffect(() => {
+    const onFocus = () => refetchWalletAndDeposits?.()
+    window.addEventListener('focus', onFocus)
+    return () => window.removeEventListener('focus', onFocus)
+  }, [refetchWalletAndDeposits])
+  // Periodic refetch so approved deposits show in Total balance without refresh
+  useEffect(() => {
+    const interval = setInterval(() => refetchWalletAndDeposits?.(), 45000)
+    return () => clearInterval(interval)
+  }, [refetchWalletAndDeposits])
   const menuItems = [
     { label: 'My profile', to: '/dashboard/profile' },
     { label: 'Create withdrawal PIN', to: '/dashboard/withdrawal-pin' },
@@ -44,7 +59,7 @@ function Dashboard() {
             <button
               type="button"
               onClick={() => signOut()}
-              className="hidden sm:inline-flex px-3 py-1.5 text-xs font-semibold rounded-md border border-slate-300 text-slate-700 hover:bg-slate-50"
+              className="inline-flex px-3 py-1.5 text-xs font-semibold rounded-md border border-slate-300 text-slate-700 hover:bg-slate-50"
             >
               Logout
             </button>
@@ -73,8 +88,8 @@ function Dashboard() {
 
       <div className="flex">
         {/* Desktop sidebar */}
-        <aside className="hidden md:block w-64 flex-shrink-0 bg-white border-r border-slate-200 min-h-[calc(100vh-3.5rem)] shadow-sm">
-          <nav className="p-4 space-y-1">
+        <aside className="hidden md:block w-64 flex-shrink-0 bg-white border-r border-slate-200 min-h-[calc(100vh-3.5rem)] shadow-sm flex flex-col">
+          <nav className="p-4 space-y-1 flex-1">
             {navItems.map(({ to, end, label }) => (
               <NavLink
                 key={to}
@@ -92,6 +107,15 @@ function Dashboard() {
               </NavLink>
             ))}
           </nav>
+          <div className="p-4 border-t border-slate-200">
+            <button
+              type="button"
+              onClick={() => signOut()}
+              className="w-full px-4 py-3 rounded-lg text-sm font-medium text-slate-700 hover:bg-red-50 hover:text-red-700 border border-slate-200"
+            >
+              Logout
+            </button>
+          </div>
         </aside>
         <main className="flex-1 p-4 pb-32 md:p-6 md:pb-6 lg:px-8">
           <Outlet />

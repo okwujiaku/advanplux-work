@@ -2,8 +2,8 @@ import { createContext, useContext, useState, useCallback, useEffect, useMemo } 
 
 const AppContext = createContext(null)
 
-// Set to false when ready to launch (requires pack purchase to watch ads)
-const FREE_ACCESS_FOR_SETUP = true
+// Set to false so only users with an approved deposit (userPack) or admin can watch ads
+const FREE_ACCESS_FOR_SETUP = false
 
 // Packs in USD with Naira, CFA, plan name, and ads per day
 export const PACKS_USD = [
@@ -25,19 +25,16 @@ const DEFAULT_AD_VIDEO_IDS = [
 
 const EARN_PER_AD_USD = 0.4
 const NGN_TO_USD = 1 / 1450
-const AUTH_USERS_KEY = 'authUsers'
-const AUTH_CURRENT_USER_KEY = 'authCurrentUserId'
 const AUTH_SESSION_TOKEN_KEY = 'authSessionToken'
 
-function getInitialValue(key, fallback) {
-  if (typeof window === 'undefined' || !window.localStorage) return fallback
-  const raw = window.localStorage.getItem(key)
-  if (!raw) return fallback
-  try {
-    return JSON.parse(raw)
-  } catch {
-    return fallback
-  }
+// Only auth token stays in localStorage; all other data comes from Supabase/API.
+function getStoredToken() {
+  if (typeof window === 'undefined' || !window.localStorage) return null
+  return window.localStorage.getItem(AUTH_SESSION_TOKEN_KEY)
+}
+function getAdminSession() {
+  if (typeof window === 'undefined' || !window.sessionStorage) return false
+  return window.sessionStorage.getItem('adminLoggedIn') === 'true'
 }
 
 function newId(prefix) {
@@ -67,51 +64,25 @@ function isYouTubeUrl(value) {
 }
 
 export function AppProvider({ children }) {
-  const [users, setUsers] = useState(() => {
-    const initial = getInitialValue(AUTH_USERS_KEY, [])
-    return Array.isArray(initial) ? initial : []
-  })
-  const [currentUserId, setCurrentUserId] = useState(() => getInitialValue(AUTH_CURRENT_USER_KEY, null))
-  const [userPack, setUserPack] = useState(() => getInitialValue('userPack', null))
-  const [savedAccount, setSavedAccount] = useState(() => getInitialValue('savedAccount', null)) // legacy single saved account for compatibility
-  const [savedDepositDetails, setSavedDepositDetails] = useState(() => getInitialValue('savedDepositDetails', []))
-  const [savedWithdrawalDetails, setSavedWithdrawalDetails] = useState(() => getInitialValue('savedWithdrawalDetails', []))
-  const [deposits, setDeposits] = useState(() => getInitialValue('deposits', []))
-  const [withdrawals, setWithdrawals] = useState(() => getInitialValue('withdrawals', []))
-  const [walletUsd, setWalletUsd] = useState(() => getInitialValue('walletUsd', 0))
-  const [teamGenerated, setTeamGenerated] = useState(0) // total generated for platform by team
+  const [users, setUsers] = useState([])
+  const [currentUserId, setCurrentUserId] = useState(null)
+  const [userPack, setUserPack] = useState(null)
+  const [savedAccount, setSavedAccount] = useState(null)
+  const [savedDepositDetails, setSavedDepositDetails] = useState([])
+  const [savedWithdrawalDetails, setSavedWithdrawalDetails] = useState([])
+  const [deposits, setDeposits] = useState([])
+  const [withdrawals, setWithdrawals] = useState([])
+  const [walletUsd, setWalletUsd] = useState(0)
+  const [teamGenerated, setTeamGenerated] = useState(0)
   const [teamCount, setTeamCount] = useState(0)
-  const [securityPins, setSecurityPins] = useState(() => {
-    if (typeof window === 'undefined' || !window.localStorage) return {}
-    try {
-      const raw = window.localStorage.getItem('securityPins')
-      const parsed = raw ? JSON.parse(raw) : {}
-      return parsed && typeof parsed === 'object' ? parsed : {}
-    } catch {
-      return {}
-    }
-  })
+  const [securityPins, setSecurityPins] = useState({})
   const [remoteHasPin, setRemoteHasPin] = useState(null)
   const [referralEarnings, setReferralEarnings] = useState({ level1: 0, level2: 0, level3: 0 })
   const [claimedSalary, setClaimedSalary] = useState(0)
   const [adsViewedToday, setAdsViewedToday] = useState(0)
-  const [earningsHistory, setEarningsHistory] = useState(() => getInitialValue('earningsHistory', []))
-  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(() => typeof window !== 'undefined' && window.localStorage?.getItem('adminLoggedIn') === 'true')
-  const [adVideoIds, setAdVideoIds] = useState(() => {
-    if (typeof window === 'undefined' || !window.localStorage) return DEFAULT_AD_VIDEO_IDS
-    const raw = window.localStorage.getItem('adVideoIds')
-    if (!raw) return DEFAULT_AD_VIDEO_IDS
-    try {
-      const parsed = JSON.parse(raw)
-      if (!Array.isArray(parsed) || parsed.length === 0) return DEFAULT_AD_VIDEO_IDS
-      const normalizedUrls = parsed
-        .map((item) => String(item || '').trim())
-        .filter((item) => /^https?:\/\//i.test(item) && isYouTubeUrl(item))
-      return normalizedUrls.length > 0 ? normalizedUrls : DEFAULT_AD_VIDEO_IDS
-    } catch {
-      return DEFAULT_AD_VIDEO_IDS
-    }
-  })
+  const [earningsHistory, setEarningsHistory] = useState([])
+  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(() => getAdminSession())
+  const [adVideoIds, setAdVideoIds] = useState(DEFAULT_AD_VIDEO_IDS)
 
   const saveSessionToken = useCallback((token) => {
     if (typeof window === 'undefined' || !window.localStorage) return
@@ -337,30 +308,47 @@ export function AppProvider({ children }) {
     [],
   )
 
+  // Restore user session from token (no localStorage for user data)
   useEffect(() => {
-    if (typeof window !== 'undefined' && window.localStorage) {
-      window.localStorage.setItem('adVideoIds', JSON.stringify(adVideoIds))
-    }
-  }, [adVideoIds])
+    const token = getStoredToken()
+    if (!token) return
+    fetch('/api/auth/me', { headers: { Authorization: `Bearer ${token}` } })
+      .then((r) => r.json())
+      .then((d) => {
+        if (d?.ok && d?.user) {
+          const u = d.user
+          setUsers((prev) => {
+            const exists = prev.some((x) => x.id === u.id)
+            if (exists) return prev.map((x) => (x.id === u.id ? { ...x, ...u } : x))
+            return [{ id: u.id, email: u.email, phone: u.phone, myInvitationCode: u.invitationCode, referredByUserId: u.referredByUserId, createdAt: u.createdAt }]
+          })
+          setCurrentUserId(u.id)
+        }
+      })
+      .catch(() => {})
+  }, [])
 
+  // Fetch ad video list from backend (single source of truth)
   useEffect(() => {
-    if (typeof window === 'undefined' || !window.localStorage) return
-    try {
-      window.localStorage.setItem('securityPins', JSON.stringify(securityPins))
-    } catch {
-      // ignore
-    }
-  }, [securityPins])
+    let cancelled = false
+    fetch('/api/ad-videos')
+      .then((r) => r.json())
+      .then((d) => {
+        if (cancelled || !d?.ok || !Array.isArray(d.urls)) return
+        if (d.urls.length > 0) {
+          setAdVideoIds(d.urls)
+        }
+      })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [])
 
   useEffect(() => {
     if (!currentUserId) {
       setRemoteHasPin(null)
       return
     }
-    const token =
-      typeof window !== 'undefined' && window.localStorage
-        ? window.localStorage.getItem(AUTH_SESSION_TOKEN_KEY)
-        : null
+    const token = getStoredToken()
     if (!token) {
       setRemoteHasPin(null)
       return
@@ -375,10 +363,7 @@ export function AppProvider({ children }) {
 
   // When authenticated, fetch withdrawal details from Supabase
   useEffect(() => {
-    const token =
-      typeof window !== 'undefined' && window.localStorage
-        ? window.localStorage.getItem(AUTH_SESSION_TOKEN_KEY)
-        : null
+    const token = getStoredToken()
     if (!currentUserId || !token) return
     fetch('/api/user/withdrawal-details', { headers: { Authorization: `Bearer ${token}` } })
       .then((r) => r.json())
@@ -402,12 +387,8 @@ export function AppProvider({ children }) {
       .catch(() => {})
   }, [currentUserId])
 
-  // When authenticated, fetch wallet, deposits, withdrawals, earnings from Supabase
-  useEffect(() => {
-    const token =
-      typeof window !== 'undefined' && window.localStorage
-        ? window.localStorage.getItem(AUTH_SESSION_TOKEN_KEY)
-        : null
+  const refetchWalletAndDeposits = useCallback(() => {
+    const token = getStoredToken()
     if (!currentUserId || !token) return
     const headers = { Authorization: `Bearer ${token}` }
     Promise.all([
@@ -417,28 +398,31 @@ export function AppProvider({ children }) {
       fetch('/api/user/earnings', { headers }).then((r) => r.json()),
     ])
       .then(([w, d, wd, e]) => {
-        if (w?.ok && w.balanceUsd != null) setWalletUsd(w.balanceUsd)
+        if (w?.ok) {
+          if (w.balanceUsd != null) setWalletUsd(w.balanceUsd)
+          if (w.activePackUsd != null) setUserPack(w.activePackUsd)
+        }
         if (d?.ok && Array.isArray(d.deposits)) setDeposits(d.deposits)
         if (wd?.ok && Array.isArray(wd.withdrawals)) setWithdrawals(wd.withdrawals)
-        if (e?.ok && Array.isArray(e.earnings)) setEarningsHistory(e.earnings)
+        if (e?.ok && Array.isArray(e.earnings)) {
+          setEarningsHistory(e.earnings)
+          const today = new Date()
+          const isToday = (dateStr) => {
+            if (!dateStr) return false
+            const x = new Date(dateStr)
+            return x.getDate() === today.getDate() && x.getMonth() === today.getMonth() && x.getFullYear() === today.getFullYear()
+          }
+          const watchAdsToday = e.earnings.filter((x) => x.source === 'watch-ads' && isToday(x.date)).length
+          setAdsViewedToday(watchAdsToday)
+        }
       })
       .catch(() => {})
   }, [currentUserId])
 
+  // When authenticated, fetch wallet, deposits, withdrawals, earnings from Supabase (single source of truth)
   useEffect(() => {
-    if (typeof window !== 'undefined' && window.localStorage) {
-      window.localStorage.setItem(AUTH_USERS_KEY, JSON.stringify(users))
-      window.localStorage.setItem(AUTH_CURRENT_USER_KEY, JSON.stringify(currentUserId))
-      window.localStorage.setItem('userPack', JSON.stringify(userPack))
-      window.localStorage.setItem('savedAccount', JSON.stringify(savedAccount))
-      window.localStorage.setItem('savedDepositDetails', JSON.stringify(savedDepositDetails))
-      window.localStorage.setItem('savedWithdrawalDetails', JSON.stringify(savedWithdrawalDetails))
-      window.localStorage.setItem('deposits', JSON.stringify(deposits))
-      window.localStorage.setItem('withdrawals', JSON.stringify(withdrawals))
-      window.localStorage.setItem('walletUsd', JSON.stringify(walletUsd))
-      window.localStorage.setItem('earningsHistory', JSON.stringify(earningsHistory))
-    }
-  }, [currentUserId, deposits, earningsHistory, savedAccount, savedDepositDetails, savedWithdrawalDetails, userPack, users, walletUsd, withdrawals])
+    refetchWalletAndDeposits()
+  }, [refetchWalletAndDeposits])
 
   const saveDepositDetail = useCallback((detail) => {
     if (!detail?.accountNumber?.trim()) return null
@@ -485,7 +469,7 @@ export function AppProvider({ children }) {
 
       const token =
         typeof window !== 'undefined' && window.localStorage
-          ? window.localStorage.getItem(AUTH_SESSION_TOKEN_KEY)
+          ? getStoredToken()
           : null
       if (token) {
         try {
@@ -537,7 +521,7 @@ export function AppProvider({ children }) {
       }
       const token =
         typeof window !== 'undefined' && window.localStorage
-          ? window.localStorage.getItem(AUTH_SESSION_TOKEN_KEY)
+          ? getStoredToken()
           : null
       if (token) {
         try {
@@ -599,7 +583,7 @@ export function AppProvider({ children }) {
       }
       const token =
         typeof window !== 'undefined' && window.localStorage
-          ? window.localStorage.getItem(AUTH_SESSION_TOKEN_KEY)
+          ? getStoredToken()
           : null
       if (token) {
         try {
@@ -640,9 +624,30 @@ export function AppProvider({ children }) {
     [saveWithdrawalDetail],
   )
 
+  const activatePack = useCallback(async (packUsd) => {
+    const token = getStoredToken()
+    if (!token || !packUsd) return false
+    try {
+      const res = await fetch('/api/user/wallet', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ activatePackUsd: packUsd }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (res.ok && data?.ok) {
+        if (data.balanceUsd != null) setWalletUsd(data.balanceUsd)
+        if (data.activePackUsd != null) setUserPack(data.activePackUsd)
+        return true
+      }
+    } catch {
+      // ignore
+    }
+    return false
+  }, [])
+
   const hasToken = useMemo(() => {
     if (typeof window === 'undefined' || !window.localStorage) return false
-    return !!window.localStorage.getItem(AUTH_SESSION_TOKEN_KEY)
+    return !!getStoredToken()
   }, [currentUserId])
 
   const hasSecurityPin = useMemo(() => {
@@ -657,7 +662,7 @@ export function AppProvider({ children }) {
       if (!currentUserId || !/^\d{4}$/.test(normalized)) return false
       const token =
         typeof window !== 'undefined' && window.localStorage
-          ? window.localStorage.getItem(AUTH_SESSION_TOKEN_KEY)
+          ? getStoredToken()
           : null
       if (token) {
         try {
@@ -693,7 +698,7 @@ export function AppProvider({ children }) {
       if (!currentUserId || !/^\d{4}$/.test(normalized)) return false
       const token =
         typeof window !== 'undefined' && window.localStorage
-          ? window.localStorage.getItem(AUTH_SESSION_TOKEN_KEY)
+          ? getStoredToken()
           : null
       if (token) {
         try {
@@ -728,7 +733,6 @@ export function AppProvider({ children }) {
         return { ...d, status: 'approved', approvedAt }
       }),
     )
-    if (approvedDeposit?.pack) setUserPack(approvedDeposit.pack)
   }, [])
 
   const rejectDeposit = useCallback((id) => {
@@ -739,16 +743,9 @@ export function AppProvider({ children }) {
 
   const reverseDeposit = useCallback((id) => {
     const reversedAt = new Date().toISOString()
-    let nextPack = null
-    setDeposits((prev) => {
-      const updated = prev.map((d) => (d.id === id && d.status === 'approved' ? { ...d, status: 'reversed', reversedAt } : d))
-      const latestApproved = updated
-        .filter((d) => d.status === 'approved' && d.pack)
-        .sort((a, b) => new Date(b.approvedAt || b.date).getTime() - new Date(a.approvedAt || a.date).getTime())[0]
-      nextPack = latestApproved?.pack ?? null
-      return updated
-    })
-    setUserPack(nextPack)
+    setDeposits((prev) =>
+      prev.map((d) => (d.id === id && d.status === 'approved' ? { ...d, status: 'reversed', reversedAt } : d)),
+    )
   }, [])
 
   const approveWithdrawal = useCallback((id) => {
@@ -806,7 +803,7 @@ export function AppProvider({ children }) {
   const watchAd = useCallback(() => {
     const token =
       typeof window !== 'undefined' && window.localStorage
-        ? window.localStorage.getItem(AUTH_SESSION_TOKEN_KEY)
+        ? getStoredToken()
         : null
     if (token) {
       fetch('/api/user/earnings', {
@@ -901,6 +898,7 @@ export function AppProvider({ children }) {
     setWalletUsd,
     addDeposit,
     addWithdrawal,
+    activatePack,
     approveDeposit,
     rejectDeposit,
     reverseDeposit,
@@ -932,6 +930,7 @@ export function AppProvider({ children }) {
     freeAccessForSetup: FREE_ACCESS_FOR_SETUP,
     adVideoIds,
     setAdVideoIds,
+    refetchWalletAndDeposits,
   }
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>
 }

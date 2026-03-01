@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
 
 const COUNTRIES = [
@@ -11,36 +11,26 @@ const COUNTRIES = [
   { id: 'uganda', name: 'Uganda', currency: 'UGX', paymentType: 'Mobile Money', ready: false },
 ]
 
+const USD_TO_NGN = 1450
+const USD_TO_CFA = 600
+
 function Deposit() {
   const navigate = useNavigate()
-  const location = useLocation()
-  const { addDeposit, PACKS_USD } = useApp()
-  const initialPackUsd = location.state?.pack
-  const [selectedPackUsd, setSelectedPackUsd] = useState(
-    PACKS_USD.some((p) => p.usd === initialPackUsd) ? initialPackUsd : PACKS_USD[0].usd,
-  )
-  const packInfo = PACKS_USD.find((p) => p.usd === selectedPackUsd) || PACKS_USD[0]
-  const [country, setCountry] = useState('nigeria')
+  const { addDeposit } = useApp()
+  const [amountUsd, setAmountUsd] = useState('')
+  const [country, setCountry] = useState('')
   const [fullName, setFullName] = useState('')
   const [submitted, setSubmitted] = useState(false)
-  const [platformBankAccounts, setPlatformBankAccounts] = useState(() => {
-    if (typeof window === 'undefined' || !window.localStorage) return []
-    try {
-      const raw = window.localStorage.getItem('platformBankAccounts')
-      const parsed = raw ? JSON.parse(raw) : []
-      return Array.isArray(parsed) ? parsed : []
-    } catch {
-      return []
-    }
-  })
+  const [platformBankAccounts, setPlatformBankAccounts] = useState([])
   const [selectedPaymentAccountId, setSelectedPaymentAccountId] = useState('')
 
-  const nairaAmount = packInfo.naira
-  const cfaAmount = packInfo.cfa
+  const amount = parseFloat(amountUsd) || 0
+  const nairaAmount = Math.round(amount * USD_TO_NGN)
+  const cfaAmount = Math.round(amount * USD_TO_CFA)
 
   const countryConfig = COUNTRIES.find((c) => c.id === country)
-  const isReady = countryConfig?.ready
-  const selectedCurrency = country === 'nigeria' ? 'NGN' : 'CFA'
+  const isReady = !!countryConfig?.ready
+  const selectedCurrency = country === 'nigeria' ? 'NGN' : country === 'cameroon' ? 'CFA' : ''
   const availablePaymentAccounts = useMemo(
     () => platformBankAccounts.filter((account) => account.currency === selectedCurrency),
     [platformBankAccounts, selectedCurrency],
@@ -55,27 +45,31 @@ function Deposit() {
   }, [country, availablePaymentAccounts])
 
   useEffect(() => {
-    if (typeof window === 'undefined') return undefined
-    const syncAccounts = () => {
+    const controller = new AbortController()
+    const load = async () => {
       try {
-        const raw = window.localStorage.getItem('platformBankAccounts')
-        const parsed = raw ? JSON.parse(raw) : []
-        setPlatformBankAccounts(Array.isArray(parsed) ? parsed : [])
+        const response = await fetch('/api/platform-bank-accounts', { signal: controller.signal })
+        const payload = await response.json()
+        if (response.ok && payload?.ok && Array.isArray(payload.accounts)) {
+          setPlatformBankAccounts(payload.accounts)
+        }
       } catch {
-        setPlatformBankAccounts([])
+        // keep existing state (e.g. from localStorage) so nothing disappears when API fails
       }
     }
-    window.addEventListener('storage', syncAccounts)
-    return () => window.removeEventListener('storage', syncAccounts)
+    load()
+    return () => controller.abort()
   }, [])
 
   const handleSubmitPayment = () => {
     if (!isReady) return
     if (!fullName.trim()) return
     if (!selectedPaymentAccount) return
+    if (amount <= 0) return
     addDeposit({
       userId: 'current-user',
       amount: country === 'nigeria' ? nairaAmount : cfaAmount,
+      amountUsd: amount,
       currency: country === 'nigeria' ? 'NGN' : 'CFA',
       country: countryConfig.name,
       paymentType: countryConfig.paymentType,
@@ -84,7 +78,6 @@ function Deposit() {
       bankName: selectedPaymentAccount.bankName || '',
       accountUsed: selectedPaymentAccount.accountNumber || '',
       saveDetail: false,
-      pack: selectedPackUsd,
     })
     setSubmitted(true)
     setTimeout(() => navigate('/dashboard'), 2000)
@@ -95,62 +88,62 @@ function Deposit() {
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Deposit</h1>
         <p className="text-gray-600 mt-1">
-          Select your country, submit payment, and reuse saved account details next time.
+          Add funds to your balance. After approval you can use the balance to activate Ads Engine.
         </p>
       </div>
 
-      {/* Amount in each country (equivalent) */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Choose Ads Engine package</h2>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          {PACKS_USD.map((pack) => (
-            <button
-              key={pack.usd}
-              onClick={() => setSelectedPackUsd(pack.usd)}
-              className={`p-4 rounded-lg border-2 text-left ${
-                selectedPackUsd === pack.usd ? 'border-primary-600 bg-primary-50' : 'border-gray-200'
-              }`}
-            >
-              <p className="font-semibold text-gray-900">{pack.planName}</p>
-              <p className="text-sm text-gray-700 mt-1">${pack.usd} USD</p>
-              <p className="text-xs text-gray-500 mt-1">{pack.adsPerDay} ads/day</p>
-            </button>
-          ))}
-        </div>
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Amount to deposit (USD)</h2>
+        <input
+          type="number"
+          min="0"
+          step="0.01"
+          value={amountUsd}
+          onChange={(e) => setAmountUsd(e.target.value)}
+          placeholder="0.00"
+          className="w-full px-4 py-3 border border-gray-300 rounded-lg"
+        />
       </div>
 
-      {/* Amount in each country (equivalent) */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Amount to pay (equivalent)</h2>
-        <div className="p-4 bg-primary-50 rounded-lg">
-          <p className="text-sm text-gray-500">Package</p>
-          <p className="text-2xl font-bold text-gray-900">${selectedPackUsd} USD</p>
-        </div>
-      </div>
-
-      {/* Country selection */}
+      {/* Country / currency selection (like Request Withdrawal) */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Select country</h2>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          {COUNTRIES.map((c) => {
-            const amountLine = c.id === 'nigeria' ? `₦${nairaAmount.toLocaleString()}` : c.id === 'cameroon' ? `CFA ${cfaAmount.toLocaleString()}` : null
-            return (
-              <button
-                key={c.id}
-                onClick={() => setCountry(c.id)}
-                disabled={!c.ready}
-                className={`p-4 rounded-lg border-2 text-left ${
-                  country === c.id ? 'border-primary-600 bg-primary-50' : 'border-gray-200'
-                } ${!c.ready ? 'opacity-60 cursor-not-allowed' : ''}`}
-              >
-                <p className="font-medium text-gray-900">{c.name}</p>
-                <p className="text-xs text-gray-500">{c.currency} · {c.paymentType}</p>
-                {amountLine && <p className="text-sm font-semibold text-gray-900 mt-1">{amountLine}</p>}
-                {!c.ready && <span className="text-xs text-amber-600">Coming soon</span>}
-              </button>
-            )
-          })}
-        </div>
+        <select
+          value={country}
+          onChange={(e) => setCountry(e.target.value)}
+          className="w-full px-4 py-3 border border-gray-300 rounded-lg"
+        >
+          <option value="">Select country / currency</option>
+          {COUNTRIES.filter((c) => c.ready).map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name} ({c.currency})
+            </option>
+          ))}
+        </select>
+
+        {amount > 0 && country && (
+          <div className="mt-4 space-y-3">
+            <p className="text-sm font-medium text-gray-700">Exchange rate — Make payment to the Details below</p>
+            {country === 'nigeria' && (
+              <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                <p className="text-sm font-medium text-gray-800 mb-1">Nigeria — NGN (Naira)</p>
+                <p className="text-xs text-gray-500 mb-2">1 USD = ₦{USD_TO_NGN.toLocaleString()}</p>
+                <p className="text-lg font-semibold text-gray-900">
+                  You&apos;ll deposit: ₦{nairaAmount.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                </p>
+              </div>
+            )}
+            {country === 'cameroon' && (
+              <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                <p className="text-sm font-medium text-gray-800 mb-1">Cameroon — CFA</p>
+                <p className="text-xs text-gray-500 mb-2">1 USD = CFA {USD_TO_CFA.toLocaleString()}</p>
+                <p className="text-lg font-semibold text-gray-900">
+                  You&apos;ll deposit: CFA {cfaAmount.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                </p>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Payment details by country */}
@@ -236,7 +229,7 @@ function Deposit() {
           </button>
           <button
             onClick={handleSubmitPayment}
-            disabled={!isReady || !fullName.trim() || !selectedPaymentAccount}
+            disabled={!isReady || !fullName.trim() || !selectedPaymentAccount || amount <= 0}
             className="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             I have made the payment
