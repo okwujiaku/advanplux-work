@@ -83,6 +83,7 @@ export function AppProvider({ children }) {
   const [earningsHistory, setEarningsHistory] = useState([])
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(() => getAdminSession())
   const [adVideoIds, setAdVideoIds] = useState(DEFAULT_AD_VIDEO_IDS)
+  const [authCheckDone, setAuthCheckDone] = useState(false)
 
   const saveSessionToken = useCallback((token) => {
     if (typeof window === 'undefined' || !window.localStorage) return
@@ -308,10 +309,13 @@ export function AppProvider({ children }) {
     [],
   )
 
-  // Restore user session from token (no localStorage for user data)
+  // Restore user session from token; avoid showing sign-in until we've checked
   useEffect(() => {
     const token = getStoredToken()
-    if (!token) return
+    if (!token) {
+      setAuthCheckDone(true)
+      return
+    }
     fetch('/api/auth/me', { headers: { Authorization: `Bearer ${token}` } })
       .then((r) => r.json())
       .then((d) => {
@@ -323,9 +327,38 @@ export function AppProvider({ children }) {
             return [{ id: u.id, email: u.email, phone: u.phone, myInvitationCode: u.invitationCode, referredByUserId: u.referredByUserId, createdAt: u.createdAt }]
           })
           setCurrentUserId(u.id)
+          // Fetch wallet immediately so balance shows after refresh (same token)
+          const headers = { Authorization: `Bearer ${token}` }
+          fetch('/api/user/wallet', { headers })
+            .then((r) => r.json())
+            .then((w) => {
+              if (w?.ok && w.balanceUsd != null) setWalletUsd(w.balanceUsd)
+              if (w?.ok && w.activePackUsd != null) setUserPack(w.activePackUsd)
+            })
+            .catch(() => {})
+          fetch('/api/user/deposits', { headers }).then((r) => r.json()).then((d2) => {
+            if (d2?.ok && Array.isArray(d2.deposits)) setDeposits(d2.deposits)
+          }).catch(() => {})
+          fetch('/api/user/withdrawals', { headers }).then((r) => r.json()).then((wd) => {
+            if (wd?.ok && Array.isArray(wd.withdrawals)) setWithdrawals(wd.withdrawals)
+          }).catch(() => {})
+          fetch('/api/user/earnings', { headers }).then((r) => r.json()).then((e) => {
+            if (e?.ok && Array.isArray(e.earnings)) {
+              setEarningsHistory(e.earnings)
+              const today = new Date()
+              const isToday = (dateStr) => {
+                if (!dateStr) return false
+                const x = new Date(dateStr)
+                return x.getDate() === today.getDate() && x.getMonth() === today.getMonth() && x.getFullYear() === today.getFullYear()
+              }
+              const watchAdsToday = e.earnings.filter((x) => x.source === 'watch-ads' && isToday(x.date)).length
+              setAdsViewedToday(watchAdsToday)
+            }
+          }).catch(() => {})
         }
+        setAuthCheckDone(true)
       })
-      .catch(() => {})
+      .catch(() => setAuthCheckDone(true))
   }, [])
 
   // Fetch ad video list from backend (single source of truth)
@@ -931,6 +964,7 @@ export function AppProvider({ children }) {
     adVideoIds,
     setAdVideoIds,
     refetchWalletAndDeposits,
+    authCheckDone,
   }
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>
 }

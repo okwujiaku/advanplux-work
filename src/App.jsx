@@ -34,19 +34,28 @@ import ResetPasswordWithTokenPage from './pages/auth/ResetPasswordWithTokenPage'
 import { useApp } from './context/AppContext'
 
 function RequireAuth({ children }) {
-  const { isAuthenticated } = useApp()
+  const { isAuthenticated, authCheckDone } = useApp()
+  if (!authCheckDone) return null
   if (!isAuthenticated) return <Navigate to="/sign-in" replace />
   return children
 }
 
 function GuestOnly({ children }) {
-  const { isAuthenticated } = useApp()
+  const { isAuthenticated, authCheckDone } = useApp()
+  if (!authCheckDone) return null
   if (isAuthenticated) return <Navigate to="/dashboard" replace />
   return children
 }
 
 function App() {
-  const { isAuthenticated } = useApp()
+  const { isAuthenticated, authCheckDone } = useApp()
+  if (!authCheckDone) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <p className="text-slate-500">Loading…</p>
+      </div>
+    )
+  }
   return (
     <div className="min-h-screen">
       <Routes>
