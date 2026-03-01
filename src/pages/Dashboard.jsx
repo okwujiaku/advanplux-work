@@ -25,9 +25,9 @@ function Dashboard() {
     window.addEventListener('focus', onFocus)
     return () => window.removeEventListener('focus', onFocus)
   }, [refetchWalletAndDeposits])
-  // Periodic refetch so approved deposits show in Total balance without refresh
+  // Auto-refresh balance every 15s so approved deposits show without user action
   useEffect(() => {
-    const interval = setInterval(() => refetchWalletAndDeposits?.(), 45000)
+    const interval = setInterval(() => refetchWalletAndDeposits?.(), 15000)
     return () => clearInterval(interval)
   }, [refetchWalletAndDeposits])
   const menuItems = [
