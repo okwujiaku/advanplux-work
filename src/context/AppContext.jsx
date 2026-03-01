@@ -509,7 +509,7 @@ export function AppProvider({ children }) {
       const payload = {
         userId: data.userId || currentUserId || 'current-user',
         amount: data.amount,
-        amountUsd: Number(data.pack) || Number(data.amountUsd) || 0,
+        amountUsd: Number(data.amountUsd) ?? Number(data.pack) ?? 0,
         currency: data.currency,
         country: data.country,
         paymentType: data.paymentType,

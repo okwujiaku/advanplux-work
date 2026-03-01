@@ -230,10 +230,14 @@ function AdminLayout() {
 
   const approveDepositAdmin = async (id) => {
     const key = getAdminKey()
+    if (!key) {
+      alert('Admin key missing. Balance will not be credited. Set ADMIN_SECRET in Vercel and VITE_ADMIN_SECRET (or sessionStorage adminApiKey) so approval hits the backend and credits the user\'s wallet.')
+      return
+    }
     try {
       const res = await fetch('/api/admin/deposits', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', ...(key ? { 'X-Admin-Key': key } : {}) },
+        headers: { 'Content-Type': 'application/json', 'X-Admin-Key': key },
         body: JSON.stringify({ id, status: 'approved' }),
       })
       const data = await res.json().catch(() => ({}))
@@ -241,20 +245,28 @@ function AdminLayout() {
         setAdminDeposits((prev) =>
           prev.map((d) => (d.id === id ? { ...d, status: 'approved', approvedAt: data.deposit.approvedAt } : d)),
         )
+        if (data.creditedAmountUsd != null) {
+          alert(`Approved. User balance credited: $${Number(data.creditedAmountUsd).toFixed(2)}. New balance: $${Number(data.newBalanceUsd).toFixed(2)}`)
+        }
         return
       }
+      const msg = data?.error || `Request failed (${res.status}). User balance was not credited.`
+      alert(msg)
     } catch {
-      // fall through to local
+      alert('Network error. Approval did not reach the server. User balance was not credited.')
     }
-    approveDeposit(id)
   }
 
   const rejectDepositAdmin = async (id) => {
     const key = getAdminKey()
+    if (!key) {
+      alert('Admin key missing. Set ADMIN_SECRET in Vercel and sessionStorage adminApiKey (or VITE_ADMIN_SECRET).')
+      return
+    }
     try {
       const res = await fetch('/api/admin/deposits', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', ...(key ? { 'X-Admin-Key': key } : {}) },
+        headers: { 'Content-Type': 'application/json', 'X-Admin-Key': key },
         body: JSON.stringify({ id, status: 'rejected' }),
       })
       const data = await res.json().catch(() => ({}))
@@ -264,10 +276,10 @@ function AdminLayout() {
         )
         return
       }
+      alert(data?.error || `Reject failed (${res.status}).`)
     } catch {
-      // fall through to local
+      alert('Network error. Reject did not reach the server.')
     }
-    rejectDeposit(id)
   }
 
   const menuItems = [

@@ -44,7 +44,13 @@ export default async function handler(req, res) {
   if (req.method === 'POST') {
     const body = req.body || {}
     const { amount, amountUsd, currency, country, paymentType, accountName, accountNumber, bankName, accountUsed, pack } = body
-    const amount_usd = Number(amountUsd) || 0
+    let amount_usd = Number(amountUsd) || 0
+    if (amount_usd <= 0 && amount != null && currency) {
+      const local = Number(String(amount).replace(/\s/g, '')) || 0
+      const cur = String(currency).toUpperCase()
+      if (cur === 'NGN' && local > 0) amount_usd = Math.round((local / 1450) * 100) / 100
+      else if (cur === 'CFA' && local > 0) amount_usd = Math.round((local / 600) * 100) / 100
+    }
     const { data: inserted, error } = await supabase
       .from('deposits')
       .insert({

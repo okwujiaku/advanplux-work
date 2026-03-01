@@ -56,6 +56,8 @@ export default async function handler(req, res) {
       return json(res, 400, { ok: false, error: 'Deposit is not pending.' })
     }
     const now = new Date().toISOString()
+    let creditedAmountUsd = 0
+    let newBalanceUsd = 0
 
     // For approval: credit wallet first, then update deposit (so we never mark approved without crediting).
     if (s === 'approved') {
@@ -85,6 +87,8 @@ export default async function handler(req, res) {
       }
       const currentBalance = Number(walletRow?.balance_usd ?? 0) || 0
       const newBalance = Math.round((currentBalance + amountUsd) * 100) / 100
+      creditedAmountUsd = amountUsd
+      newBalanceUsd = newBalance
       const { error: walletErr } = await supabase
         .from('user_wallet')
         .upsert(
@@ -116,7 +120,12 @@ export default async function handler(req, res) {
       .single()
     if (updateErr) return json(res, 500, { ok: false, error: 'Unable to update deposit.' })
 
-    return json(res, 200, { ok: true, deposit: mapRow(updated) })
+    const payload = { ok: true, deposit: mapRow(updated) }
+    if (s === 'approved' && creditedAmountUsd > 0) {
+      payload.creditedAmountUsd = creditedAmountUsd
+      payload.newBalanceUsd = newBalanceUsd
+    }
+    return json(res, 200, payload)
   }
 
   return json(res, 405, { ok: false, error: 'Method not allowed.' })
