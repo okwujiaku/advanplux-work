@@ -6,7 +6,7 @@ function DashboardHome() {
   const {
     currentUser,
     users,
-    userPack,
+    activePacks,
     PACKS_USD,
     adsViewedToday,
     walletUsd,
@@ -14,7 +14,15 @@ function DashboardHome() {
     claimedSalary,
     refetchWalletAndDeposits,
   } = useApp()
-  const packInfo = userPack ? PACKS_USD.find((p) => p.usd === userPack) : null
+  const totalAdsPerDay =
+    (activePacks || []).reduce((sum, packUsd) => sum + (PACKS_USD.find((p) => p.usd === packUsd)?.adsPerDay ?? 0), 0)
+  const packLabel =
+    activePacks.length === 0
+      ? null
+      : activePacks.length === 1
+        ? PACKS_USD.find((p) => p.usd === activePacks[0])
+        : null
+  const packInfo = packLabel
   const earnedTodayUsd = (adsViewedToday * 0.4).toFixed(2)
   const referralTotalNgn =
     Number(referralEarnings.level1 || 0) +
@@ -69,7 +77,11 @@ function DashboardHome() {
             <p className="text-sm text-white/85">Today earnings</p>
             <p className="text-2xl sm:text-3xl font-bold mt-1">${earnedTodayUsd}</p>
             <p className="text-xs sm:text-sm text-white/85 mt-1 sm:mt-2">
-              {packInfo ? `${packInfo.planName} · ${packInfo.adsPerDay} ads/day` : 'No package activated yet'}
+              {totalAdsPerDay > 0
+                ? packInfo
+                  ? `${packInfo.planName} · ${totalAdsPerDay} ads/day`
+                  : `${totalAdsPerDay} ads/day from your packs`
+                : 'No package activated yet'}
             </p>
           </div>
           <div className="sm:border-l sm:border-white/30 sm:pl-6">

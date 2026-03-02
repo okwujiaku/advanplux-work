@@ -9,7 +9,7 @@ const SOCIAL_PROOF = [
 ]
 
 function AdGenerator() {
-  const { userPack, PACKS_USD, walletUsd, activatePack } = useApp()
+  const { activePacks, PACKS_USD, walletUsd, activatePack } = useApp()
   const [proofIndex, setProofIndex] = useState(0)
   const [activating, setActivating] = useState(null)
 
@@ -18,7 +18,7 @@ function AdGenerator() {
     return () => clearInterval(t)
   }, [])
 
-  const hasPack = !!userPack
+  const hasPack = activePacks.length > 0
   const balance = Number(walletUsd || 0)
 
   const handleActivate = async (packUsd) => {
@@ -73,19 +73,20 @@ function AdGenerator() {
         <h2 className="text-lg font-semibold text-[#143D59] mb-4">Activate a package from your balance</h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {PACKS_USD.map((pack) => {
-            const isCurrent = userPack === pack.usd
-            const canActivate = balance >= pack.usd && !isCurrent
-            const insufficient = balance < pack.usd && !isCurrent
+            const activeCount = (activePacks || []).filter((p) => p === pack.usd).length
+            const isActive = activeCount > 0
+            const canActivate = balance >= pack.usd
+            const insufficient = balance < pack.usd
             return (
               <div
                 key={pack.usd}
                 className={`relative bg-[#1B4965] rounded-xl border-2 p-5 shadow-lg ${
-                  isCurrent ? 'border-primary-500' : 'border-[#2b607f]'
+                  isActive ? 'border-primary-500' : 'border-[#2b607f]'
                 }`}
               >
-                {isCurrent && (
+                {isActive && (
                   <span className="absolute -top-2 left-4 px-2 py-0.5 bg-primary-500 text-white text-xs font-medium rounded">
-                    Active
+                    Active{activeCount > 1 ? ` (${activeCount})` : ''}
                   </span>
                 )}
                 <div className="text-center mb-4">
@@ -94,18 +95,14 @@ function AdGenerator() {
                   <p className="text-xs text-primary-400 font-medium mt-2">{pack.planName}</p>
                   <p className="text-xs text-white/80 mt-1">{pack.adsPerDay} ads per day</p>
                 </div>
-                {isCurrent ? (
-                  <button disabled className="w-full py-2.5 bg-white/20 text-white/70 rounded-lg font-medium cursor-not-allowed">
-                    Active
-                  </button>
-                ) : canActivate ? (
+                {canActivate ? (
                   <button
                     type="button"
                     onClick={() => handleActivate(pack.usd)}
                     disabled={!!activating}
                     className="w-full py-2.5 bg-primary-500 text-white rounded-lg font-medium hover:bg-primary-600 disabled:opacity-50"
                   >
-                    {activating === pack.usd ? 'Activating…' : 'Activate'}
+                    {activating === pack.usd ? 'Activating…' : isActive ? 'Add another' : 'Activate'}
                   </button>
                 ) : insufficient ? (
                   <div className="text-center">

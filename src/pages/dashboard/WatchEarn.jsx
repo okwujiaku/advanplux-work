@@ -31,8 +31,8 @@ function getYoutubeEmbedUrl(link) {
 
 function WatchEarn() {
   const app = useApp()
-  const userPack = app?.userPack
-  const PACKS_USD = app?.PACKS_USD
+  const activePacks = app?.activePacks ?? []
+  const PACKS_USD = app?.PACKS_USD ?? []
   const adsViewedToday = app?.adsViewedToday ?? 0
   const watchAd = app?.watchAd
   const isAdminLoggedIn = app?.isAdminLoggedIn
@@ -57,10 +57,14 @@ function WatchEarn() {
   const currentAdKeyRef = useRef(null)
   const [ytReady, setYtReady] = useState(false)
 
-  const hasAccess = !!(userPack || isAdminLoggedIn || freeAccessForSetup)
-  const packInfo = userPack && PACKS_USD ? PACKS_USD.find((p) => p.usd === userPack) : null
-  const setupLimit = (PACKS_USD && PACKS_USD[0]?.adsPerDay) ?? 0
-  const dailyLimit = packInfo ? packInfo.adsPerDay : (freeAccessForSetup ? setupLimit : 0)
+  const hasAccess = !!(activePacks.length > 0 || isAdminLoggedIn || freeAccessForSetup)
+  const dailyLimit = activePacks.length > 0
+    ? activePacks.reduce((sum, packUsd) => sum + (PACKS_USD.find((p) => p.usd === packUsd)?.adsPerDay ?? 0), 0)
+    : (freeAccessForSetup ? (PACKS_USD[0]?.adsPerDay ?? 0) : 0)
+  const packInfo = activePacks.length > 0 && PACKS_USD.length > 0
+    ? PACKS_USD.find((p) => p.usd === activePacks[0])
+    : null
+  const setupLimit = PACKS_USD[0]?.adsPerDay ?? 0
   const adsRemaining = Math.max(0, (dailyLimit || 0) - (adsViewedToday || 0))
   const totalEarnedToday = (adsViewedToday || 0) * EARN_PER_AD_USD
   const youtubeAdLinks = Array.isArray(adVideoIds) ? adVideoIds.filter(isYouTubeUrl) : []
@@ -251,11 +255,13 @@ function WatchEarn() {
     <div className="max-w-2xl mx-auto space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Watch & Earn</h1>
-        {packInfo ? (
+        {activePacks.length > 0 ? (
           <>
-            <p className="text-primary-600 font-semibold mt-1">{packInfo.planName} — ${packInfo.usd} pack active</p>
+            <p className="text-primary-600 font-semibold mt-1">
+              {activePacks.length === 1 && packInfo ? packInfo.planName : `${dailyLimit} ads per day from your active packs`}
+            </p>
             <p className="text-gray-600 mt-1">
-              {packInfo.adsPerDay} ads per day · ${EARN_PER_AD_USD.toFixed(2)} per completed ad. Watch the full {REQUIRED_WATCH_SECONDS}s to earn.
+              {dailyLimit} ads per day · ${EARN_PER_AD_USD.toFixed(2)} per completed ad. Watch the full {REQUIRED_WATCH_SECONDS}s to earn.
             </p>
           </>
         ) : (

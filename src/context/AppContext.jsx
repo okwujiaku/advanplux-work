@@ -67,6 +67,7 @@ export function AppProvider({ children }) {
   const [users, setUsers] = useState([])
   const [currentUserId, setCurrentUserId] = useState(null)
   const [userPack, setUserPack] = useState(null)
+  const [activePacks, setActivePacks] = useState([])
   const [savedAccount, setSavedAccount] = useState(null)
   const [savedDepositDetails, setSavedDepositDetails] = useState([])
   const [savedWithdrawalDetails, setSavedWithdrawalDetails] = useState([])
@@ -333,7 +334,8 @@ export function AppProvider({ children }) {
             .then((r) => r.json())
             .then((w) => {
               if (w?.ok && w.balanceUsd != null) setWalletUsd(w.balanceUsd)
-              if (w?.ok && w.activePackUsd != null) setUserPack(w.activePackUsd)
+              if (w?.ok && Array.isArray(w.activePacks)) setActivePacks(w.activePacks)
+              if (w?.ok) setUserPack(w.activePackUsd ?? null)
             })
             .catch(() => {})
           fetch('/api/user/deposits', { headers }).then((r) => r.json()).then((d2) => {
@@ -433,7 +435,8 @@ export function AppProvider({ children }) {
       .then(([w, d, wd, e]) => {
         if (w?.ok) {
           if (w.balanceUsd != null) setWalletUsd(w.balanceUsd)
-          if (w.activePackUsd != null) setUserPack(w.activePackUsd)
+          if (Array.isArray(w.activePacks)) setActivePacks(w.activePacks)
+          setUserPack(w.activePackUsd ?? null)
         }
         if (d?.ok && Array.isArray(d.deposits)) setDeposits(d.deposits)
         if (wd?.ok && Array.isArray(wd.withdrawals)) setWithdrawals(wd.withdrawals)
@@ -669,6 +672,7 @@ export function AppProvider({ children }) {
       const data = await res.json().catch(() => ({}))
       if (res.ok && data?.ok) {
         if (data.balanceUsd != null) setWalletUsd(data.balanceUsd)
+        if (Array.isArray(data.activePacks)) setActivePacks(data.activePacks)
         if (data.activePackUsd != null) setUserPack(data.activePackUsd)
         return true
       }
@@ -919,6 +923,7 @@ export function AppProvider({ children }) {
     resetPassword,
     userPack,
     setUserPack,
+    activePacks,
     savedAccount,
     setSavedAccount,
     savedDepositDetails,

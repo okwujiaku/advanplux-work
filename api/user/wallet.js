@@ -10,15 +10,19 @@ export default async function handler(req, res) {
   }
 
   if (req.method === 'GET') {
-    const { data, error } = await supabase
-      .from('user_wallet')
-      .select('balance_usd, active_pack_usd')
-      .eq('user_id', userId)
-      .maybeSingle()
-    if (error) return json(res, 500, { ok: false, error: 'Unable to load wallet.' })
-    const balance = data ? Number(data.balance_usd) : 0
-    const activePackUsd = data?.active_pack_usd != null ? Number(data.active_pack_usd) : null
-    return json(res, 200, { ok: true, balanceUsd: balance, activePackUsd })
+    const [{ data: walletRow, error: walletErr }, { data: packsRows, error: packsErr }] = await Promise.all([
+      supabase.from('user_wallet').select('balance_usd, active_pack_usd').eq('user_id', userId).maybeSingle(),
+      supabase.from('user_active_packs').select('pack_usd').eq('user_id', userId).order('created_at', { ascending: true }),
+    ])
+    if (walletErr) return json(res, 500, { ok: false, error: 'Unable to load wallet.' })
+    const balance = walletRow ? Number(walletRow.balance_usd) : 0
+    let activePacks = Array.isArray(packsRows) ? packsRows.map((r) => Number(r.pack_usd)).filter(Number.isFinite) : []
+    if (activePacks.length === 0 && walletRow?.active_pack_usd != null) {
+      const legacy = Number(walletRow.active_pack_usd)
+      if (Number.isFinite(legacy)) activePacks = [legacy]
+    }
+    const activePackUsd = activePacks.length > 0 ? Math.max(...activePacks) : null
+    return json(res, 200, { ok: true, balanceUsd: balance, activePackUsd, activePacks })
   }
 
   if (req.method === 'PATCH') {
@@ -29,7 +33,7 @@ export default async function handler(req, res) {
       if (!Number.isFinite(packUsd) || packUsd <= 0) return json(res, 400, { ok: false, error: 'Invalid pack amount.' })
       const { data: row, error: fetchErr } = await supabase
         .from('user_wallet')
-        .select('balance_usd, active_pack_usd')
+        .select('balance_usd')
         .eq('user_id', userId)
         .maybeSingle()
       if (fetchErr) return json(res, 500, { ok: false, error: 'Unable to load wallet.' })
@@ -37,12 +41,24 @@ export default async function handler(req, res) {
       if (balance < packUsd) return json(res, 400, { ok: false, error: 'Insufficient balance to activate this pack.' })
       const nextBalance = Number((balance - packUsd).toFixed(2))
       const now = new Date().toISOString()
+      const { error: insertPackErr } = await supabase.from('user_active_packs').insert({
+        user_id: userId,
+        pack_usd: packUsd,
+      })
+      if (insertPackErr) return json(res, 500, { ok: false, error: 'Unable to activate pack.' })
       const { error: upsertErr } = await supabase.from('user_wallet').upsert(
-        { user_id: userId, balance_usd: nextBalance, active_pack_usd: packUsd, updated_at: now },
+        { user_id: userId, balance_usd: nextBalance, updated_at: now },
         { onConflict: 'user_id' },
       )
-      if (upsertErr) return json(res, 500, { ok: false, error: 'Unable to activate pack.' })
-      return json(res, 200, { ok: true, balanceUsd: nextBalance, activePackUsd: packUsd })
+      if (upsertErr) return json(res, 500, { ok: false, error: 'Unable to update balance.' })
+      const { data: packsRows } = await supabase
+        .from('user_active_packs')
+        .select('pack_usd')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: true })
+      const activePacks = Array.isArray(packsRows) ? packsRows.map((r) => Number(r.pack_usd)).filter(Number.isFinite) : []
+      const activePackUsd = activePacks.length > 0 ? Math.max(...activePacks) : null
+      return json(res, 200, { ok: true, balanceUsd: nextBalance, activePackUsd, activePacks })
     }
 
     if (addUsd != null) {
