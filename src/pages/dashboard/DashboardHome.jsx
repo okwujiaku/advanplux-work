@@ -3,7 +3,17 @@ import { Link } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
 
 function DashboardHome() {
-  const { currentUser, users, userPack, PACKS_USD, adsViewedToday, walletUsd, referralEarnings, claimedSalary } = useApp()
+  const {
+    currentUser,
+    users,
+    userPack,
+    PACKS_USD,
+    adsViewedToday,
+    walletUsd,
+    referralEarnings,
+    claimedSalary,
+    refetchWalletAndDeposits,
+  } = useApp()
   const packInfo = userPack ? PACKS_USD.find((p) => p.usd === userPack) : null
   const earnedTodayUsd = (adsViewedToday * 0.4).toFixed(2)
   const referralTotalNgn =
@@ -21,6 +31,10 @@ function DashboardHome() {
     'Build your team and increase your referral and weekly rewards.',
   ]
   const [bannerIndex, setBannerIndex] = useState(0)
+
+  useEffect(() => {
+    refetchWalletAndDeposits()
+  }, [refetchWalletAndDeposits])
 
   useEffect(() => {
     const interval = setInterval(() => {

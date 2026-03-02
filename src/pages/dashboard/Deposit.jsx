@@ -123,7 +123,7 @@ function Deposit() {
 
         {amount > 0 && country && (
           <div className="mt-4 space-y-3">
-            <p className="text-sm font-medium text-gray-700">Exchange rate — Make payment to the Details below</p>
+            <p className="text-sm font-medium text-gray-700">Exchange rate — Pay using the details below</p>
             {country === 'nigeria' && (
               <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
                 <p className="text-sm font-medium text-gray-800 mb-1">Nigeria — NGN (Naira)</p>
