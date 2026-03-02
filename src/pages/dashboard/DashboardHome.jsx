@@ -74,7 +74,6 @@ function DashboardHome() {
           <div className="sm:border-l sm:border-white/30 sm:pl-6">
             <p className="text-2xl sm:text-3xl font-bold mt-1">${totalBalanceUsd.toFixed(2)}</p>
             <p className="text-xs sm:text-sm text-white/85 mt-1 sm:mt-2">Total balance</p>
-            <p className="text-xs text-white/70 mt-0.5">Includes approved deposits</p>
           </div>
         </div>
       </div>
