@@ -123,13 +123,13 @@ function Deposit() {
 
         {amount > 0 && country && (
           <div className="mt-4 space-y-3">
-            <p className="text-sm font-medium text-gray-700">Exchange rate — Pay using the details below</p>
+            <p className="text-sm font-medium text-gray-700">Exchange rate</p>
             {country === 'nigeria' && (
               <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
                 <p className="text-sm font-medium text-gray-800 mb-1">Nigeria — NGN (Naira)</p>
                 <p className="text-xs text-gray-500 mb-2">1 USD = ₦{USD_TO_NGN.toLocaleString()}</p>
                 <p className="text-lg font-semibold text-gray-900">
-                  You&apos;ll deposit: ₦{nairaAmount.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                  You&apos;ll deposit: ₦{nairaAmount.toLocaleString(undefined, { maximumFractionDigits: 0 })} - using the details below
                 </p>
               </div>
             )}
@@ -138,7 +138,7 @@ function Deposit() {
                 <p className="text-sm font-medium text-gray-800 mb-1">Cameroon — CFA</p>
                 <p className="text-xs text-gray-500 mb-2">1 USD = CFA {USD_TO_CFA.toLocaleString()}</p>
                 <p className="text-lg font-semibold text-gray-900">
-                  You&apos;ll deposit: CFA {cfaAmount.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                  You&apos;ll deposit: CFA {cfaAmount.toLocaleString(undefined, { maximumFractionDigits: 0 })} - using the details below
                 </p>
               </div>
             )}

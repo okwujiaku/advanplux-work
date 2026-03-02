@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import Dashboard from './pages/Dashboard'
 import DashboardHome from './pages/dashboard/DashboardHome'
+import AboutUs from './pages/dashboard/AboutUs'
 import Profile from './pages/dashboard/Profile'
 import AdGenerator from './pages/dashboard/AdGenerator'
 import Deposit from './pages/dashboard/Deposit'
@@ -117,6 +118,7 @@ function App() {
           <Route path="earning-history" element={<EarningHistory />} />
           <Route path="deposit-history" element={<DepositHistory />} />
           <Route path="withdrawal-history" element={<WithdrawalHistory />} />
+          <Route path="about" element={<AboutUs />} />
         </Route>
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<Navigate to="users" replace />} />

@@ -56,6 +56,7 @@ function DashboardHome() {
     { label: 'Contact us', to: '/dashboard/support-center', icon: '🛟' },
     { label: 'Community', href: 'https://t.me/Advanplux', icon: '🌐' },
     { label: 'Promote your business with us', href: 'https://t.me/Advanplux', icon: '📣' },
+    { label: 'About us', to: '/dashboard/about', icon: 'ℹ️' },
   ]
 
   return (
