@@ -11,7 +11,7 @@ const SALARY_TIERS = [
 ]
 
 function Team() {
-  const { teamCount, referralCount, claimSalary, claimedSalary } = useApp()
+  const { teamCount, referralCount, claimSalary, claimedSalary, currentUser } = useApp()
   const referralTotal = (referralCount.level1 || 0) + (referralCount.level2 || 0) + (referralCount.level3 || 0)
   const investorCount = Math.max(teamCount, referralTotal)
   const currentTier = SALARY_TIERS.filter((t) => investorCount >= t.investors).pop()
@@ -24,6 +24,11 @@ function Team() {
         <p className="text-gray-600 mt-1">
           Number of direct active downlines under you. Earn weekly salary as your downline count increases.
         </p>
+        {currentUser && (
+          <p className="text-xs text-gray-500 mt-1">
+            Your account ID: <span className="font-mono">{currentUser.email || currentUser.id}</span>
+          </p>
+        )}
       </div>
 
       <div className="grid sm:grid-cols-2 gap-4">

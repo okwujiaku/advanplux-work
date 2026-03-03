@@ -31,6 +31,11 @@ function Referral() {
         <p className="text-gray-600 mt-1">
           Earn 10% Level 1, 2% Level 2, 1% Level 3. Share your link and see earnings on your dashboard.
         </p>
+        {currentUser && (
+          <p className="text-xs text-gray-500 mt-1">
+            Your account ID: <span className="font-mono">{currentUser.email || currentUser.id}</span>
+          </p>
+        )}
       </div>
 
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">

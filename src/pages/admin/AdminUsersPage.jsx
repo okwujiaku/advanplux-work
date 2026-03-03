@@ -45,6 +45,7 @@ function AdminUsersPage() {
             <thead>
               <tr className="bg-gray-50 text-left">
                 <th className="p-3">S/N</th>
+                <th className="p-3">Account ID</th>
                 <th className="p-3">Name</th>
                 <th className="p-3">Email</th>
                 <th className="p-3">Phone</th>
@@ -60,21 +61,26 @@ function AdminUsersPage() {
             <tbody>
               {displayMembers.length === 0 ? (
                 <tr className="border-t">
-                  <td className="p-4 text-gray-500" colSpan={10}>No registered users yet.</td>
+                  <td className="p-4 text-gray-500" colSpan={12}>No registered users yet.</td>
                 </tr>
               ) : filteredMembers.length === 0 ? (
                 <tr className="border-t">
-                  <td className="p-4 text-gray-500" colSpan={11}>No members match your search.</td>
+                  <td className="p-4 text-gray-500" colSpan={12}>No members match your search.</td>
                 </tr>
               ) : (
-                filteredMembers.map((member, index) => (
+                filteredMembers.map((member, index) => {
+                  const referrer = members.find((m) => m.id === member.referredByUserId)
+                  const referrerLabel = referrer ? getMemberDisplay(referrer) : (member.referredByUserId || '-')
+                  const accountId = member.invitationCode || (member.email || '').split('@')[0] || member.id
+                  return (
                   <tr key={member.id} className="border-t">
                     <td className="p-3">{index + 1}</td>
+                    <td className="p-3 font-mono">{accountId}</td>
                     <td className="p-3">{member.name}</td>
                     <td className="p-3">{member.email || '-'}</td>
                     <td className="p-3">{member.phone || '-'}</td>
                     <td className="p-3 font-mono">{member.invitationCode || '-'}</td>
-                    <td className="p-3 font-mono">{member.referredByUserId || '-'}</td>
+                    <td className="p-3">{referrerLabel}</td>
                     <td className="p-3">{member.joinedAt ? new Date(member.joinedAt).toLocaleString() : '-'}</td>
                     <td className="p-3">{getMemberDisplay(member)}</td>
                     <td className="p-3">${Number(member.balance || 0).toLocaleString()}</td>
@@ -132,7 +138,8 @@ function AdminUsersPage() {
                       </button>
                     </td>
                   </tr>
-                ))
+                  )
+                })
               )}
             </tbody>
           </table>
