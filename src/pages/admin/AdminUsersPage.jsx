@@ -52,7 +52,6 @@ function AdminUsersPage() {
                 <th className="p-3">Invitation code</th>
                 <th className="p-3">Referred by</th>
                 <th className="p-3">Joined</th>
-                <th className="p-3">Email / Name</th>
                 <th className="p-3">Wallet</th>
                 <th className="p-3">Bonus</th>
                 <th className="p-3">Actions</th>
@@ -65,24 +64,25 @@ function AdminUsersPage() {
                 </tr>
               ) : filteredMembers.length === 0 ? (
                 <tr className="border-t">
-                  <td className="p-4 text-gray-500" colSpan={12}>No members match your search.</td>
+                  <td className="p-4 text-gray-500" colSpan={11}>No members match your search.</td>
                 </tr>
               ) : (
                 filteredMembers.map((member, index) => {
                   const referrer = members.find((m) => m.id === member.referredByUserId)
                   const referrerLabel = referrer ? getMemberDisplay(referrer) : (member.referredByUserId || '-')
                   const accountId = member.invitationCode || (member.email || '').split('@')[0] || member.id
+                  const isUuidEmail = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(member.email || '')
+                  const emailDisplay = member.email && !isUuidEmail ? member.email : getMemberDisplay(member)
                   return (
                   <tr key={member.id} className="border-t">
                     <td className="p-3">{index + 1}</td>
                     <td className="p-3 font-mono">{accountId}</td>
                     <td className="p-3">{member.name}</td>
-                    <td className="p-3">{member.email || '-'}</td>
+                    <td className="p-3">{emailDisplay || '-'}</td>
                     <td className="p-3">{member.phone || '-'}</td>
                     <td className="p-3 font-mono">{member.invitationCode || '-'}</td>
                     <td className="p-3">{referrerLabel}</td>
                     <td className="p-3">{member.joinedAt ? new Date(member.joinedAt).toLocaleString() : '-'}</td>
-                    <td className="p-3">{getMemberDisplay(member)}</td>
                     <td className="p-3">${Number(member.balance || 0).toLocaleString()}</td>
                     <td className="p-3">${Number(member.bonusBalance || 0).toLocaleString()}</td>
                     <td className="p-3 space-y-1">
