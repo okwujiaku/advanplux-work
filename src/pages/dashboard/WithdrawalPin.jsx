@@ -8,6 +8,7 @@ function WithdrawalPin() {
   const [currentPin, setCurrentPin] = useState('')
   const [pinError, setPinError] = useState('')
   const [success, setSuccess] = useState('')
+  const [resetMode, setResetMode] = useState(false)
 
   const handleCreateOrUpdate = async (e) => {
     e.preventDefault()
@@ -23,7 +24,7 @@ function WithdrawalPin() {
       setPinError('PIN and confirm PIN must match.')
       return
     }
-    if (hasSecurityPin) {
+    if (hasSecurityPin && !resetMode) {
       const cleanCurrent = currentPin.replace(/\D/g, '').slice(0, 4)
       if (!/^\d{4}$/.test(cleanCurrent)) {
         setPinError('Enter your current PIN to confirm.')
@@ -59,7 +60,7 @@ function WithdrawalPin() {
 
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
         <form onSubmit={handleCreateOrUpdate} className="space-y-4">
-          {hasSecurityPin && (
+          {hasSecurityPin && !resetMode && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Current PIN</label>
               <input
@@ -104,13 +105,29 @@ function WithdrawalPin() {
           </div>
           {pinError && <p className="text-sm text-red-600">{pinError}</p>}
           {success && <p className="text-sm text-green-600">{success}</p>}
-          <p className="text-xs text-gray-500">Keep this PIN safe. You’ll need it to confirm withdrawals.</p>
+          <p className="text-xs text-gray-500">
+            Keep this PIN safe. You’ll need it to confirm withdrawals.
+          </p>
+          {hasSecurityPin && (
+            <button
+              type="button"
+              onClick={() => {
+                setResetMode((prev) => !prev)
+                setPinError('')
+                setSuccess('')
+                setCurrentPin('')
+              }}
+              className="text-xs text-primary-600 hover:underline"
+            >
+              {resetMode ? 'Cancel reset (use current PIN instead)' : 'Forgot PIN? Reset without current PIN'}
+            </button>
+          )}
           <button
             type="submit"
             disabled={
               !/^\d{4}$/.test(pin.replace(/\D/g, '')) ||
               pin.replace(/\D/g, '') !== confirmPin.replace(/\D/g, '') ||
-              (hasSecurityPin && !/^\d{4}$/.test(currentPin.replace(/\D/g, '')))
+              (hasSecurityPin && !resetMode && !/^\d{4}$/.test(currentPin.replace(/\D/g, '')))
             }
             className="w-full py-3 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >

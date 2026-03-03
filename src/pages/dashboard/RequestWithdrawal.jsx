@@ -11,10 +11,12 @@ function RequestWithdrawal() {
   const { walletUsd, savedWithdrawalDetails, addWithdrawal, hasSecurityPin, verifySecurityPinForCurrentUser } = useApp()
   const [amountUsd, setAmountUsd] = useState('')
   const [currency, setCurrency] = useState('')
-  const [pin, setPin] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState('')
+  const [showPinModal, setShowPinModal] = useState(false)
+  const [pin, setPin] = useState('')
+  const [pinError, setPinError] = useState('')
 
   const savedDetail = savedWithdrawalDetails?.[0] || null
   const amount = parseFloat(amountUsd) || 0
@@ -23,36 +25,43 @@ function RequestWithdrawal() {
   const equivalentNgn = netAmountUsd * USD_TO_NGN
   const equivalentCfa = netAmountUsd * USD_TO_CFA
   const balance = Number(walletUsd || 0)
-  const pinOk = !hasSecurityPin || /^\d{4}$/.test(pin.replace(/\D/g, ''))
-  const canSubmit = amount >= MIN_WITHDRAWAL_USD && amount <= balance && savedDetail && (currency === 'NGN' || currency === 'CFA') && hasSecurityPin && pinOk
+  const canSubmitBase =
+    amount >= MIN_WITHDRAWAL_USD &&
+    amount <= balance &&
+    savedDetail &&
+    (currency === 'NGN' || currency === 'CFA')
   const showExchange = currency === 'NGN' || currency === 'CFA'
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!canSubmit || submitting) return
+    if (!canSubmitBase || submitting) return
+    if (!hasSecurityPin) {
+      setError('Create a withdrawal PIN first from Menu → Create withdrawal PIN.')
+      return
+    }
     setError('')
-    if (hasSecurityPin) {
-      const cleanPin = pin.replace(/\D/g, '').slice(0, 4)
-      if (!/^\d{4}$/.test(cleanPin)) {
-        setError('Enter your 4-digit withdrawal PIN to confirm.')
-        return
-      }
-      setSubmitting(true)
-      try {
-        const verified = await verifySecurityPinForCurrentUser(cleanPin)
-        if (!verified) {
-          setError('Incorrect PIN. Try again.')
-          setSubmitting(false)
-          return
-        }
-      } catch {
-        setError('Could not verify PIN. Try again.')
+    setPin('')
+    setPinError('')
+    setShowPinModal(true)
+  }
+
+  const handleConfirmPin = async (e) => {
+    e.preventDefault()
+    if (submitting) return
+    const cleanPin = pin.replace(/\D/g, '').slice(0, 4)
+    if (!/^\d{4}$/.test(cleanPin)) {
+      setPinError('Enter your 4-digit withdrawal PIN.')
+      return
+    }
+    setPinError('')
+    setSubmitting(true)
+    try {
+      const verified = await verifySecurityPinForCurrentUser(cleanPin)
+      if (!verified) {
+        setPinError('Incorrect PIN. Try again.')
         setSubmitting(false)
         return
       }
-    }
-    setSubmitting(true)
-    try {
       const id = await addWithdrawal({
         amountUsd: amount,
         feeUsd,
@@ -66,11 +75,12 @@ function RequestWithdrawal() {
         setSubmitted(true)
         setAmountUsd('')
         setPin('')
+        setShowPinModal(false)
       } else {
-        setError('Could not submit. Try again.')
+        setPinError('Could not submit. Try again.')
       }
     } catch {
-      setError('Something went wrong. Try again.')
+      setPinError('Something went wrong. Try again.')
     }
     setSubmitting(false)
   }
@@ -143,23 +153,6 @@ function RequestWithdrawal() {
               </select>
             </div>
 
-            {hasSecurityPin && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Withdrawal PIN (required to confirm)</label>
-                <input
-                  type="password"
-                  inputMode="numeric"
-                  pattern="\d*"
-                  maxLength={4}
-                  value={pin}
-                  onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                  placeholder="Enter 4-digit PIN"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg"
-                />
-                <p className="text-xs text-gray-500 mt-1">Enter the PIN you created in Menu → Create withdrawal PIN.</p>
-              </div>
-            )}
-
             {!hasSecurityPin && (
               <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
                 <p className="text-sm font-medium text-amber-900 mb-1">Create a withdrawal PIN first</p>
@@ -201,7 +194,7 @@ function RequestWithdrawal() {
 
             <button
               type="submit"
-              disabled={!canSubmit || submitting}
+              disabled={!canSubmitBase || submitting}
               className="w-full sm:w-auto px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
             >
               {submitting ? 'Submitting…' : 'Request withdrawal'}
@@ -213,6 +206,50 @@ function RequestWithdrawal() {
             <p>{savedDetail.accountName} · {savedDetail.accountNumber} · {savedDetail.bankName} ({savedDetail.currency})</p>
             <Link to="/dashboard/withdrawal" className="text-primary-600 hover:underline mt-1 inline-block">View in Menu → Withdrawal details</Link>
           </div>
+
+          {showPinModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+              <div className="bg-white rounded-xl shadow-lg max-w-sm w-full p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Confirm withdrawal</h3>
+                <p className="text-sm text-gray-600 mb-4">Enter your 4-digit withdrawal PIN to confirm this request.</p>
+                {pinError && <p className="text-sm text-red-600 mb-2">{pinError}</p>}
+                <form onSubmit={handleConfirmPin} className="space-y-4">
+                  <input
+                    type="password"
+                    inputMode="numeric"
+                    pattern="\d*"
+                    maxLength={4}
+                    value={pin}
+                    onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                    placeholder="Enter PIN"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg"
+                  />
+                  <div className="flex justify-end gap-2">
+                    <button
+                      type="button"
+                      className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 text-sm"
+                      onClick={() => {
+                        if (!submitting) {
+                          setShowPinModal(false)
+                          setPin('')
+                          setPinError('')
+                        }
+                      }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-5 py-2 rounded-lg bg-primary-600 text-white text-sm font-medium hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                      disabled={submitting}
+                    >
+                      {submitting ? 'Confirming…' : 'Confirm withdrawal'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
         </>
       )}
     </div>
