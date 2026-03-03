@@ -1,10 +1,10 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
 
 const EARN_PER_AD_USD = 0.4
 const REQUIRED_WATCH_SECONDS = 30
-const RESET_KEY_PREFIX = 'watchEarnResetAt:'
+const DAY_MS = 24 * 60 * 60 * 1000
 
 function isYouTubeUrl(link) {
   const value = String(link || '').toLowerCase()
@@ -32,7 +32,6 @@ function getYoutubeEmbedUrl(link) {
 
 function WatchEarn() {
   const app = useApp()
-  const currentUserId = app?.currentUserId
   const activePacks = app?.activePacks ?? []
   const PACKS_USD = app?.PACKS_USD ?? []
   const adsViewedToday = app?.adsViewedToday ?? 0
@@ -40,6 +39,7 @@ function WatchEarn() {
   const isAdminLoggedIn = app?.isAdminLoggedIn
   const freeAccessForSetup = app?.freeAccessForSetup
   const adVideoIds = app?.adVideoIds
+  const earningsHistory = app?.earningsHistory ?? []
 
   const [lastEarned, setLastEarned] = useState(null)
   const [currentAdIndex, setCurrentAdIndex] = useState(0)
@@ -59,7 +59,6 @@ function WatchEarn() {
   const currentAdKeyRef = useRef(null)
   const [ytReady, setYtReady] = useState(false)
   const [resetCountdown, setResetCountdown] = useState('')
-  const resetEndRef = useRef(null)
 
   const hasAccess = !!(activePacks.length > 0 || isAdminLoggedIn || freeAccessForSetup)
   const dailyLimit = activePacks.length > 0
@@ -69,7 +68,33 @@ function WatchEarn() {
     ? PACKS_USD.find((p) => p.usd === activePacks[0])
     : null
   const setupLimit = PACKS_USD[0]?.adsPerDay ?? 0
-  const adsRemaining = Math.max(0, (dailyLimit || 0) - (adsViewedToday || 0))
+  const watchAdsStats = useMemo(() => {
+    if (!dailyLimit || !Array.isArray(earningsHistory) || earningsHistory.length === 0) {
+      return { watchedLast24h: 0, nextAvailableTs: null }
+    }
+    const nowTs = Date.now()
+    const watchAds = earningsHistory
+      .filter((e) => e && e.source === 'watch-ads' && e.date)
+      .map((e) => {
+        const ts = new Date(e.date).getTime()
+        return Number.isFinite(ts) ? ts : null
+      })
+      .filter((ts) => ts != null && nowTs - ts < DAY_MS)
+      .sort((a, b) => a - b)
+    const watchedLast24h = watchAds.length
+    if (watchedLast24h < dailyLimit) {
+      return { watchedLast24h, nextAvailableTs: null }
+    }
+    const windowStartTs = watchAds[watchedLast24h - dailyLimit]
+    const nextAvailableTs = windowStartTs + DAY_MS
+    return { watchedLast24h, nextAvailableTs }
+  }, [earningsHistory, dailyLimit])
+  const watchedLast24h = watchAdsStats.watchedLast24h
+  const nextAvailableTs = watchAdsStats.nextAvailableTs
+  const isLocked = dailyLimit > 0 && watchedLast24h >= dailyLimit
+  const adsRemaining = isLocked
+    ? 0
+    : Math.max(0, (dailyLimit || 0) - Math.min(adsViewedToday || 0, dailyLimit || 0))
   const totalEarnedToday = (adsViewedToday || 0) * EARN_PER_AD_USD
   const youtubeAdLinks = Array.isArray(adVideoIds) ? adVideoIds.filter(isYouTubeUrl) : []
   const hasVideos = youtubeAdLinks.length > 0
@@ -91,58 +116,17 @@ function WatchEarn() {
     dailyLimitRef.current = dailyLimit
   }, [dailyLimit])
 
-  // Countdown for 24 hours after hitting daily limit
+  // Countdown until next ads become available (24h window based on earnings history)
   useEffect(() => {
-    if (typeof window === 'undefined') return
-    const storageKey = `${RESET_KEY_PREFIX}${currentUserId || 'anonymous'}`
-
-    if (adsRemaining > 0 || !dailyLimit) {
+    if (!isLocked || !nextAvailableTs) {
       setResetCountdown('')
-      resetEndRef.current = null
-      try {
-        window.localStorage.removeItem(storageKey)
-      } catch {
-        // ignore storage errors
-      }
       return
     }
 
     const update = () => {
-      if (!resetEndRef.current) {
-        let storedTs = null
-        try {
-          const raw = window.localStorage.getItem(storageKey)
-          if (raw) {
-            const parsed = Number(raw)
-            if (Number.isFinite(parsed)) storedTs = parsed
-          }
-        } catch {
-          storedTs = null
-        }
-
-        const nowTs = Date.now()
-        if (storedTs && storedTs > nowTs) {
-          resetEndRef.current = storedTs
-        } else {
-          resetEndRef.current = nowTs + 24 * 60 * 60 * 1000
-          try {
-            window.localStorage.setItem(storageKey, String(resetEndRef.current))
-          } catch {
-            // ignore storage errors
-          }
-        }
-      }
-
-      const now = Date.now()
-      const diff = resetEndRef.current - now
+      const diff = nextAvailableTs - Date.now()
       if (diff <= 0) {
         setResetCountdown('00:00:00')
-        resetEndRef.current = null
-        try {
-          window.localStorage.removeItem(storageKey)
-        } catch {
-          // ignore storage errors
-        }
         return
       }
       const hours = String(Math.floor(diff / 3600000)).padStart(2, '0')
@@ -154,7 +138,7 @@ function WatchEarn() {
     update()
     const id = setInterval(update, 1000)
     return () => clearInterval(id)
-  }, [adsRemaining, dailyLimit, currentUserId])
+  }, [isLocked, nextAvailableTs])
 
   const stopTimer = () => {
     if (timerIntervalRef.current) {
