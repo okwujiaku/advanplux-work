@@ -8,9 +8,10 @@ const MIN_WITHDRAWAL_USD = 3
 const WITHDRAWAL_FEE_RATE = 0.1
 
 function RequestWithdrawal() {
-  const { walletUsd, savedWithdrawalDetails, addWithdrawal } = useApp()
+  const { walletUsd, savedWithdrawalDetails, addWithdrawal, hasSecurityPin, verifySecurityPinForCurrentUser } = useApp()
   const [amountUsd, setAmountUsd] = useState('')
   const [currency, setCurrency] = useState('')
+  const [pin, setPin] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState('')
@@ -22,13 +23,34 @@ function RequestWithdrawal() {
   const equivalentNgn = netAmountUsd * USD_TO_NGN
   const equivalentCfa = netAmountUsd * USD_TO_CFA
   const balance = Number(walletUsd || 0)
-  const canSubmit = amount >= MIN_WITHDRAWAL_USD && amount <= balance && savedDetail && (currency === 'NGN' || currency === 'CFA')
+  const pinOk = !hasSecurityPin || /^\d{4}$/.test(pin.replace(/\D/g, ''))
+  const canSubmit = amount >= MIN_WITHDRAWAL_USD && amount <= balance && savedDetail && (currency === 'NGN' || currency === 'CFA') && hasSecurityPin && pinOk
   const showExchange = currency === 'NGN' || currency === 'CFA'
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!canSubmit || submitting) return
     setError('')
+    if (hasSecurityPin) {
+      const cleanPin = pin.replace(/\D/g, '').slice(0, 4)
+      if (!/^\d{4}$/.test(cleanPin)) {
+        setError('Enter your 4-digit withdrawal PIN to confirm.')
+        return
+      }
+      setSubmitting(true)
+      try {
+        const verified = await verifySecurityPinForCurrentUser(cleanPin)
+        if (!verified) {
+          setError('Incorrect PIN. Try again.')
+          setSubmitting(false)
+          return
+        }
+      } catch {
+        setError('Could not verify PIN. Try again.')
+        setSubmitting(false)
+        return
+      }
+    }
     setSubmitting(true)
     try {
       const id = await addWithdrawal({
@@ -43,6 +65,7 @@ function RequestWithdrawal() {
       if (id) {
         setSubmitted(true)
         setAmountUsd('')
+        setPin('')
       } else {
         setError('Could not submit. Try again.')
       }
@@ -119,6 +142,31 @@ function RequestWithdrawal() {
                 <option value="CFA">CFA</option>
               </select>
             </div>
+
+            {hasSecurityPin && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Withdrawal PIN (required to confirm)</label>
+                <input
+                  type="password"
+                  inputMode="numeric"
+                  pattern="\d*"
+                  maxLength={4}
+                  value={pin}
+                  onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                  placeholder="Enter 4-digit PIN"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg"
+                />
+                <p className="text-xs text-gray-500 mt-1">Enter the PIN you created in Menu → Create withdrawal PIN.</p>
+              </div>
+            )}
+
+            {!hasSecurityPin && (
+              <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+                <p className="text-sm font-medium text-amber-900 mb-1">Create a withdrawal PIN first</p>
+                <p className="text-amber-800 text-xs mb-3">To request a withdrawal, you need to create a 4-digit PIN. You’ll enter it here to confirm each withdrawal.</p>
+                <Link to="/dashboard/withdrawal-pin" className="text-primary-600 hover:underline font-medium text-sm">Create withdrawal PIN →</Link>
+              </div>
+            )}
 
             {showExchange && (
               <div className="space-y-3">

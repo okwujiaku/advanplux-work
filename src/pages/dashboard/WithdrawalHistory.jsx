@@ -2,10 +2,15 @@ import { useMemo } from 'react'
 import { useApp } from '../../context/AppContext'
 
 function WithdrawalHistory() {
-  const { withdrawals } = useApp()
+  const { withdrawals, currentUserId } = useApp()
   const myWithdrawals = useMemo(
-    () => withdrawals.filter((withdrawal) => withdrawal.userId === 'current-user'),
-    [withdrawals],
+    () =>
+      withdrawals.filter(
+        (withdrawal) =>
+          withdrawal.userId === currentUserId ||
+          withdrawal.userId === 'current-user',
+      ),
+    [withdrawals, currentUserId],
   )
 
   return (

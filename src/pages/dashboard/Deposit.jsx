@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
 
 const COUNTRIES = [
@@ -90,6 +90,12 @@ function Deposit() {
         <p className="text-gray-600 mt-1">
           Add funds to your balance. After approval you can use the balance to activate Ads Engine.
         </p>
+        <Link
+          to="/dashboard/deposit-history"
+          className="inline-block mt-2 text-sm font-medium text-primary-600 hover:text-primary-700 hover:underline"
+        >
+          View deposit history →
+        </Link>
       </div>
 
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
