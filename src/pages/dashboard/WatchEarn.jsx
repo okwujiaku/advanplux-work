@@ -4,6 +4,7 @@ import { useApp } from '../../context/AppContext'
 
 const EARN_PER_AD_USD = 0.4
 const REQUIRED_WATCH_SECONDS = 30
+const RESET_KEY_PREFIX = 'watchEarnResetAt:'
 
 function isYouTubeUrl(link) {
   const value = String(link || '').toLowerCase()
@@ -31,6 +32,7 @@ function getYoutubeEmbedUrl(link) {
 
 function WatchEarn() {
   const app = useApp()
+  const currentUserId = app?.currentUserId
   const activePacks = app?.activePacks ?? []
   const PACKS_USD = app?.PACKS_USD ?? []
   const adsViewedToday = app?.adsViewedToday ?? 0
@@ -91,19 +93,56 @@ function WatchEarn() {
 
   // Countdown for 24 hours after hitting daily limit
   useEffect(() => {
+    if (typeof window === 'undefined') return
+    const storageKey = `${RESET_KEY_PREFIX}${currentUserId || 'anonymous'}`
+
     if (adsRemaining > 0 || !dailyLimit) {
       setResetCountdown('')
       resetEndRef.current = null
+      try {
+        window.localStorage.removeItem(storageKey)
+      } catch {
+        // ignore storage errors
+      }
       return
     }
+
     const update = () => {
       if (!resetEndRef.current) {
-        resetEndRef.current = Date.now() + 24 * 60 * 60 * 1000
+        let storedTs = null
+        try {
+          const raw = window.localStorage.getItem(storageKey)
+          if (raw) {
+            const parsed = Number(raw)
+            if (Number.isFinite(parsed)) storedTs = parsed
+          }
+        } catch {
+          storedTs = null
+        }
+
+        const nowTs = Date.now()
+        if (storedTs && storedTs > nowTs) {
+          resetEndRef.current = storedTs
+        } else {
+          resetEndRef.current = nowTs + 24 * 60 * 60 * 1000
+          try {
+            window.localStorage.setItem(storageKey, String(resetEndRef.current))
+          } catch {
+            // ignore storage errors
+          }
+        }
       }
+
       const now = Date.now()
       const diff = resetEndRef.current - now
       if (diff <= 0) {
         setResetCountdown('00:00:00')
+        resetEndRef.current = null
+        try {
+          window.localStorage.removeItem(storageKey)
+        } catch {
+          // ignore storage errors
+        }
         return
       }
       const hours = String(Math.floor(diff / 3600000)).padStart(2, '0')
@@ -111,10 +150,11 @@ function WatchEarn() {
       const seconds = String(Math.floor((diff % 60000) / 1000)).padStart(2, '0')
       setResetCountdown(`${hours}:${minutes}:${seconds}`)
     }
+
     update()
     const id = setInterval(update, 1000)
     return () => clearInterval(id)
-  }, [adsRemaining, dailyLimit])
+  }, [adsRemaining, dailyLimit, currentUserId])
 
   const stopTimer = () => {
     if (timerIntervalRef.current) {
