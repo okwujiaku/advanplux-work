@@ -71,13 +71,17 @@ function AdminUsersPage() {
                   const referrer = members.find((m) => m.id === member.referredByUserId)
                   const referrerLabel = referrer ? getMemberDisplay(referrer) : (member.referredByUserId || '-')
                   const accountId = member.invitationCode || (member.email || '').split('@')[0] || member.id
-                  const isUuidEmail = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(member.email || '')
-                  const emailDisplay = member.email && !isUuidEmail ? member.email : getMemberDisplay(member)
+                  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+                  const isUuidEmail = uuidRegex.test(member.email || '')
+                  const isUuidName = uuidRegex.test(member.name || '')
+                  const displayLabel = getMemberDisplay(member)
+                  const emailDisplay = member.email && !isUuidEmail ? member.email : displayLabel
+                  const nameDisplay = member.name && !isUuidName ? member.name : displayLabel
                   return (
                   <tr key={member.id} className="border-t">
                     <td className="p-3">{index + 1}</td>
                     <td className="p-3 font-mono">{accountId}</td>
-                    <td className="p-3">{member.name}</td>
+                    <td className="p-3">{nameDisplay}</td>
                     <td className="p-3">{emailDisplay || '-'}</td>
                     <td className="p-3">{member.phone || '-'}</td>
                     <td className="p-3 font-mono">{member.invitationCode || '-'}</td>
