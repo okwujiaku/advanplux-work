@@ -57,6 +57,7 @@ function WatchEarn() {
   const currentAdKeyRef = useRef(null)
   const [ytReady, setYtReady] = useState(false)
   const [resetCountdown, setResetCountdown] = useState('')
+  const resetEndRef = useRef(null)
 
   const hasAccess = !!(activePacks.length > 0 || isAdminLoggedIn || freeAccessForSetup)
   const dailyLimit = activePacks.length > 0
@@ -88,18 +89,19 @@ function WatchEarn() {
     dailyLimitRef.current = dailyLimit
   }, [dailyLimit])
 
-  // Countdown until the next day when ads reset (local midnight)
+  // Countdown for 24 hours after hitting daily limit
   useEffect(() => {
     if (adsRemaining > 0 || !dailyLimit) {
       setResetCountdown('')
+      resetEndRef.current = null
       return
     }
     const update = () => {
-      const now = new Date()
-      const next = new Date(now)
-      next.setDate(now.getDate() + 1)
-      next.setHours(0, 0, 0, 0)
-      const diff = next.getTime() - now.getTime()
+      if (!resetEndRef.current) {
+        resetEndRef.current = Date.now() + 24 * 60 * 60 * 1000
+      }
+      const now = Date.now()
+      const diff = resetEndRef.current - now
       if (diff <= 0) {
         setResetCountdown('00:00:00')
         return

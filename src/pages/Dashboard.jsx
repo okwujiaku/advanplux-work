@@ -32,7 +32,6 @@ function Dashboard() {
   }, [refetchWalletAndDeposits])
   const menuItems = [
     { label: 'My profile', to: '/dashboard/profile' },
-    { label: 'Create withdrawal PIN', to: '/dashboard/withdrawal-pin' },
     { label: 'Withdrawal details', to: '/dashboard/withdrawal' },
     { label: 'Earning history', to: '/dashboard/earning-history' },
     { label: 'Deposit history', to: '/dashboard/deposit-history' },

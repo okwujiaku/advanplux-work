@@ -17,7 +17,6 @@ import ChangePassword from './pages/dashboard/ChangePassword'
 import EarningHistory from './pages/dashboard/EarningHistory'
 import DepositHistory from './pages/dashboard/DepositHistory'
 import WithdrawalHistory from './pages/dashboard/WithdrawalHistory'
-import WithdrawalPin from './pages/dashboard/WithdrawalPin'
 import AdminLayout from './pages/admin/AdminLayout'
 import AdminUsersPage from './pages/admin/AdminUsersPage'
 import AdminDepositsPage from './pages/admin/AdminDepositsPage'
@@ -108,7 +107,6 @@ function App() {
           <Route path="deposit" element={<Deposit />} />
           <Route path="withdrawal" element={<Withdrawal />} />
           <Route path="request-withdrawal" element={<RequestWithdrawal />} />
-          <Route path="withdrawal-pin" element={<WithdrawalPin />} />
           <Route path="referral" element={<ReferralDashboard />} />
           <Route path="team" element={<Team />} />
           <Route path="redeem-gift-code" element={<RedeemGiftCode />} />
