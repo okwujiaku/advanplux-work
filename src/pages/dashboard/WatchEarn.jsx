@@ -44,7 +44,7 @@ function WatchEarn() {
   const [countdown, setCountdown] = useState(REQUIRED_WATCH_SECONDS)
   const [timerRunning, setTimerRunning] = useState(false)
   const [canClaim, setCanClaim] = useState(false)
-  const [playerMessage, setPlayerMessage] = useState('Click play on the video to start the timer.')
+  const [playerMessage, setPlayerMessage] = useState('Click play on the video to start.')
   const lastCreditedAdKeyRef = useRef(null)
   const timerIntervalRef = useRef(null)
   const countdownRef = useRef(REQUIRED_WATCH_SECONDS)
@@ -101,7 +101,7 @@ function WatchEarn() {
     stopTimer()
     setCanClaim(false)
     setCountdown(REQUIRED_WATCH_SECONDS)
-    setPlayerMessage('Click play on the video to start the timer.')
+    setPlayerMessage('Click play on the video to start.')
     timerStartedForAdRef.current = null
   }, [adsRemaining, currentAdKey, currentAdLink, hasAccess])
 
@@ -206,7 +206,7 @@ function WatchEarn() {
     }
 
     setTimerRunning(true)
-    setPlayerMessage('Timer running... keep watching this ad.')
+    setPlayerMessage('Ads running.')
 
     timerIntervalRef.current = setInterval(() => {
       const next = countdownRef.current - 1
@@ -298,7 +298,7 @@ function WatchEarn() {
                   Ad {Math.min(adsViewedToday + 1, dailyLimit)} of {dailyLimit}
                 </p>
                 <p className="text-gray-600 text-center mt-2 text-sm">
-                  Watch for {REQUIRED_WATCH_SECONDS} seconds. Reward is added and next ad loads automatically. If you pause the video, the timer pauses too.
+                  Watch for {REQUIRED_WATCH_SECONDS} seconds. Reward is added and next ads load automatically.
                 </p>
               </div>
               <div className="p-6 space-y-4">

@@ -2,10 +2,14 @@ import { useMemo } from 'react'
 import { useApp } from '../../context/AppContext'
 
 function DepositHistory() {
-  const { deposits } = useApp()
+  const { deposits, currentUserId } = useApp()
   const myDeposits = useMemo(
-    () => deposits.filter((deposit) => deposit.userId === 'current-user'),
-    [deposits],
+    () =>
+      deposits.filter(
+        (deposit) =>
+          deposit.userId === currentUserId || deposit.userId === 'current-user',
+      ),
+    [deposits, currentUserId],
   )
 
   return (
