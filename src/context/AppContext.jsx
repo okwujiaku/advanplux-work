@@ -916,6 +916,7 @@ export function AppProvider({ children }) {
   const value = {
     users,
     currentUser,
+    currentUserId,
     isAuthenticated,
     signUp,
     signIn,

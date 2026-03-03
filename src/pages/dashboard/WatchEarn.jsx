@@ -348,15 +348,9 @@ function WatchEarn() {
         <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
           <p className="text-gray-800 font-medium mb-2">Daily limit reached</p>
           <p className="text-gray-600 mb-4">
-            You've watched all {dailyLimit} ads for today for your {packInfo ? packInfo.planName : 'current'} pack. You can watch again tomorrow or activate another Ads Engine to get more ads now.
+            You&apos;ve watched all your ads for today. You can watch again after 24hrs.
           </p>
-          <p className="text-primary-600 font-medium mb-4">Total earned today: ${totalEarnedToday.toFixed(2)}</p>
-          <Link
-            to="/dashboard/purchase"
-            className="inline-block px-6 py-3 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700"
-          >
-            Activate another Ads Engine
-          </Link>
+          <p className="text-primary-600 font-medium">Total earned today: ${totalEarnedToday.toFixed(2)}</p>
         </div>
       )}
     </div>
