@@ -76,7 +76,9 @@ function AdminUsersPage() {
                   const isUuidName = uuidRegex.test(member.name || '')
                   const displayLabel = getMemberDisplay(member)
                   const emailDisplay = member.email && !isUuidEmail ? member.email : displayLabel
-                  const nameDisplay = member.name && !isUuidName ? member.name : displayLabel
+                  const emailLocal = (member.email || '').split('@')[0]
+                  const hasRealName = member.name && !isUuidName && member.name !== member.email
+                  const nameDisplay = hasRealName ? member.name : (emailLocal || displayLabel)
                   return (
                   <tr key={member.id} className="border-t">
                     <td className="p-3">{index + 1}</td>
