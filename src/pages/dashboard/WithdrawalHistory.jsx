@@ -22,14 +22,14 @@ function WithdrawalHistory() {
 
       <section className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="min-w-full table-fixed text-sm">
             <thead>
               <tr className="bg-gray-50 text-left">
-                <th className="p-3">Date</th>
-                <th className="p-3">Amount (USD)</th>
-                <th className="p-3">Payout</th>
-                <th className="p-3">Account</th>
-                <th className="p-3">Status</th>
+                <th className="p-3 w-40">Date</th>
+                <th className="p-3 w-28">Amount (USD)</th>
+                <th className="p-3 w-32">Payout</th>
+                <th className="p-3 w-32">Account</th>
+                <th className="p-3 w-28">Status</th>
               </tr>
             </thead>
             <tbody>
@@ -40,14 +40,14 @@ function WithdrawalHistory() {
               ) : (
                 myWithdrawals.map((withdrawal) => (
                   <tr key={withdrawal.id} className="border-t">
-                    <td className="p-3">{withdrawal.date ? new Date(withdrawal.date).toLocaleString() : '-'}</td>
-                    <td className="p-3">${Number(withdrawal.amountUsd || 0).toFixed(2)}</td>
-                    <td className="p-3">
+                    <td className="p-3 whitespace-nowrap align-top">{withdrawal.date ? new Date(withdrawal.date).toLocaleString() : '-'}</td>
+                    <td className="p-3 whitespace-nowrap align-top">${Number(withdrawal.amountUsd || 0).toFixed(2)}</td>
+                    <td className="p-3 whitespace-nowrap align-top">
                       {withdrawal.currency} {Number(withdrawal.amount || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}
                     </td>
-                    <td className="p-3">{withdrawal.accountNumber || '-'}</td>
-                    <td className="p-3">
-                      <span className={`text-xs px-2 py-1 rounded-full ${
+                    <td className="p-3 whitespace-nowrap align-top">{withdrawal.accountNumber || '-'}</td>
+                    <td className="p-3 align-top">
+                      <span className={`inline-flex items-center justify-center text-xs px-2 py-1 rounded-full ${
                         withdrawal.status === 'approved'
                           ? 'bg-green-100 text-green-700'
                           : withdrawal.status === 'rejected'

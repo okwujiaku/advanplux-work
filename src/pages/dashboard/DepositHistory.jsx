@@ -21,15 +21,15 @@ function DepositHistory() {
 
       <section className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="min-w-full table-fixed text-sm">
             <thead>
               <tr className="bg-gray-50 text-left">
-                <th className="p-3">Date</th>
-                <th className="p-3">Amount (USD)</th>
-                <th className="p-3">Amount (Local)</th>
-                <th className="p-3">Country</th>
-                <th className="p-3">Method</th>
-                <th className="p-3">Status</th>
+                <th className="p-3 w-40">Date</th>
+                <th className="p-3 w-28">Amount (USD)</th>
+                <th className="p-3 w-32">Amount (Local)</th>
+                <th className="p-3 w-28">Country</th>
+                <th className="p-3 w-32">Method</th>
+                <th className="p-3 w-28">Status</th>
               </tr>
             </thead>
             <tbody>
@@ -40,13 +40,13 @@ function DepositHistory() {
               ) : (
                 myDeposits.map((deposit) => (
                   <tr key={deposit.id} className="border-t">
-                    <td className="p-3">{deposit.date ? new Date(deposit.date).toLocaleString() : '-'}</td>
-                    <td className="p-3">${Number(deposit.amountUsd || 0).toFixed(2)}</td>
-                    <td className="p-3">{deposit.currency} {Number(deposit.amount || 0).toLocaleString()}</td>
-                    <td className="p-3">{deposit.country || '-'}</td>
-                    <td className="p-3">{deposit.paymentType || '-'}</td>
-                    <td className="p-3">
-                      <span className={`text-xs px-2 py-1 rounded-full ${
+                    <td className="p-3 whitespace-nowrap align-top">{deposit.date ? new Date(deposit.date).toLocaleString() : '-'}</td>
+                    <td className="p-3 whitespace-nowrap align-top">${Number(deposit.amountUsd || 0).toFixed(2)}</td>
+                    <td className="p-3 whitespace-nowrap align-top">{deposit.currency} {Number(deposit.amount || 0).toLocaleString()}</td>
+                    <td className="p-3 whitespace-nowrap align-top">{deposit.country || '-'}</td>
+                    <td className="p-3 whitespace-nowrap align-top">{deposit.paymentType || '-'}</td>
+                    <td className="p-3 align-top">
+                      <span className={`inline-flex items-center justify-center text-xs px-2 py-1 rounded-full ${
                         deposit.status === 'approved'
                           ? 'bg-green-100 text-green-700'
                           : deposit.status === 'rejected'

@@ -56,6 +56,7 @@ function WatchEarn() {
   const stopTimerRef = useRef(null)
   const currentAdKeyRef = useRef(null)
   const [ytReady, setYtReady] = useState(false)
+  const [resetCountdown, setResetCountdown] = useState('')
 
   const hasAccess = !!(activePacks.length > 0 || isAdminLoggedIn || freeAccessForSetup)
   const dailyLimit = activePacks.length > 0
@@ -86,6 +87,32 @@ function WatchEarn() {
   useEffect(() => {
     dailyLimitRef.current = dailyLimit
   }, [dailyLimit])
+
+  // Countdown until the next day when ads reset (local midnight)
+  useEffect(() => {
+    if (adsRemaining > 0 || !dailyLimit) {
+      setResetCountdown('')
+      return
+    }
+    const update = () => {
+      const now = new Date()
+      const next = new Date(now)
+      next.setDate(now.getDate() + 1)
+      next.setHours(0, 0, 0, 0)
+      const diff = next.getTime() - now.getTime()
+      if (diff <= 0) {
+        setResetCountdown('00:00:00')
+        return
+      }
+      const hours = String(Math.floor(diff / 3600000)).padStart(2, '0')
+      const minutes = String(Math.floor((diff % 3600000) / 60000)).padStart(2, '0')
+      const seconds = String(Math.floor((diff % 60000) / 1000)).padStart(2, '0')
+      setResetCountdown(`${hours}:${minutes}:${seconds}`)
+    }
+    update()
+    const id = setInterval(update, 1000)
+    return () => clearInterval(id)
+  }, [adsRemaining, dailyLimit])
 
   const stopTimer = () => {
     if (timerIntervalRef.current) {
@@ -350,7 +377,10 @@ function WatchEarn() {
           <p className="text-gray-600 mb-4">
             You&apos;ve watched all your ads for today. You can watch again after 24hrs.
           </p>
-          <p className="text-primary-600 font-medium">Total earned today: ${totalEarnedToday.toFixed(2)}</p>
+          <p className="text-primary-600 font-medium mb-1">Total earned today: ${totalEarnedToday.toFixed(2)}</p>
+          {resetCountdown && (
+            <p className="text-xs text-gray-500">Next ads available in {resetCountdown}</p>
+          )}
         </div>
       )}
     </div>
