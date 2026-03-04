@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
 
@@ -12,6 +12,7 @@ function DashboardHome() {
     walletUsd,
     referralEarnings,
     claimedSalary,
+    earningsHistory,
     refetchWalletAndDeposits,
   } = useApp()
   const totalAdsPerDay =
@@ -23,7 +24,23 @@ function DashboardHome() {
         ? PACKS_USD.find((p) => p.usd === activePacks[0])
         : null
   const packInfo = packLabel
-  const earnedTodayUsd = (adsViewedToday * 0.4).toFixed(2)
+  const earnedTodayUsd = useMemo(() => {
+    if (!Array.isArray(earningsHistory) || earningsHistory.length === 0) return '0.00'
+    const today = new Date()
+    const isToday = (dateStr) => {
+      if (!dateStr) return false
+      const x = new Date(dateStr)
+      return (
+        x.getDate() === today.getDate() &&
+        x.getMonth() === today.getMonth() &&
+        x.getFullYear() === today.getFullYear()
+      )
+    }
+    const total = earningsHistory
+      .filter((e) => e && e.source === 'watch-ads' && isToday(e.date))
+      .reduce((sum, e) => sum + (Number(e.amountUsd) || 0), 0)
+    return total.toFixed(2)
+  }, [earningsHistory])
   const referralTotalNgn =
     Number(referralEarnings.level1 || 0) +
     Number(referralEarnings.level2 || 0) +
