@@ -95,7 +95,22 @@ function WatchEarn() {
   const adsRemaining = isLocked
     ? 0
     : Math.max(0, (dailyLimit || 0) - Math.min(adsViewedToday || 0, dailyLimit || 0))
-  const totalEarnedToday = (adsViewedToday || 0) * EARN_PER_AD_USD
+  const totalEarnedToday = useMemo(() => {
+    if (!Array.isArray(earningsHistory) || earningsHistory.length === 0) return 0
+    const today = new Date()
+    const isToday = (dateStr) => {
+      if (!dateStr) return false
+      const x = new Date(dateStr)
+      return (
+        x.getDate() === today.getDate() &&
+        x.getMonth() === today.getMonth() &&
+        x.getFullYear() === today.getFullYear()
+      )
+    }
+    return earningsHistory
+      .filter((e) => e && e.source === 'watch-ads' && isToday(e.date))
+      .reduce((sum, e) => sum + (Number(e.amountUsd) || 0), 0)
+  }, [earningsHistory])
   const youtubeAdLinks = Array.isArray(adVideoIds) ? adVideoIds.filter(isYouTubeUrl) : []
   const hasVideos = youtubeAdLinks.length > 0
   const currentAdLink = hasVideos ? youtubeAdLinks[currentAdIndex % youtubeAdLinks.length] : ''
