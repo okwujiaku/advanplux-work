@@ -1,14 +1,36 @@
 import { useState } from 'react'
+import { useApp } from '../../context/AppContext'
 
 function RedeemGiftCode() {
+  const { refetchWalletAndDeposits } = useApp()
   const [code, setCode] = useState('')
   const [status, setStatus] = useState('')
+  const [loading, setLoading] = useState(false)
 
-  const handleRedeem = () => {
+  const handleRedeem = async () => {
     if (!code.trim()) return
-    // Placeholder user-side redeem flow (non-admin).
-    setStatus('Gift code submitted. If valid, your reward will be added to your account.')
-    setCode('')
+    setLoading(true)
+    setStatus('')
+    try {
+      const token = typeof window !== 'undefined' && window.localStorage && window.localStorage.getItem('authSessionToken')
+      const res = await fetch('/api/user/redeem-gift-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify({ code: code.trim() }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (res.ok && data?.ok) {
+        setStatus(`Success! $${Number(data.creditedUsd).toFixed(2)} has been added to your balance.`)
+        setCode('')
+        refetchWalletAndDeposits?.()
+      } else {
+        setStatus(data?.error || 'Invalid or already redeemed code.')
+      }
+    } catch {
+      setStatus('Network error. Please try again.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -31,12 +53,13 @@ function RedeemGiftCode() {
           <button
             type="button"
             onClick={handleRedeem}
-            className="px-5 py-3 bg-primary-500 text-white rounded-lg hover:bg-primary-600"
+            disabled={loading}
+            className="px-5 py-3 bg-primary-500 text-white rounded-lg hover:bg-primary-600 disabled:opacity-50"
           >
-            Redeem
+            {loading ? 'Redeeming…' : 'Redeem'}
           </button>
         </div>
-        {status && <p className="text-sm text-green-300 mt-3">{status}</p>}
+        {status && <p className={`text-sm mt-3 ${status.startsWith('Success') ? 'text-green-300' : 'text-amber-200'}`}>{status}</p>}
       </div>
     </div>
   )

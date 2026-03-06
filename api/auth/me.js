@@ -21,11 +21,12 @@ export default async function handler(req, res) {
 
   const { data, error } = await supabase
     .from('users')
-    .select('id, email, phone, invitation_code, referred_by_user_id, created_at')
+    .select('id, email, phone, invitation_code, referred_by_user_id, created_at, banned')
     .eq('id', userId)
     .maybeSingle()
 
   if (error || !data) return json(res, 401, { ok: false, error: 'User not found.' })
+  if (data.banned) return json(res, 403, { ok: false, error: 'Account is suspended.' })
 
   let referrerInvitationCode = null
   if (data.referred_by_user_id) {

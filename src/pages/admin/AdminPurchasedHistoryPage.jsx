@@ -8,6 +8,7 @@ function AdminPurchasedHistoryPage() {
   return (
     <section className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
       <h2 className="text-lg font-semibold text-gray-900 p-4 border-b">Purchased engine history</h2>
+      <p className="text-sm text-gray-600 px-4 pb-2">All Ads Engine purchases (no limit).</p>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead><tr className="bg-gray-50 text-left"><th className="p-3">Date</th><th className="p-3">User</th><th className="p-3">Package</th><th className="p-3">Deposit</th></tr></thead>

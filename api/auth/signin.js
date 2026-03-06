@@ -24,7 +24,7 @@ export default async function handler(req, res) {
 
   let query = supabase
     .from('users')
-    .select('id,email,phone,password_hash,invitation_code,referred_by_user_id,created_at')
+    .select('id,email,phone,password_hash,invitation_code,referred_by_user_id,created_at,banned')
     .limit(1)
 
   if (identifier.includes('@')) {
@@ -36,6 +36,9 @@ export default async function handler(req, res) {
   const { data, error } = await query.maybeSingle()
   if (error || !data) {
     return json(res, 401, { ok: false, error: 'Invalid login details.' })
+  }
+  if (data.banned) {
+    return json(res, 403, { ok: false, error: 'Account is suspended. Contact support.' })
   }
 
   const matches = await bcrypt.compare(cleanPassword, data.password_hash || '')

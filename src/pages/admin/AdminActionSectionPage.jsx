@@ -29,7 +29,7 @@ function AdminActionSectionPage() {
   } = useOutletContext()
 
   const [bankForm, setBankForm] = useState({ bankName: '', accountName: '', accountNumber: '', currency: 'USD' })
-  const [editForm, setEditForm] = useState({ name: '', email: '', phone: '' })
+  const [editForm, setEditForm] = useState({ email: '', accountNumber: '' })
   const [editUserSearch, setEditUserSearch] = useState('')
   const editableMembers = useMemo(
     () => members.filter((m) => m.id !== 'current-user'),
@@ -46,9 +46,11 @@ function AdminActionSectionPage() {
       return s.includes(q)
     })
   }, [editableMembers, editUserSearch])
-  const [topupForm, setTopupForm] = useState({ memberId: selectedMemberId, amount: '' })
+  const [topupForm, setTopupForm] = useState({ email: '', amount: '' })
   const [deductForm, setDeductForm] = useState({ memberId: selectedMemberId, amount: '' })
   const [giftForm, setGiftForm] = useState({ value: '' })
+  const [globalWithdrawalLocked, setGlobalWithdrawalLocked] = useState(null)
+  const [withdrawalLockLoading, setWithdrawalLockLoading] = useState(false)
   const [videoUrlsText, setVideoUrlsText] = useState(() => (Array.isArray(adVideoIds) ? adVideoIds.join('\n') : ''))
   const [announcementText, setAnnouncementText] = useState('')
   const [registerAdminForm, setRegisterAdminForm] = useState({ email: '', password: '' })
@@ -57,9 +59,8 @@ function AdminActionSectionPage() {
   useEffect(() => {
     if (selectedMember && selectedMember.id !== 'current-user') {
       setEditForm({
-        name: selectedMember.name || '',
         email: selectedMember.email || '',
-        phone: selectedMember.phone || '',
+        accountNumber: selectedMember.invitationCode || '',
       })
     }
   }, [selectedMember])
@@ -67,6 +68,15 @@ function AdminActionSectionPage() {
   useEffect(() => {
     setVideoUrlsText(Array.isArray(adVideoIds) ? adVideoIds.join('\n') : '')
   }, [adVideoIds])
+
+  useEffect(() => {
+    if (section !== 'lock-withdrawal') return
+    const key = (typeof window !== 'undefined' && window.sessionStorage?.getItem('adminApiKey')) || (typeof import.meta !== 'undefined' && import.meta.env?.VITE_ADMIN_SECRET) || ''
+    fetch('/api/admin/withdrawal-lock', { headers: key ? { 'X-Admin-Key': key } : {} })
+      .then((r) => r.json())
+      .then((d) => { if (d?.ok) setGlobalWithdrawalLocked(!!d.locked) })
+      .catch(() => setGlobalWithdrawalLocked(false))
+  }, [section])
 
   if (section === 'add-bank') {
     return (
@@ -122,7 +132,7 @@ function AdminActionSectionPage() {
                     type="button"
                     onClick={() => {
                       setSelectedMemberId(m.id)
-                      setEditForm({ name: m.name || '', email: m.email || '' })
+                      setEditForm({ email: m.email || '', accountNumber: m.invitationCode || '' })
                       setEditUserSearch('')
                     }}
                     className={`w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 border-b border-gray-100 last:border-0 ${selectedMemberId === m.id ? 'bg-primary-50 text-primary-800' : ''}`}
@@ -151,25 +161,20 @@ function AdminActionSectionPage() {
               </dl>
             </div>
 
-            <h3 className="text-sm font-semibold text-gray-700 mb-2">Editable fields</h3>
-            <div className="grid sm:grid-cols-3 gap-3">
+            <h3 className="text-sm font-semibold text-gray-700 mb-2">Editable fields (email and account number only)</h3>
+            <div className="grid sm:grid-cols-2 gap-3">
               <input
-                value={editForm.name}
-                onChange={(e) => setEditForm((p) => ({ ...p, name: e.target.value }))}
-                placeholder="Name"
-                className="px-4 py-3 border border-gray-300 rounded-lg"
-              />
-              <input
+                type="email"
                 value={editForm.email}
                 onChange={(e) => setEditForm((p) => ({ ...p, email: e.target.value }))}
                 placeholder="Email"
                 className="px-4 py-3 border border-gray-300 rounded-lg"
               />
               <input
-                value={editForm.phone}
-                onChange={(e) => setEditForm((p) => ({ ...p, phone: e.target.value }))}
-                placeholder="Phone"
-                className="px-4 py-3 border border-gray-300 rounded-lg"
+                value={editForm.accountNumber}
+                onChange={(e) => setEditForm((p) => ({ ...p, accountNumber: e.target.value }))}
+                placeholder="Account number (Invitation code)"
+                className="px-4 py-3 border border-gray-300 rounded-lg font-mono"
               />
             </div>
             <button onClick={() => saveMemberEdits(selectedMemberId, editForm)} className="mt-3 px-4 py-2 bg-primary-600 text-white rounded-lg">Save changes</button>
@@ -258,26 +263,43 @@ function AdminActionSectionPage() {
   }
 
   if (section === 'account-topup') {
+    const handleTopup = () => {
+      const email = (topupForm.email || '').trim().toLowerCase()
+      const amount = Number(topupForm.amount)
+      if (!email || !amount || amount <= 0) {
+        alert('Enter a valid email and amount.')
+        return
+      }
+      const member = editableMembers.find((m) => (m.email || '').toLowerCase() === email)
+      if (!member) {
+        alert('No member found with that email.')
+        return
+      }
+      applyWalletChange({ memberId: member.id, amount: String(amount) }, 'add', 'topup')
+      setTopupForm((p) => ({ ...p, amount: '' }))
+    }
     return (
       <section className="bg-white rounded-xl border border-gray-200 p-6">
         <h2 className="text-lg font-semibold mb-3">Account Top up</h2>
+        <p className="text-sm text-gray-600 mb-3">Enter the member&apos;s email and amount to credit their wallet.</p>
         <div className="grid sm:grid-cols-3 gap-3">
-          <select
-            value={topupForm.memberId}
-            onChange={(e) => setTopupForm((p) => ({ ...p, memberId: e.target.value }))}
+          <input
+            type="email"
+            value={topupForm.email || ''}
+            onChange={(e) => setTopupForm((p) => ({ ...p, email: e.target.value }))}
+            placeholder="Member email"
             className="px-4 py-3 border border-gray-300 rounded-lg"
-          >
-            {editableMembers.map((m) => {
-              const label = getMemberDisplay(m)
-              return (
-                <option key={m.id} value={m.id}>
-                  {label}
-                </option>
-              )
-            })}
-          </select>
-          <input value={topupForm.amount} onChange={(e) => setTopupForm((p) => ({ ...p, amount: e.target.value }))} placeholder="Top up amount" className="px-4 py-3 border border-gray-300 rounded-lg" />
-          <button onClick={() => applyWalletChange(topupForm, 'add', 'topup')} className="px-4 py-2 bg-primary-600 text-white rounded-lg">Top up</button>
+          />
+          <input
+            type="number"
+            min="0"
+            step="0.01"
+            value={topupForm.amount}
+            onChange={(e) => setTopupForm((p) => ({ ...p, amount: e.target.value }))}
+            placeholder="Top up amount (USD)"
+            className="px-4 py-3 border border-gray-300 rounded-lg"
+          />
+          <button onClick={handleTopup} className="px-4 py-2 bg-primary-600 text-white rounded-lg">Top up</button>
         </div>
       </section>
     )
@@ -310,23 +332,42 @@ function AdminActionSectionPage() {
   }
 
   if (section === 'lock-withdrawal') {
+    const setLock = async (lock) => {
+      setWithdrawalLockLoading(true)
+      const key = (typeof window !== 'undefined' && window.sessionStorage?.getItem('adminApiKey')) || (typeof import.meta !== 'undefined' && import.meta.env?.VITE_ADMIN_SECRET) || ''
+      try {
+        const res = await fetch('/api/admin/withdrawal-lock', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', ...(key ? { 'X-Admin-Key': key } : {}) },
+          body: JSON.stringify({ lock }),
+        })
+        const data = await res.json().catch(() => ({}))
+        if (res.ok && data?.ok) setGlobalWithdrawalLocked(!!data.locked)
+      } finally {
+        setWithdrawalLockLoading(false)
+      }
+    }
     return (
-      <section className="bg-white rounded-xl border border-gray-200 p-6 space-y-2">
+      <section className="bg-white rounded-xl border border-gray-200 p-6">
         <h2 className="text-lg font-semibold mb-3">Lock/Unlock Withdrawal</h2>
-        {editableMembers.map((member) => {
-          const label = getMemberDisplay(member)
-          return (
-            <div key={member.id} className="flex items-center justify-between border border-gray-200 rounded-lg p-3">
-              <span className="text-sm">{label}</span>
-              <button
-                onClick={() => updateMember(member.id, (m) => ({ ...m, withdrawalLocked: !m.withdrawalLocked }))}
-                className={`px-3 py-1 rounded text-white ${member.withdrawalLocked ? 'bg-green-600' : 'bg-amber-600'}`}
-              >
-                {member.withdrawalLocked ? 'Unlock' : 'Lock'}
-              </button>
-            </div>
-          )
-        })}
+        <p className="text-sm text-gray-600 mb-4">One setting applies to all members. When locked, no one can request a withdrawal.</p>
+        <p className="text-sm font-medium text-gray-700 mb-2">Status: {globalWithdrawalLocked === null ? '…' : globalWithdrawalLocked ? 'Locked for everyone' : 'Unlocked'}</p>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setLock(true)}
+            disabled={withdrawalLockLoading || globalWithdrawalLocked === true}
+            className="px-4 py-2 rounded bg-amber-600 text-white disabled:opacity-50"
+          >
+            Lock withdrawal for all
+          </button>
+          <button
+            onClick={() => setLock(false)}
+            disabled={withdrawalLockLoading || globalWithdrawalLocked === false}
+            className="px-4 py-2 rounded bg-green-600 text-white disabled:opacity-50"
+          >
+            Unlock withdrawal for all
+          </button>
+        </div>
       </section>
     )
   }

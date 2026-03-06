@@ -3,7 +3,7 @@ import { useNavigate, useOutletContext } from 'react-router-dom'
 import { getMemberDisplay } from './memberDisplay'
 
 function AdminUsersPage() {
-  const { members, setSelectedMemberId } = useOutletContext()
+  const { members, setSelectedMemberId, setMemberBanned } = useOutletContext()
   const navigate = useNavigate()
   const [searchTerm, setSearchTerm] = useState('')
   const displayMembers = members.filter((member) => member.id !== 'current-user')
@@ -92,56 +92,68 @@ function AdminUsersPage() {
                     <td className="p-3">${Number(member.balance || 0).toLocaleString()}</td>
                     <td className="p-3">${Number(member.bonusBalance || 0).toLocaleString()}</td>
                     <td className="p-3 space-y-1">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (typeof window === 'undefined') return
-                          try {
-                            const storage = window.localStorage
-                            storage.setItem('authCurrentUserId', JSON.stringify(member.id))
-                            const nextSession = { userId: member.id, email: member.email }
-                            storage.setItem('authSession', JSON.stringify(nextSession))
-                            let authUsers = []
+                      <div className="flex flex-wrap items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (typeof window === 'undefined') return
                             try {
-                              const raw = storage.getItem('authUsers')
-                              authUsers = raw ? JSON.parse(raw) : []
+                              const storage = window.localStorage
+                              storage.setItem('authCurrentUserId', JSON.stringify(member.id))
+                              const nextSession = { userId: member.id, email: member.email }
+                              storage.setItem('authSession', JSON.stringify(nextSession))
+                              let authUsers = []
+                              try {
+                                const raw = storage.getItem('authUsers')
+                                authUsers = raw ? JSON.parse(raw) : []
+                              } catch {
+                                authUsers = []
+                              }
+                              if (!Array.isArray(authUsers)) authUsers = []
+                              const exists = authUsers.some((u) => u.id === member.id)
+                              if (!exists) {
+                                authUsers.push({
+                                  id: member.id,
+                                  email: member.email || '',
+                                  phone: member.phone || '',
+                                  password: '',
+                                  myInvitationCode: member.invitationCode || '',
+                                  referredByUserId: member.referredByUserId || null,
+                                  createdAt: member.joinedAt || new Date().toISOString(),
+                                })
+                                storage.setItem('authUsers', JSON.stringify(authUsers))
+                              }
                             } catch {
-                              authUsers = []
+                              // ignore storage errors
                             }
-                            if (!Array.isArray(authUsers)) authUsers = []
-                            const exists = authUsers.some((u) => u.id === member.id)
-                            if (!exists) {
-                              authUsers.push({
-                                id: member.id,
-                                email: member.email || '',
-                                phone: member.phone || '',
-                                password: '',
-                                myInvitationCode: member.invitationCode || '',
-                                referredByUserId: member.referredByUserId || null,
-                                createdAt: member.joinedAt || new Date().toISOString(),
-                              })
-                              storage.setItem('authUsers', JSON.stringify(authUsers))
-                            }
-                          } catch {
-                            // ignore storage errors
-                          }
-                          window.open('/dashboard', '_blank')
-                        }}
-                        className="block w-full rounded bg-primary-600 px-2 py-1 text-xs font-medium text-white hover:bg-primary-700"
-                      >
-                        View dashboard
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (member.id === 'current-user') return
-                          setSelectedMemberId?.(member.id)
-                          navigate('/admin/edit-users')
-                        }}
-                        className="block w-full rounded border border-amber-500 px-2 py-1 text-xs font-medium text-amber-700 hover:bg-amber-50"
-                      >
-                        Edit user info
-                      </button>
+                            window.open('/dashboard', '_blank')
+                          }}
+                          className="rounded bg-primary-600 px-2 py-1 text-xs font-medium text-white hover:bg-primary-700"
+                        >
+                          View dashboard
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (member.id === 'current-user') return
+                            setSelectedMemberId?.(member.id)
+                            navigate('/admin/edit-users')
+                          }}
+                          className="rounded border border-amber-500 px-2 py-1 text-xs font-medium text-amber-700 hover:bg-amber-50"
+                        >
+                          Edit user info
+                        </button>
+                        {member.id !== 'current-user' && setMemberBanned && (
+                          <button
+                            type="button"
+                            onClick={() => setMemberBanned(member.id, !member.banned)}
+                            title={member.banned ? 'Activate user' : 'Ban user'}
+                            className={`rounded px-2 py-1 text-xs font-medium text-white ${member.banned ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}`}
+                          >
+                            {member.banned ? '✓ Activate' : '⊘ Ban'}
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                   )

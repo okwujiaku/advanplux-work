@@ -159,6 +159,7 @@ function AdminLayout() {
       myInvitationCode: user.invitationCode || '',
       referredByUserId: user.referredByUserId || '',
       createdAt: user.createdAt || '',
+      banned: user.banned || false,
     }))
     const allUsers = [...users, ...normalizedRemoteUsers]
     const authUserById = new Map(allUsers.map((user) => [user.id, user]))
@@ -182,6 +183,7 @@ function AdminLayout() {
             balance: 0,
             bonusBalance: 0,
             withdrawalLocked: false,
+            banned: authUser?.banned || false,
           })
         }
       })
@@ -195,13 +197,15 @@ function AdminLayout() {
           invitationCode: authUser.myInvitationCode || '',
           referredByUserId: authUser.referredByUserId || '',
           joinedAt: authUser.createdAt || member.joinedAt || '',
+          banned: authUser.banned ?? member.banned ?? false,
         }
         if (
           updatedMember.email !== member.email ||
           updatedMember.phone !== member.phone ||
           updatedMember.invitationCode !== member.invitationCode ||
           updatedMember.referredByUserId !== member.referredByUserId ||
-          updatedMember.joinedAt !== member.joinedAt
+          updatedMember.joinedAt !== member.joinedAt ||
+          updatedMember.banned !== member.banned
         ) {
           changed = true
           return updatedMember
@@ -380,13 +384,45 @@ function AdminLayout() {
     setPlatformBankAccounts((prev) => prev.filter((account) => account.id !== bankAccountId))
   }
 
-  const saveMemberEdits = (memberId, payload) => {
-    updateMember(memberId, (m) => ({
-      ...m,
-      name: payload.name.trim() || m.name,
-      email: payload.email.trim() || m.email,
-      phone: (payload.phone || '').trim() || m.phone,
-    }))
+  const setMemberBanned = async (memberId, banned) => {
+    const key = getAdminKey()
+    try {
+      const res = await fetch('/api/admin/users', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', ...(key ? { 'X-Admin-Key': key } : {}) },
+        body: JSON.stringify({ id: memberId, banned }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (res.ok && data?.ok) {
+        updateMember(memberId, (m) => ({ ...m, banned }))
+        return true
+      }
+      alert(data?.error || 'Failed to update.')
+    } catch {
+      alert('Network error.')
+    }
+    return false
+  }
+
+  const saveMemberEdits = async (memberId, payload) => {
+    const email = (payload.email || '').trim()
+    const invitationCode = (payload.accountNumber || '').trim()
+    const key = getAdminKey()
+    try {
+      const res = await fetch('/api/admin/users', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', ...(key ? { 'X-Admin-Key': key } : {}) },
+        body: JSON.stringify({ id: memberId, email: email || undefined, invitationCode: invitationCode || undefined }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (res.ok && data?.ok) {
+        updateMember(memberId, (m) => ({ ...m, email: email || m.email, invitationCode: invitationCode || m.invitationCode }))
+        return
+      }
+      alert(data?.error || 'Failed to save.')
+    } catch {
+      alert('Network error. Could not save.')
+    }
   }
 
   const applyWalletChange = async (form, mode, source) => {
@@ -601,6 +637,7 @@ function AdminLayout() {
     submitBankAccount,
     deleteBankAccount,
     saveMemberEdits,
+    setMemberBanned,
     applyWalletChange,
     createBonusWithdrawal,
     approveBonusWithdrawal,

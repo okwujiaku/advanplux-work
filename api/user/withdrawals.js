@@ -39,6 +39,14 @@ export default async function handler(req, res) {
   }
 
   if (req.method === 'POST') {
+    const { data: lockRow } = await supabase
+      .from('platform_settings')
+      .select('value')
+      .eq('key', 'withdrawal_locked')
+      .maybeSingle()
+    if (lockRow?.value === true) {
+      return json(res, 400, { ok: false, error: 'Withdrawals are currently locked. Try again later.' })
+    }
     const body = req.body || {}
     const { amountUsd, feeUsd, netAmountUsd, currency, accountNumber, accountName, bankName } = body
     const amount_usd = Number(amountUsd) || 0
