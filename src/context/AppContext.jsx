@@ -79,6 +79,7 @@ export function AppProvider({ children }) {
   const [securityPins, setSecurityPins] = useState({})
   const [remoteHasPin, setRemoteHasPin] = useState(null)
   const [referralEarnings, setReferralEarnings] = useState({ level1: 0, level2: 0, level3: 0 })
+  const [referralCountFromApi, setReferralCountFromApi] = useState(null)
   const [claimedSalary, setClaimedSalary] = useState(0)
   const [adsViewedToday, setAdsViewedToday] = useState(0)
   const [earningsHistory, setEarningsHistory] = useState([])
@@ -99,6 +100,7 @@ export function AppProvider({ children }) {
   const isAuthenticated = !!currentUser
 
   const referralCount = useMemo(() => {
+    if (referralCountFromApi) return referralCountFromApi
     if (!currentUser) return { level1: 0, level2: 0, level3: 0 }
     const level1Users = users.filter((user) => user.referredByUserId === currentUser.id)
     const level1Ids = new Set(level1Users.map((user) => user.id))
@@ -110,7 +112,7 @@ export function AppProvider({ children }) {
       level2: level2Users.length,
       level3: level3Users.length,
     }
-  }, [currentUser, users])
+  }, [currentUser, users, referralCountFromApi])
 
   const localSignUp = useCallback(({ phone, email, password, confirmPassword, invitationCode }) => {
     const normalizedPhone = normalizePhone(phone)
@@ -193,6 +195,7 @@ export function AppProvider({ children }) {
           password: String(password || ''),
           myInvitationCode: serverUser.invitationCode || generateInvitationCode(users),
           referredByUserId: serverUser.referredByUserId || null,
+          referrerInvitationCode: serverUser.referrerInvitationCode ?? null,
           createdAt: serverUser.createdAt || new Date().toISOString(),
         }
         setUsers((prev) => {
@@ -265,6 +268,7 @@ export function AppProvider({ children }) {
 
   const signOut = useCallback(() => {
     setCurrentUserId(null)
+    setReferralCountFromApi(null)
     saveSessionToken('')
   }, [saveSessionToken])
 
@@ -324,8 +328,9 @@ export function AppProvider({ children }) {
           const u = d.user
           setUsers((prev) => {
             const exists = prev.some((x) => x.id === u.id)
-            if (exists) return prev.map((x) => (x.id === u.id ? { ...x, ...u } : x))
-            return [{ id: u.id, email: u.email, phone: u.phone, myInvitationCode: u.invitationCode, referredByUserId: u.referredByUserId, createdAt: u.createdAt }]
+            const merged = { id: u.id, email: u.email, phone: u.phone, myInvitationCode: u.invitationCode, referredByUserId: u.referredByUserId, referrerInvitationCode: u.referrerInvitationCode ?? null, createdAt: u.createdAt }
+            if (exists) return prev.map((x) => (x.id === u.id ? { ...x, ...merged } : x))
+            return [merged]
           })
           setCurrentUserId(u.id)
           // Fetch wallet immediately so balance shows after refresh (same token)
@@ -355,8 +360,18 @@ export function AppProvider({ children }) {
               }
               const watchAdsToday = e.earnings.filter((x) => x.source === 'watch-ads' && isToday(x.date)).length
               setAdsViewedToday(watchAdsToday)
+              const teamSalaryTotal = e.earnings
+                .filter((x) => x && x.source === 'team-salary')
+                .reduce((sum, x) => sum + (Number(x.amountUsd) || 0), 0)
+              setClaimedSalary(teamSalaryTotal)
             }
           }).catch(() => {})
+          fetch('/api/user/referral-stats', { headers })
+            .then((r) => r.json())
+            .then((d) => {
+              if (d?.ok && d.level1 != null) setReferralCountFromApi({ level1: d.level1, level2: d.level2 ?? 0, level3: d.level3 ?? 0 })
+            })
+            .catch(() => {})
         }
         setAuthCheckDone(true)
       })
@@ -431,8 +446,9 @@ export function AppProvider({ children }) {
       fetch('/api/user/deposits', { headers }).then((r) => r.json()),
       fetch('/api/user/withdrawals', { headers }).then((r) => r.json()),
       fetch('/api/user/earnings', { headers }).then((r) => r.json()),
+      fetch('/api/user/referral-stats', { headers }).then((r) => r.json()),
     ])
-      .then(([w, d, wd, e]) => {
+      .then(([w, d, wd, e, ref]) => {
         if (w?.ok) {
           if (w.balanceUsd != null) setWalletUsd(w.balanceUsd)
           if (Array.isArray(w.activePacks)) setActivePacks(w.activePacks)
@@ -450,7 +466,12 @@ export function AppProvider({ children }) {
           }
           const watchAdsToday = e.earnings.filter((x) => x.source === 'watch-ads' && isToday(x.date)).length
           setAdsViewedToday(watchAdsToday)
+          const teamSalaryTotal = e.earnings
+            .filter((x) => x && x.source === 'team-salary')
+            .reduce((sum, x) => sum + (Number(x.amountUsd) || 0), 0)
+          setClaimedSalary(teamSalaryTotal)
         }
+        if (ref?.ok && ref.level1 != null) setReferralCountFromApi({ level1: ref.level1, level2: ref.level2 ?? 0, level3: ref.level3 ?? 0 })
       })
       .catch(() => {})
   }, [currentUserId])
@@ -824,12 +845,35 @@ export function AppProvider({ children }) {
   }, [])
 
   const claimSalary = useCallback((amount) => {
-    setClaimedSalary((prev) => prev + amount)
+    const token = typeof window !== 'undefined' && window.localStorage ? getStoredToken() : null
+    const amountUsd = Number(amount || 0)
+    if (token && amountUsd > 0) {
+      fetch('/api/user/earnings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          source: 'team-salary',
+          amountUsd,
+          note: 'Weekly team salary claimed',
+        }),
+      }).catch(() => {})
+      fetch('/api/user/wallet', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ addUsd: amountUsd }),
+      })
+        .then((r) => r.json())
+        .then((d) => {
+          if (d?.ok && d.balanceUsd != null) setWalletUsd(d.balanceUsd)
+        })
+        .catch(() => {})
+    }
+    setClaimedSalary((prev) => prev + amountUsd)
     setEarningsHistory((prev) => [
       {
         id: newId('earn'),
         source: 'team-salary',
-        amountUsd: Number(amount || 0),
+        amountUsd,
         note: 'Weekly team salary claimed',
         date: new Date().toISOString(),
       },

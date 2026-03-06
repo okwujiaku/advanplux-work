@@ -3,12 +3,13 @@ import { Link } from 'react-router-dom'
 function AboutUs() {
   return (
     <div className="max-w-3xl mx-auto space-y-6">
-      <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
+      <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm space-y-4">
         <h1 className="text-2xl font-bold text-slate-900 mb-2">About Advanplux</h1>
-        <p className="text-sm text-slate-600">
-          Advanplux is a digital advertising and rewards platform where members earn in dollars by watching ads,
-          building teams and activating Ads Engine packages. We focus on transparency, clear earnings, and simple
-          deposit and withdrawal experiences.
+        <p className="text-slate-600">
+          Welcome to Advanplux, the platform that makes earning online effortless and enjoyable. We connect advertisers with everyday users who earn cash simply by watching short, high-quality video ads in their free moments. With fast payouts, a user-friendly dashboard, and transparent rewards, Advanplux empowers people worldwide to monetize their downtime – no special skills required, just a few minutes a day.
+        </p>
+        <p className="text-slate-600">
+          Advanplux redefines side hustles: earn real money just by watching ads. Our mission is straightforward – reward you for your attention while helping brands reach engaged audiences. Enjoy a clean interface, quick withdrawals, consistent opportunities, and the freedom to earn on your schedule. Discover why users call Advanplux the easiest way to make extra cash online.
         </p>
       </div>
 

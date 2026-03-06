@@ -79,11 +79,22 @@ export default async function handler(req, res) {
     return json(res, 500, { ok: false, error: 'Unable to create account.' })
   }
 
+  let referrerInvitationCode = null
+  if (inserted.referred_by_user_id) {
+    const { data: referrer } = await supabase
+      .from('users')
+      .select('invitation_code')
+      .eq('id', inserted.referred_by_user_id)
+      .maybeSingle()
+    referrerInvitationCode = referrer?.invitation_code || null
+  }
+
+  const user = { ...stripSensitiveUser(inserted), referrerInvitationCode }
   const token = signSessionToken(inserted)
   return json(res, 200, {
     ok: true,
     token,
-    user: stripSensitiveUser(inserted),
+    user,
   })
 }
 

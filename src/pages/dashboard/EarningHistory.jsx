@@ -15,17 +15,20 @@ function formatUsd(amount) {
 }
 
 function EarningHistory() {
-  const { earningsHistory, adsViewedToday, referralEarnings, claimedSalary } = useApp()
+  const { earningsHistory, referralEarnings, claimedSalary } = useApp()
 
   const sourceTotals = useMemo(() => {
+    const totalFromAds = (earningsHistory || [])
+      .filter((e) => e && e.source === 'watch-ads')
+      .reduce((sum, e) => sum + (Number(e.amountUsd) || 0), 0)
     const referralTotalNgn = Number(referralEarnings.level1 || 0) + Number(referralEarnings.level2 || 0) + Number(referralEarnings.level3 || 0)
     return {
-      watchAds: Number((adsViewedToday * 0.4).toFixed(2)),
+      watchAds: Number(totalFromAds.toFixed(2)),
       referral: Number((referralTotalNgn * NGN_TO_USD).toFixed(2)),
       team: Number(claimedSalary || 0),
       bonus: 0,
     }
-  }, [adsViewedToday, claimedSalary, referralEarnings])
+  }, [earningsHistory, claimedSalary, referralEarnings])
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -38,7 +41,7 @@ function EarningHistory() {
         <h2 className="text-lg font-semibold text-gray-900 mb-3">Earnings by source</h2>
         <div className="grid sm:grid-cols-4 gap-3">
           <div className="rounded-lg border border-gray-200 p-3">
-            <p className="text-xs text-gray-500">Watch ads</p>
+            <p className="text-xs text-gray-500">Watch ads (total from ads)</p>
             <p className="text-lg font-semibold text-gray-900">{formatUsd(sourceTotals.watchAds)}</p>
           </div>
           <div className="rounded-lg border border-gray-200 p-3">

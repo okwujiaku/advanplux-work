@@ -41,13 +41,6 @@ function DashboardHome() {
       .reduce((sum, e) => sum + (Number(e.amountUsd) || 0), 0)
     return total.toFixed(2)
   }, [earningsHistory])
-  const totalFromAdsUsd = useMemo(() => {
-    if (!Array.isArray(earningsHistory) || earningsHistory.length === 0) return '0.00'
-    const total = earningsHistory
-      .filter((e) => e && e.source === 'watch-ads')
-      .reduce((sum, e) => sum + (Number(e.amountUsd) || 0), 0)
-    return total.toFixed(2)
-  }, [earningsHistory])
   const referralTotalNgn =
     Number(referralEarnings.level1 || 0) +
     Number(referralEarnings.level2 || 0) +
@@ -100,7 +93,6 @@ function DashboardHome() {
           <div>
             <p className="text-sm text-white/85">Today earnings</p>
             <p className="text-2xl sm:text-3xl font-bold mt-1">${earnedTodayUsd}</p>
-            <p className="text-xs text-white/70 mt-0.5">Total from ads: ${totalFromAdsUsd}</p>
             <p className="text-xs sm:text-sm text-white/85 mt-1 sm:mt-2">
               {totalAdsPerDay > 0
                 ? packInfo

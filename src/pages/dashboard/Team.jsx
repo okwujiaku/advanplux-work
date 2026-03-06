@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { useApp } from '../../context/AppContext'
 
 const SALARY_TIERS = [
@@ -11,11 +12,16 @@ const SALARY_TIERS = [
 ]
 
 function Team() {
-  const { teamCount, referralCount, claimSalary, claimedSalary, currentUser } = useApp()
-  const referralTotal = (referralCount.level1 || 0) + (referralCount.level2 || 0) + (referralCount.level3 || 0)
-  const investorCount = Math.max(teamCount, referralTotal)
-  const currentTier = SALARY_TIERS.filter((t) => investorCount >= t.investors).pop()
-  const nextTier = SALARY_TIERS.find((t) => t.investors > investorCount)
+  const { referralCount, claimSalary, claimedSalary, currentUser, refetchWalletAndDeposits } = useApp()
+
+  useEffect(() => {
+    refetchWalletAndDeposits()
+  }, [refetchWalletAndDeposits])
+
+  const directDownlines = referralCount.level1 || 0
+  const totalTeam = (referralCount.level1 || 0) + (referralCount.level2 || 0) + (referralCount.level3 || 0)
+  const currentTier = SALARY_TIERS.filter((t) => directDownlines >= t.investors).pop()
+  const nextTier = SALARY_TIERS.find((t) => t.investors > directDownlines)
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
@@ -26,20 +32,23 @@ function Team() {
         </p>
         {currentUser && (
           <p className="text-xs text-gray-500 mt-1">
-            Your account ID: <span className="font-mono">{currentUser.email || currentUser.id}</span>
+            Your account ID: <span className="font-mono">{currentUser.myInvitationCode || currentUser.invitationCode || '–'}</span>
           </p>
         )}
       </div>
 
       <div className="grid sm:grid-cols-2 gap-4">
         <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <p className="text-sm text-gray-500 mb-1">Direct active downlines</p>
-          <p className="text-3xl font-bold text-gray-900">{investorCount}</p>
+          <p className="text-sm text-gray-500 mb-1">Direct active downlines (L1)</p>
+          <p className="text-3xl font-bold text-gray-900">{directDownlines}</p>
+          {totalTeam > directDownlines && (
+            <p className="text-xs text-gray-500 mt-1">Total team (L1+L2+L3): {totalTeam}</p>
+          )}
         </div>
         <div className="bg-white rounded-xl border border-gray-200 p-5">
           <p className="text-sm text-gray-500 mb-1">Next tier target</p>
           <p className="text-3xl font-bold text-primary-600">
-            {nextTier ? `${nextTier.investors - investorCount} downline(s)` : 'Top tier reached'}
+            {nextTier ? `${nextTier.investors - directDownlines} more direct downline(s)` : 'Top tier reached'}
           </p>
         </div>
       </div>
@@ -52,7 +61,7 @@ function Team() {
         </p>
         <div className="space-y-3">
           {SALARY_TIERS.map((t) => {
-            const reached = investorCount >= t.investors
+            const reached = directDownlines >= t.investors
             return (
               <div
                 key={t.investors}

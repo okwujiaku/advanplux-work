@@ -69,7 +69,7 @@ function AdminUsersPage() {
               ) : (
                 filteredMembers.map((member, index) => {
                   const referrer = members.find((m) => m.id === member.referredByUserId)
-                  const referrerLabel = referrer ? getMemberDisplay(referrer) : (member.referredByUserId || '-')
+                  const referrerLabel = referrer ? referrer.invitationCode : (member.referredByUserId ? '–' : '–')
                   const accountId = member.invitationCode || (member.email || '').split('@')[0] || member.id
                   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
                   const isUuidEmail = uuidRegex.test(member.email || '')

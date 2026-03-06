@@ -10,11 +10,18 @@ export default async function handler(req, res) {
   }
 
   if (req.method === 'GET') {
+    const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000
+    const cutoffIso = new Date(Date.now() - THIRTY_DAYS_MS).toISOString()
     const [{ data: walletRow, error: walletErr }, { data: packsRows, error: packsErr }] = await Promise.all([
       supabase.from('user_wallet').select('balance_usd, active_pack_usd').eq('user_id', userId).maybeSingle(),
-      supabase.from('user_active_packs').select('pack_usd').eq('user_id', userId).order('created_at', { ascending: true }),
+      supabase
+        .from('user_active_packs')
+        .select('pack_usd, created_at')
+        .eq('user_id', userId)
+        .gte('created_at', cutoffIso)
+        .order('created_at', { ascending: true }),
     ])
-    if (walletErr) return json(res, 500, { ok: false, error: 'Unable to load wallet.' })
+    if (walletErr || packsErr) return json(res, 500, { ok: false, error: 'Unable to load wallet.' })
     const balance = walletRow ? Number(walletRow.balance_usd) : 0
     let activePacks = Array.isArray(packsRows) ? packsRows.map((r) => Number(r.pack_usd)).filter(Number.isFinite) : []
     if (activePacks.length === 0 && walletRow?.active_pack_usd != null) {

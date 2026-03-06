@@ -144,7 +144,7 @@ function AdminActionSectionPage() {
                 <div><dt className="text-gray-500">Joined</dt><dd>{selectedMember.joinedAt ? new Date(selectedMember.joinedAt).toLocaleString() : '–'}</dd></div>
                 <div><dt className="text-gray-500">Phone</dt><dd>{selectedMember.phone || '–'}</dd></div>
                 <div><dt className="text-gray-500">Invitation code</dt><dd className="font-mono">{selectedMember.invitationCode || '–'}</dd></div>
-                <div><dt className="text-gray-500">Referred by</dt><dd className="truncate">{selectedMember.referredByUserId ? getMemberDisplay(members.find((m) => m.id === selectedMember.referredByUserId)) || selectedMember.referredByUserId : '–'}</dd></div>
+                <div><dt className="text-gray-500">Referred by</dt><dd className="truncate font-mono">{selectedMember.referredByUserId ? (members.find((m) => m.id === selectedMember.referredByUserId))?.invitationCode ?? '–' : '–'}</dd></div>
                 <div><dt className="text-gray-500">Wallet balance</dt><dd>${Number(selectedMember.balance ?? 0).toLocaleString()}</dd></div>
                 <div><dt className="text-gray-500">Bonus balance</dt><dd>${Number(selectedMember.bonusBalance ?? 0).toLocaleString()}</dd></div>
                 <div><dt className="text-gray-500">Withdrawal</dt><dd>{selectedMember.withdrawalLocked ? 'Locked' : 'Unlocked'}</dd></div>

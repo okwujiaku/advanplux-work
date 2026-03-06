@@ -27,6 +27,16 @@ export default async function handler(req, res) {
 
   if (error || !data) return json(res, 401, { ok: false, error: 'User not found.' })
 
-  const user = stripSensitiveUser(data)
+  let referrerInvitationCode = null
+  if (data.referred_by_user_id) {
+    const { data: referrer } = await supabase
+      .from('users')
+      .select('invitation_code')
+      .eq('id', data.referred_by_user_id)
+      .maybeSingle()
+    referrerInvitationCode = referrer?.invitation_code || null
+  }
+
+  const user = { ...stripSensitiveUser(data), referrerInvitationCode }
   return json(res, 200, { ok: true, user })
 }

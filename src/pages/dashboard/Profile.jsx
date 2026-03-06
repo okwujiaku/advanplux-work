@@ -4,9 +4,12 @@ import { useApp } from '../../context/AppContext'
 function Profile() {
   const { currentUser, users } = useApp()
 
-  const referrer = useMemo(() => {
+  const referredByDisplay = useMemo(() => {
     if (!currentUser?.referredByUserId) return null
-    return users.find((u) => u.id === currentUser.referredByUserId) || null
+    const referrer = users.find((u) => u.id === currentUser.referredByUserId)
+    return (currentUser.referrerInvitationCode != null && currentUser.referrerInvitationCode !== '')
+      ? currentUser.referrerInvitationCode
+      : referrer?.invitationCode ?? referrer?.myInvitationCode ?? null
   }, [currentUser, users])
 
   return (
@@ -32,12 +35,8 @@ function Profile() {
               </div>
               <div>
                 <dt className="text-slate-500 font-medium">Referred by</dt>
-                <dd className="mt-0.5 text-slate-900">
-                  {referrer
-                    ? (referrer.email || (referrer.email && referrer.email.split('@')[0]) || referrer.phone || referrer.id)
-                    : currentUser.referredByUserId
-                      ? '–'
-                      : '–'}
+                <dd className="mt-0.5 font-mono text-slate-900">
+                  {referredByDisplay ?? '–'}
                 </dd>
               </div>
               <div>
