@@ -25,6 +25,7 @@ const DEFAULT_AD_VIDEO_IDS = [
 
 const EARN_PER_AD_USD = 0.4
 const NGN_TO_USD = 1 / 1450
+const USD_TO_NGN = 1 / NGN_TO_USD
 const AUTH_SESSION_TOKEN_KEY = 'authSessionToken'
 
 // Only auth token stays in localStorage; all other data comes from Supabase/API.
@@ -364,6 +365,10 @@ export function AppProvider({ children }) {
                 .filter((x) => x && x.source === 'team-salary')
                 .reduce((sum, x) => sum + (Number(x.amountUsd) || 0), 0)
               setClaimedSalary(teamSalaryTotal)
+              const l1Usd = e.earnings.filter((x) => x && x.source === 'referral-level1').reduce((s, x) => s + (Number(x.amountUsd) || 0), 0)
+              const l2Usd = e.earnings.filter((x) => x && x.source === 'referral-level2').reduce((s, x) => s + (Number(x.amountUsd) || 0), 0)
+              const l3Usd = e.earnings.filter((x) => x && x.source === 'referral-level3').reduce((s, x) => s + (Number(x.amountUsd) || 0), 0)
+              setReferralEarnings({ level1: l1Usd, level2: l2Usd, level3: l3Usd })
             }
           }).catch(() => {})
           fetch('/api/user/referral-stats', { headers })
@@ -470,6 +475,10 @@ export function AppProvider({ children }) {
             .filter((x) => x && x.source === 'team-salary')
             .reduce((sum, x) => sum + (Number(x.amountUsd) || 0), 0)
           setClaimedSalary(teamSalaryTotal)
+          const l1Usd = e.earnings.filter((x) => x && x.source === 'referral-level1').reduce((s, x) => s + (Number(x.amountUsd) || 0), 0)
+          const l2Usd = e.earnings.filter((x) => x && x.source === 'referral-level2').reduce((s, x) => s + (Number(x.amountUsd) || 0), 0)
+          const l3Usd = e.earnings.filter((x) => x && x.source === 'referral-level3').reduce((s, x) => s + (Number(x.amountUsd) || 0), 0)
+          setReferralEarnings({ level1: l1Usd, level2: l2Usd, level3: l3Usd })
         }
         if (ref?.ok && ref.level1 != null) setReferralCountFromApi({ level1: ref.level1, level2: ref.level2 ?? 0, level3: ref.level3 ?? 0 })
       })
@@ -929,33 +938,6 @@ export function AppProvider({ children }) {
       saveSessionToken('')
     }
   }, [currentUserId, saveSessionToken])
-
-  useEffect(() => {
-    const referralTotalNgn = Number(referralEarnings.level1 || 0) + Number(referralEarnings.level2 || 0) + Number(referralEarnings.level3 || 0)
-    const referralTotalUsd = Number((referralTotalNgn * NGN_TO_USD).toFixed(2))
-    if (!referralTotalUsd || referralTotalUsd <= 0) return
-    setEarningsHistory((prev) => {
-      const existing = prev.find((entry) => entry.source === 'referral-total')
-      if (existing) {
-        return prev.map((entry) =>
-          entry.source === 'referral-total'
-            ? { ...entry, amountUsd: referralTotalUsd, date: new Date().toISOString(), note: 'Referral earnings summary' }
-            : entry,
-        )
-      }
-      return [
-        {
-          id: newId('earn'),
-          source: 'referral-total',
-          amountUsd: referralTotalUsd,
-          note: 'Referral earnings summary',
-          date: new Date().toISOString(),
-        },
-        ...prev,
-      ]
-    })
-  }, [referralEarnings])
-
 
   const value = {
     users,

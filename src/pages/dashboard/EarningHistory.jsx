@@ -1,11 +1,11 @@
 import { useMemo } from 'react'
 import { useApp } from '../../context/AppContext'
 
-const NGN_TO_USD = 1 / 1450
-
 const SOURCE_LABELS = {
   'watch-ads': 'Watch Ads',
-  'referral-total': 'Referral',
+  'referral-level1': 'Referral (10% L1)',
+  'referral-level2': 'Referral (2% L2)',
+  'referral-level3': 'Referral (1% L3)',
   'team-salary': 'Team',
   bonus: 'Bonus',
 }
@@ -21,10 +21,10 @@ function EarningHistory() {
     const totalFromAds = (earningsHistory || [])
       .filter((e) => e && e.source === 'watch-ads')
       .reduce((sum, e) => sum + (Number(e.amountUsd) || 0), 0)
-    const referralTotalNgn = Number(referralEarnings.level1 || 0) + Number(referralEarnings.level2 || 0) + Number(referralEarnings.level3 || 0)
+    const referralTotalUsd = Number(referralEarnings.level1 || 0) + Number(referralEarnings.level2 || 0) + Number(referralEarnings.level3 || 0)
     return {
       watchAds: Number(totalFromAds.toFixed(2)),
-      referral: Number((referralTotalNgn * NGN_TO_USD).toFixed(2)),
+      referral: Number(referralTotalUsd.toFixed(2)),
       team: Number(claimedSalary || 0),
       bonus: 0,
     }

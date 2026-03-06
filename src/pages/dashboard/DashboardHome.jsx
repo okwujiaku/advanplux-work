@@ -41,11 +41,10 @@ function DashboardHome() {
       .reduce((sum, e) => sum + (Number(e.amountUsd) || 0), 0)
     return total.toFixed(2)
   }, [earningsHistory])
-  const referralTotalNgn =
+  const referralTotalUsd =
     Number(referralEarnings.level1 || 0) +
     Number(referralEarnings.level2 || 0) +
     Number(referralEarnings.level3 || 0)
-  const referralTotalUsd = referralTotalNgn > 0 ? referralTotalNgn / 1450 : 0
   const totalBalanceUsd = Number(walletUsd || 0) + Number(referralTotalUsd || 0) + Number(claimedSalary || 0)
   const referrer = currentUser?.referredByUserId ? users.find((u) => u.id === currentUser.referredByUserId) : null
   const bannerMessages = [

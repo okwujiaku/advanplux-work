@@ -7,12 +7,10 @@ const LEVELS = [
   { level: 3, rate: 1, desc: 'People referred by your Level 2' },
 ]
 
-const NGN_TO_USD = 1 / 1450
-
 function Referral() {
   const [copied, setCopied] = useState(false)
   const { referralEarnings, referralCount, currentUser } = useApp()
-  const code = currentUser?.myInvitationCode || 'N/A'
+  const code = currentUser?.myInvitationCode || currentUser?.invitationCode || 'N/A'
   const referralLink = `https://advanplux.com/sign-up?invite=${code}`
 
   const handleCopy = () => {
@@ -21,8 +19,8 @@ function Referral() {
     setTimeout(() => setCopied(false), 2000)
   }
 
-  const totalEarnings = referralEarnings.level1 + referralEarnings.level2 + referralEarnings.level3
-  const formatAmount = (amountNgn) => `$${(amountNgn * NGN_TO_USD).toFixed(2)}`
+  const totalEarningsUsd = Number(referralEarnings.level1 || 0) + Number(referralEarnings.level2 || 0) + Number(referralEarnings.level3 || 0)
+  const formatUsd = (usd) => `$${Number(usd || 0).toFixed(2)}`
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
@@ -33,7 +31,7 @@ function Referral() {
         </p>
         {currentUser && (
           <p className="text-xs text-gray-500 mt-1">
-            Your account ID: <span className="font-mono">{currentUser.email || currentUser.id}</span>
+            Your account ID: <span className="font-mono">{currentUser.myInvitationCode || currentUser.invitationCode || '–'}</span>
           </p>
         )}
       </div>
@@ -60,7 +58,7 @@ function Referral() {
       <div className="grid sm:grid-cols-2 gap-4">
         <div className="bg-white rounded-xl border border-gray-200 p-5">
           <p className="text-sm text-gray-500 mb-1">Total referral earnings</p>
-          <p className="text-2xl font-bold text-primary-600">{formatAmount(totalEarnings)}</p>
+          <p className="text-2xl font-bold text-primary-600">{formatUsd(totalEarningsUsd)}</p>
         </div>
         <div className="bg-white rounded-xl border border-gray-200 p-5">
           <p className="text-sm text-gray-500 mb-1">Total referrals</p>
@@ -82,7 +80,7 @@ function Referral() {
               <div className="text-right">
                 <p className="text-sm text-gray-500">Earnings</p>
                 <p className="font-bold text-primary-600">
-                  {formatAmount(referralEarnings[`level${l.level}`] || 0)}
+                  {formatUsd(referralEarnings[`level${l.level}`] || 0)}
                 </p>
               </div>
             </div>
