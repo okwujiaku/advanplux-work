@@ -11,6 +11,7 @@ function Referral() {
   const [copied, setCopied] = useState(false)
   const [referralList, setReferralList] = useState({ level1: [], level2: [], level3: [] })
   const [referralListLoading, setReferralListLoading] = useState(true)
+  const [expandedLevel, setExpandedLevel] = useState(null)
   const { referralEarnings, referralCount, currentUser } = useApp()
   const code = currentUser?.myInvitationCode || currentUser?.invitationCode || 'N/A'
   const referralLink = `https://advanplux.com/sign-up?invite=${code}`
@@ -39,41 +40,6 @@ function Referral() {
 
   const totalEarningsUsd = Number(referralEarnings.level1 || 0) + Number(referralEarnings.level2 || 0) + Number(referralEarnings.level3 || 0)
   const formatUsd = (usd) => `$${Number(usd || 0).toFixed(2)}`
-
-  const LevelMembers = ({ level, members, desc }) => (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-      <div className="px-4 py-3 border-b border-gray-200 bg-gray-50">
-        <h3 className="text-base font-semibold text-gray-900">Level {level} — {desc}</h3>
-        <p className="text-xs text-gray-500 mt-0.5">{members.length} member{members.length !== 1 ? 's' : ''}</p>
-      </div>
-      <div className="overflow-x-auto">
-        {members.length === 0 ? (
-          <p className="p-4 text-sm text-gray-500">No one on this level yet.</p>
-        ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-gray-50 text-left">
-                <th className="p-3 text-gray-600 font-medium">#</th>
-                <th className="p-3 text-gray-600 font-medium">Account ID</th>
-                <th className="p-3 text-gray-600 font-medium">Email</th>
-                <th className="p-3 text-gray-600 font-medium">Joined</th>
-              </tr>
-            </thead>
-            <tbody>
-              {members.map((m, i) => (
-                <tr key={m.id} className="border-t border-gray-100">
-                  <td className="p-3 text-gray-500">{i + 1}</td>
-                  <td className="p-3 font-mono text-gray-900">{m.invitationCode || '–'}</td>
-                  <td className="p-3 text-gray-900 break-all">{m.email || '–'}</td>
-                  <td className="p-3 text-gray-600 whitespace-nowrap">{m.joinedAt ? new Date(m.joinedAt).toLocaleString() : '–'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
-    </div>
-  )
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
@@ -124,35 +90,65 @@ function Referral() {
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Referral levels & earnings</h2>
         <div className="space-y-4">
-          {LEVELS.map((l) => (
-            <div key={l.level} className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
-              <div>
-                <p className="font-medium">Level {l.level} — {l.rate}%</p>
-                <p className="text-sm text-gray-500">{l.desc}</p>
+          {LEVELS.map((l) => {
+            const members = referralList[`level${l.level}`] || []
+            const isExpanded = expandedLevel === l.level
+            return (
+              <div key={l.level} className="p-4 bg-gray-50 rounded-lg space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p className="font-medium">Level {l.level} — {l.rate}%</p>
+                    <p className="text-sm text-gray-500">{l.desc}</p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <p className="text-right">
+                      <span className="text-sm text-gray-500">Earnings </span>
+                      <span className="font-bold text-primary-600">{formatUsd(referralEarnings[`level${l.level}`] || 0)}</span>
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setExpandedLevel(isExpanded ? null : l.level)}
+                      className="px-3 py-1.5 text-sm font-medium rounded-lg border border-primary-600 text-primary-600 hover:bg-primary-50 whitespace-nowrap"
+                    >
+                      {isExpanded ? 'Hide members' : `View Level ${l.level}`}
+                    </button>
+                  </div>
+                </div>
+                {isExpanded && (
+                  <div className="pt-3 border-t border-gray-200 overflow-x-auto">
+                    {referralListLoading ? (
+                      <p className="text-gray-500 py-2 text-sm">Loading…</p>
+                    ) : members.length === 0 ? (
+                      <p className="text-sm text-gray-500">No one on this level yet.</p>
+                    ) : (
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="bg-gray-100 text-left">
+                            <th className="p-2 text-gray-600 font-medium">#</th>
+                            <th className="p-2 text-gray-600 font-medium">Account ID</th>
+                            <th className="p-2 text-gray-600 font-medium">Email</th>
+                            <th className="p-2 text-gray-600 font-medium">Joined</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {members.map((m, i) => (
+                            <tr key={m.id} className="border-t border-gray-100">
+                              <td className="p-2 text-gray-500">{i + 1}</td>
+                              <td className="p-2 font-mono text-gray-900">{m.invitationCode || '–'}</td>
+                              <td className="p-2 text-gray-900 break-all">{m.email || '–'}</td>
+                              <td className="p-2 text-gray-600 whitespace-nowrap">{m.joinedAt ? new Date(m.joinedAt).toLocaleString() : '–'}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )}
+                  </div>
+                )}
               </div>
-              <div className="text-right">
-                <p className="text-sm text-gray-500">Earnings</p>
-                <p className="font-bold text-primary-600">
-                  {formatUsd(referralEarnings[`level${l.level}`] || 0)}
-                </p>
-              </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
-      </div>
-
-      <div>
-        <h2 className="text-lg font-semibold text-gray-900 mb-3">Members under you (by level)</h2>
-        <p className="text-sm text-gray-600 mb-4">People who registered using your affiliate link or invitation code, and their downlines.</p>
-        {referralListLoading ? (
-          <p className="text-gray-500 py-4">Loading…</p>
-        ) : (
-          <div className="space-y-6">
-            <LevelMembers level={1} members={referralList.level1} desc="People you referred directly" />
-            <LevelMembers level={2} members={referralList.level2} desc="People referred by your Level 1" />
-            <LevelMembers level={3} members={referralList.level3} desc="People referred by your Level 2" />
-          </div>
-        )}
+        <p className="text-xs text-gray-500 mt-3">Click “View Level N” to see the list of members on that level.</p>
       </div>
     </div>
   )
