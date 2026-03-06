@@ -9,22 +9,24 @@ function AdminWithdrawalsPage() {
     <section className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
       <h2 className="text-lg font-semibold text-gray-900 p-4 border-b">Members withdrawals</h2>
       <div className="overflow-x-auto">
-        <table className="w-full text-sm">
+        <table className="w-full text-sm min-w-[640px]">
           <thead>
             <tr className="bg-gray-50 text-left">
               <th className="p-3">Date</th>
               <th className="p-3">User</th>
               <th className="p-3">Amount</th>
               <th className="p-3">Currency</th>
-              <th className="p-3">Bank</th>
-              <th className="p-3">Account name</th>
-              <th className="p-3">Account number</th>
+              <th className="p-3 whitespace-nowrap">Full withdrawal details</th>
               <th className="p-3">Status</th>
               <th className="p-3">Action</th>
             </tr>
           </thead>
           <tbody>
-            {withdrawals.length === 0 ? <tr><td colSpan={9} className="p-4 text-gray-500">No withdrawal requests yet.</td></tr> : withdrawals.map((w) => (
+            {withdrawals.length === 0 ? <tr><td colSpan={7} className="p-4 text-gray-500">No withdrawal requests yet.</td></tr> : withdrawals.map((w) => {
+              const bank = w.bankName || '–'
+              const accName = w.accountName || '–'
+              const accNum = w.accountNumber || '–'
+              return (
               <tr key={w.id} className="border-t">
                 <td className="p-3">{new Date(w.date).toLocaleString()}</td>
                 <td className="p-3">{getUserLabel(w.userId)}</td>
@@ -34,9 +36,11 @@ function AdminWithdrawalsPage() {
                   <p className="text-xs text-green-700">Net: ${Number(w.netAmountUsd || 0).toFixed(2)}</p>
                 </td>
                 <td className="p-3">{w.currency}</td>
-                <td className="p-3">{w.bankName || '–'}</td>
-                <td className="p-3">{w.accountName || '–'}</td>
-                <td className="p-3 font-mono">{w.accountNumber || '–'}</td>
+                <td className="p-3 max-w-[200px]">
+                  <span className="block font-medium text-gray-900">Bank: {bank}</span>
+                  <span className="block text-gray-700">Account name: {accName}</span>
+                  <span className="block font-mono text-gray-800">Account number: {accNum}</span>
+                </td>
                 <td className="p-3">{w.status}</td>
                 <td className="p-3">
                   <div className="flex gap-2">
@@ -58,7 +62,8 @@ function AdminWithdrawalsPage() {
                   </div>
                 </td>
               </tr>
-            ))}
+            )
+            })}
           </tbody>
         </table>
       </div>

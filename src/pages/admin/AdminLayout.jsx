@@ -406,20 +406,36 @@ function AdminLayout() {
 
   const saveMemberEdits = async (memberId, payload) => {
     const email = (payload.email || '').trim()
-    const invitationCode = (payload.accountNumber || '').trim()
     const key = getAdminKey()
     try {
-      const res = await fetch('/api/admin/users', {
+      if (email) {
+        const res = await fetch('/api/admin/users', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', ...(key ? { 'X-Admin-Key': key } : {}) },
+          body: JSON.stringify({ id: memberId, email }),
+        })
+        const data = await res.json().catch(() => ({}))
+        if (!res.ok || !data?.ok) {
+          alert(data?.error || 'Failed to save email.')
+          return
+        }
+        updateMember(memberId, (m) => ({ ...m, email: email || m.email }))
+      }
+      const wRes = await fetch('/api/admin/user-withdrawal-details', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', ...(key ? { 'X-Admin-Key': key } : {}) },
-        body: JSON.stringify({ id: memberId, email: email || undefined, invitationCode: invitationCode || undefined }),
+        body: JSON.stringify({
+          userId: memberId,
+          bankName: (payload.bankName || '').trim() || undefined,
+          accountName: (payload.accountName || '').trim() || undefined,
+          accountNumber: (payload.accountNumber || '').trim().replace(/\s+/g, '') || undefined,
+        }),
       })
-      const data = await res.json().catch(() => ({}))
-      if (res.ok && data?.ok) {
-        updateMember(memberId, (m) => ({ ...m, email: email || m.email, invitationCode: invitationCode || m.invitationCode }))
+      const wData = await wRes.json().catch(() => ({}))
+      if (!wRes.ok || !wData?.ok) {
+        alert(wData?.error || 'Failed to save withdrawal details.')
         return
       }
-      alert(data?.error || 'Failed to save.')
     } catch {
       alert('Network error. Could not save.')
     }

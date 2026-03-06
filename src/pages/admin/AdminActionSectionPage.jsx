@@ -29,7 +29,7 @@ function AdminActionSectionPage() {
   } = useOutletContext()
 
   const [bankForm, setBankForm] = useState({ bankName: '', accountName: '', accountNumber: '', currency: 'USD' })
-  const [editForm, setEditForm] = useState({ email: '', accountNumber: '' })
+  const [editForm, setEditForm] = useState({ email: '', bankName: '', accountName: '', accountNumber: '' })
   const [editUserSearch, setEditUserSearch] = useState('')
   const editableMembers = useMemo(
     () => members.filter((m) => m.id !== 'current-user'),
@@ -58,10 +58,21 @@ function AdminActionSectionPage() {
 
   useEffect(() => {
     if (selectedMember && selectedMember.id !== 'current-user') {
-      setEditForm({
-        email: selectedMember.email || '',
-        accountNumber: selectedMember.invitationCode || '',
-      })
+      setEditForm({ email: selectedMember.email || '', bankName: '', accountName: '', accountNumber: '' })
+      const key = (typeof window !== 'undefined' && window.sessionStorage?.getItem('adminApiKey')) || (typeof import.meta !== 'undefined' && import.meta.env?.VITE_ADMIN_SECRET) || ''
+      fetch(`/api/admin/user-withdrawal-details?userId=${encodeURIComponent(selectedMember.id)}`, { headers: key ? { 'X-Admin-Key': key } : {} })
+        .then((r) => r.json())
+        .then((d) => {
+          if (d?.ok && d.detail) {
+            setEditForm((p) => ({
+              ...p,
+              bankName: d.detail.bankName || '',
+              accountName: d.detail.accountName || '',
+              accountNumber: d.detail.accountNumber || '',
+            }))
+          }
+        })
+        .catch(() => {})
     }
   }, [selectedMember])
 
@@ -132,7 +143,7 @@ function AdminActionSectionPage() {
                     type="button"
                     onClick={() => {
                       setSelectedMemberId(m.id)
-                      setEditForm({ email: m.email || '', accountNumber: m.invitationCode || '' })
+                      setEditForm({ email: m.email || '', bankName: '', accountName: '', accountNumber: '' })
                       setEditUserSearch('')
                     }}
                     className={`w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 border-b border-gray-100 last:border-0 ${selectedMemberId === m.id ? 'bg-primary-50 text-primary-800' : ''}`}
@@ -161,7 +172,6 @@ function AdminActionSectionPage() {
               </dl>
             </div>
 
-            <h3 className="text-sm font-semibold text-gray-700 mb-2">Editable fields (email and account number only)</h3>
             <div className="grid sm:grid-cols-2 gap-3">
               <input
                 type="email"
@@ -171,9 +181,21 @@ function AdminActionSectionPage() {
                 className="px-4 py-3 border border-gray-300 rounded-lg"
               />
               <input
+                value={editForm.bankName}
+                onChange={(e) => setEditForm((p) => ({ ...p, bankName: e.target.value }))}
+                placeholder="Bank name"
+                className="px-4 py-3 border border-gray-300 rounded-lg"
+              />
+              <input
+                value={editForm.accountName}
+                onChange={(e) => setEditForm((p) => ({ ...p, accountName: e.target.value }))}
+                placeholder="Account name"
+                className="px-4 py-3 border border-gray-300 rounded-lg"
+              />
+              <input
                 value={editForm.accountNumber}
                 onChange={(e) => setEditForm((p) => ({ ...p, accountNumber: e.target.value }))}
-                placeholder="Account number (Invitation code)"
+                placeholder="Account number"
                 className="px-4 py-3 border border-gray-300 rounded-lg font-mono"
               />
             </div>
