@@ -38,6 +38,7 @@ function AdminLayout() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [adminDeposits, setAdminDeposits] = useState([])
   const [adminWithdrawals, setAdminWithdrawals] = useState([])
+  const [packPurchases, setPackPurchases] = useState([])
 
   const {
     users,
@@ -148,18 +149,20 @@ function AdminLayout() {
     const headers = key ? { 'X-Admin-Key': key } : {}
     const load = async () => {
       try {
-        const [g, a, b, i, ad] = await Promise.all([
+        const [g, a, b, i, ad, pp] = await Promise.all([
           fetch('/api/admin/gift-codes', { signal: controller.signal, headers }).then((r) => r.json()),
           fetch('/api/admin/announcements', { signal: controller.signal, headers }).then((r) => r.json()),
           fetch('/api/admin/bonus-withdrawals', { signal: controller.signal, headers }).then((r) => r.json()),
           fetch('/api/admin/investment-history', { signal: controller.signal, headers }).then((r) => r.json()),
           fetch('/api/admin/admin-users', { signal: controller.signal, headers }).then((r) => r.json()),
+          fetch('/api/admin/pack-purchases', { signal: controller.signal, headers }).then((r) => r.json()),
         ])
         if (g?.ok && Array.isArray(g.giftCodes)) setGiftCodes(g.giftCodes)
         if (a?.ok && Array.isArray(a.announcements)) setAnnouncements(a.announcements)
         if (b?.ok && Array.isArray(b.bonusWithdrawals)) setBonusWithdrawals(b.bonusWithdrawals)
         if (i?.ok && Array.isArray(i.investmentHistory)) setInvestmentHistory(i.investmentHistory)
         if (ad?.ok && Array.isArray(ad.adminAccounts)) setAdminAccounts(ad.adminAccounts)
+        if (pp?.ok && Array.isArray(pp.purchases)) setPackPurchases(pp.purchases)
       } catch {
         // keep defaults
       }
@@ -724,6 +727,7 @@ function AdminLayout() {
     investmentHistory,
     adminAccounts,
     deposits: depositsForAdmin,
+    purchasedHistory: packPurchases,
     withdrawals: withdrawalsForAdmin,
     approveDeposit: approveDepositAdmin,
     rejectDeposit: rejectDepositAdmin,
