@@ -434,7 +434,8 @@ function AdminActionSectionPage() {
     return (
       <section className="bg-white rounded-xl border border-gray-200 p-6">
         <h2 className="text-lg font-semibold mb-3">Make Announcement</h2>
-        <textarea value={announcementText} onChange={(e) => setAnnouncementText(e.target.value)} rows={3} className="w-full px-4 py-3 border border-gray-300 rounded-lg" placeholder="Announcement message..." />
+        <p className="text-sm text-gray-500 mb-2">These appear on the dashboard Announcements page. First line = title, rest = description.</p>
+        <textarea value={announcementText} onChange={(e) => setAnnouncementText(e.target.value)} rows={4} className="w-full px-4 py-3 border border-gray-300 rounded-lg" placeholder={'Title (first line)\nDescription (following lines)...'} />
         <button onClick={() => { postAnnouncement(announcementText); setAnnouncementText('') }} className="mt-3 px-4 py-2 bg-primary-600 text-white rounded-lg">Post</button>
         {announcements.map((item) => (<div key={item.id} className="p-3 border border-gray-200 rounded-lg text-sm mt-2"><p>{item.text}</p></div>))}
       </section>

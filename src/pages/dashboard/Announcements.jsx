@@ -1,4 +1,43 @@
+import { useState, useEffect } from 'react'
+
 function Announcements() {
+  const [announcements, setAnnouncements] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  useEffect(() => {
+    let cancelled = false
+    fetch('/api/announcements')
+      .then((r) => r.json())
+      .then((data) => {
+        if (cancelled) return
+        if (data?.ok && Array.isArray(data.announcements)) {
+          setAnnouncements(data.announcements)
+        } else {
+          setError(data?.error || 'Unable to load announcements.')
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) setError(err?.message || 'Failed to load announcements.')
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => { cancelled = true }
+  }, [])
+
+  // Use first line as title, rest as description; if no newline, whole text is description
+  function parseAnnouncement(text) {
+    if (!text || typeof text !== 'string') return { title: '', description: '' }
+    const trimmed = text.trim()
+    const firstNewline = trimmed.indexOf('\n')
+    if (firstNewline === -1) return { title: 'Announcement', description: trimmed }
+    return {
+      title: trimmed.slice(0, firstNewline).trim(),
+      description: trimmed.slice(firstNewline + 1).trim(),
+    }
+  }
+
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       <div>
@@ -6,16 +45,33 @@ function Announcements() {
         <p className="text-[#1B4965] mt-1">Latest platform updates and notices.</p>
       </div>
 
-      <div className="bg-[#1B4965] rounded-xl border border-[#2b607f] shadow-lg p-6 text-white space-y-3">
-        <div className="rounded-lg bg-[#143D59] border border-[#2b607f] p-4">
-          <p className="font-semibold">Watch & Earn updates</p>
-          <p className="text-sm text-white/75">Ads credit automatically after completed watch time.</p>
+      {loading && (
+        <p className="text-[#1B4965]">Loading announcements...</p>
+      )}
+
+      {error && (
+        <p className="text-red-600">{error}</p>
+      )}
+
+      {!loading && !error && announcements.length === 0 && (
+        <div className="bg-[#1B4965] rounded-xl border border-[#2b607f] shadow-lg p-6 text-white">
+          <p className="text-white/85">No announcements yet. Check back later.</p>
         </div>
-        <div className="rounded-lg bg-[#143D59] border border-[#2b607f] p-4">
-          <p className="font-semibold">Payout processing</p>
-          <p className="text-sm text-white/75">Withdrawal requests are reviewed in queue order.</p>
+      )}
+
+      {!loading && !error && announcements.length > 0 && (
+        <div className="bg-[#1B4965] rounded-xl border border-[#2b607f] shadow-lg p-6 text-white space-y-3">
+          {announcements.map((item) => {
+            const { title, description } = parseAnnouncement(item.text)
+            return (
+              <div key={item.id} className="rounded-lg bg-[#143D59] border border-[#2b607f] p-4">
+                <p className="font-semibold">{title}</p>
+                <p className="text-sm text-white/75">{description}</p>
+              </div>
+            )
+          })}
         </div>
-      </div>
+      )}
     </div>
   )
 }
