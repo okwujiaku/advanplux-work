@@ -15,10 +15,12 @@ function formatPayoutInUserCurrency(netUsd, currency) {
 function AdminWithdrawalsPage() {
   const { withdrawals, approveWithdrawal, rejectWithdrawal, members } = useOutletContext()
   const getUserLabel = (userId) => getUserDisplay(userId, members)
+  const pendingWithdrawals = withdrawals.filter((w) => w.status === 'pending')
 
   return (
     <section className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
       <h2 className="text-lg font-semibold text-gray-900 p-4 border-b">Members withdrawals</h2>
+      <p className="text-sm text-gray-600 px-4 pb-2">Pending requests only. Approved, rejected, or reversed withdrawals appear in Withdrawal History.</p>
       <div className="overflow-x-auto">
         <table className="w-full text-sm min-w-[640px]">
           <thead>
@@ -33,7 +35,7 @@ function AdminWithdrawalsPage() {
             </tr>
           </thead>
           <tbody>
-            {withdrawals.length === 0 ? <tr><td colSpan={7} className="p-4 text-gray-500">No withdrawal requests yet.</td></tr> : withdrawals.map((w) => {
+            {pendingWithdrawals.length === 0 ? <tr><td colSpan={7} className="p-4 text-gray-500">No pending withdrawal requests.</td></tr> : pendingWithdrawals.map((w) => {
               const bank = w.bankName || '–'
               const accName = w.accountName || '–'
               const accNum = w.accountNumber || '–'

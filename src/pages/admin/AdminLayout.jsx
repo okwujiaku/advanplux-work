@@ -388,7 +388,7 @@ function AdminLayout() {
     { to: '/admin/change-password', icon: '🔒', label: 'Change Password' },
     { to: '/admin/announcement', icon: '🔔', label: 'Make Announcement' },
     { to: '/admin/deposit-history', icon: '↻', label: 'Deposit History' },
-    { to: '/admin/withdrawal-history', icon: '↻', label: 'Withdrawal History', count: withdrawalsForAdmin.length },
+    { to: '/admin/withdrawal-history', icon: '↻', label: 'Withdrawal History', count: withdrawalsForAdmin.filter((w) => w.status === 'approved' || w.status === 'rejected').length },
   ]
 
   const handleLogin = async (e) => {

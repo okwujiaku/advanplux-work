@@ -48,7 +48,7 @@ function AdminActionSectionPage() {
     })
   }, [editableMembers, editUserSearch])
   const [topupForm, setTopupForm] = useState({ email: '', amount: '' })
-  const [deductForm, setDeductForm] = useState({ memberId: selectedMemberId, amount: '' })
+  const [deductForm, setDeductForm] = useState({ email: '', amount: '' })
   const [giftForm, setGiftForm] = useState({ value: '' })
   const [globalWithdrawalLocked, setGlobalWithdrawalLocked] = useState(null)
   const [withdrawalLockLoading, setWithdrawalLockLoading] = useState(false)
@@ -338,26 +338,52 @@ function AdminActionSectionPage() {
   }
 
   if (section === 'deduct-account') {
+    const handleDeduct = async () => {
+      const email = (deductForm.email || '').trim().toLowerCase()
+      const amount = Number(deductForm.amount)
+      if (!email) {
+        alert('Enter the member\'s email.')
+        return
+      }
+      if (!amount || amount <= 0 || !Number.isFinite(amount)) {
+        alert('Enter a valid amount (e.g. 10 or 10.50).')
+        return
+      }
+      const member = editableMembers.find((m) => (m.email || '').toLowerCase() === email)
+      if (!member) {
+        alert('No member found with that email.')
+        return
+      }
+      const ok = await applyWalletChange({ memberId: member.id, amount: String(amount) }, 'deduct', 'deduct')
+      if (ok) {
+        alert(`Deduction successful. $${amount.toFixed(2)} has been deducted from ${email}'s wallet.`)
+        setDeductForm({ email: '', amount: '' })
+      } else {
+        alert('Deduction failed. The amount may exceed the member\'s balance, or the request could not be completed.')
+      }
+    }
     return (
       <section className="bg-white rounded-xl border border-gray-200 p-6">
         <h2 className="text-lg font-semibold mb-3">Deduct Account</h2>
+        <p className="text-sm text-gray-600 mb-3">Enter the member&apos;s email and amount to deduct from their wallet.</p>
         <div className="grid sm:grid-cols-3 gap-3">
-          <select
-            value={deductForm.memberId}
-            onChange={(e) => setDeductForm((p) => ({ ...p, memberId: e.target.value }))}
+          <input
+            type="email"
+            value={deductForm.email || ''}
+            onChange={(e) => setDeductForm((p) => ({ ...p, email: e.target.value }))}
+            placeholder="Member email"
             className="px-4 py-3 border border-gray-300 rounded-lg"
-          >
-            {editableMembers.map((m) => {
-              const label = getMemberDisplay(m)
-              return (
-                <option key={m.id} value={m.id}>
-                  {label}
-                </option>
-              )
-            })}
-          </select>
-          <input value={deductForm.amount} onChange={(e) => setDeductForm((p) => ({ ...p, amount: e.target.value }))} placeholder="Deduct amount" className="px-4 py-3 border border-gray-300 rounded-lg" />
-          <button onClick={() => applyWalletChange(deductForm, 'deduct', 'deduct')} className="px-4 py-2 bg-red-600 text-white rounded-lg">Deduct</button>
+          />
+          <input
+            type="number"
+            min="0"
+            step="0.01"
+            value={deductForm.amount}
+            onChange={(e) => setDeductForm((p) => ({ ...p, amount: e.target.value }))}
+            placeholder="Deduct amount (USD)"
+            className="px-4 py-3 border border-gray-300 rounded-lg"
+          />
+          <button onClick={handleDeduct} className="px-4 py-2 bg-red-600 text-white rounded-lg">Deduct</button>
         </div>
       </section>
     )

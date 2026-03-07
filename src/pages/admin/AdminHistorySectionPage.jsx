@@ -38,13 +38,15 @@ function AdminHistorySectionPage() {
   }
 
   if (section === 'withdrawal-history') {
+    const withdrawalHistory = withdrawals.filter((w) => w.status === 'approved' || w.status === 'rejected')
     return (
       <section className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
         <h2 className="text-lg font-semibold text-gray-900 p-4 border-b">Withdrawal History</h2>
+        <p className="text-sm text-gray-600 px-4 pb-2">Approved and rejected withdrawals.</p>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead><tr className="bg-gray-50 text-left"><th className="p-3">Date</th><th className="p-3">User</th><th className="p-3">Amount</th><th className="p-3">Status</th></tr></thead>
-            <tbody>{withdrawals.length === 0 ? <tr><td colSpan={4} className="p-4 text-gray-500">No withdrawals yet.</td></tr> : withdrawals.map((w) => (<tr key={w.id} className="border-t"><td className="p-3">{new Date(w.date).toLocaleString()}</td><td className="p-3">{getUserLabel(w.userId)}</td><td className="p-3">${Number(w.amountUsd || 0).toFixed(2)}</td><td className="p-3">{w.status}</td></tr>))}</tbody>
+            <tbody>{withdrawalHistory.length === 0 ? <tr><td colSpan={4} className="p-4 text-gray-500">No withdrawal history yet.</td></tr> : withdrawalHistory.map((w) => (<tr key={w.id} className="border-t"><td className="p-3">{new Date(w.date).toLocaleString()}</td><td className="p-3">{getUserLabel(w.userId)}</td><td className="p-3">${Number(w.amountUsd || 0).toFixed(2)}</td><td className="p-3">{w.status}</td></tr>))}</tbody>
           </table>
         </div>
       </section>
