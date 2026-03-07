@@ -50,8 +50,8 @@ function RequestWithdrawal() {
       } else {
         setError('Could not submit. Try again.')
       }
-    } catch {
-      setError('Something went wrong. Try again.')
+    } catch (err) {
+      setError(err?.message || 'Something went wrong. Try again.')
     }
     setSubmitting(false)
   }

@@ -182,6 +182,7 @@ function AdminLayout() {
       referredByUserId: user.referredByUserId || '',
       createdAt: user.createdAt || '',
       banned: user.banned || false,
+      balanceUsd: user.balanceUsd ?? 0,
     }))
     const allUsers = [...users, ...normalizedRemoteUsers]
     const authUserById = new Map(allUsers.map((user) => [user.id, user]))
@@ -203,8 +204,7 @@ function AdminLayout() {
             invitationCode: authUser?.myInvitationCode || '',
             referredByUserId: authUser?.referredByUserId || '',
             joinedAt: authUser?.createdAt || '',
-            balance: 0,
-            bonusBalance: 0,
+            balance: authUser?.balanceUsd ?? 0,
             withdrawalLocked: false,
             banned: authUser?.banned || false,
           })
@@ -213,6 +213,7 @@ function AdminLayout() {
       const merged = next.map((member) => {
         const authUser = authUserById.get(member.id)
         if (!authUser) return member
+        const balance = authUser.balanceUsd ?? member.balance ?? 0
         const updatedMember = {
           ...member,
           email: authUser.email || member.email,
@@ -221,6 +222,7 @@ function AdminLayout() {
           referredByUserId: authUser.referredByUserId || '',
           joinedAt: authUser.createdAt || member.joinedAt || '',
           banned: authUser.banned ?? member.banned ?? false,
+          balance,
         }
         if (
           updatedMember.email !== member.email ||
@@ -228,7 +230,8 @@ function AdminLayout() {
           updatedMember.invitationCode !== member.invitationCode ||
           updatedMember.referredByUserId !== member.referredByUserId ||
           updatedMember.joinedAt !== member.joinedAt ||
-          updatedMember.banned !== member.banned
+          updatedMember.banned !== member.banned ||
+          updatedMember.balance !== member.balance
         ) {
           changed = true
           return updatedMember

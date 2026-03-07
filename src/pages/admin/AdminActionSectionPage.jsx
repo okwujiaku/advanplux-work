@@ -26,6 +26,7 @@ function AdminActionSectionPage() {
     registerAdmin,
     changePassword,
     postAnnouncement,
+    getAdminKey,
   } = useOutletContext()
 
   const [bankForm, setBankForm] = useState({ bankName: '', accountName: '', accountNumber: '', currency: 'USD' })
@@ -82,12 +83,12 @@ function AdminActionSectionPage() {
 
   useEffect(() => {
     if (section !== 'lock-withdrawal') return
-    const key = (typeof window !== 'undefined' && window.sessionStorage?.getItem('adminApiKey')) || (typeof import.meta !== 'undefined' && import.meta.env?.VITE_ADMIN_SECRET) || ''
+    const key = typeof getAdminKey === 'function' ? getAdminKey() : ''
     fetch('/api/admin/withdrawal-lock', { headers: key ? { 'X-Admin-Key': key } : {} })
       .then((r) => r.json())
       .then((d) => { if (d?.ok) setGlobalWithdrawalLocked(!!d.locked) })
       .catch(() => setGlobalWithdrawalLocked(false))
-  }, [section])
+  }, [section, getAdminKey])
 
   if (section === 'add-bank') {
     return (
@@ -365,7 +366,7 @@ function AdminActionSectionPage() {
   if (section === 'lock-withdrawal') {
     const setLock = async (lock) => {
       setWithdrawalLockLoading(true)
-      const key = (typeof window !== 'undefined' && window.sessionStorage?.getItem('adminApiKey')) || (typeof import.meta !== 'undefined' && import.meta.env?.VITE_ADMIN_SECRET) || ''
+      const key = typeof getAdminKey === 'function' ? getAdminKey() : ''
       try {
         const res = await fetch('/api/admin/withdrawal-lock', {
           method: 'PATCH',
@@ -374,6 +375,7 @@ function AdminActionSectionPage() {
         })
         const data = await res.json().catch(() => ({}))
         if (res.ok && data?.ok) setGlobalWithdrawalLocked(!!data.locked)
+        else if (!res.ok) alert(data?.error || 'Failed to update. Ensure admin key is set (VITE_ADMIN_SECRET or sessionStorage adminApiKey).')
       } finally {
         setWithdrawalLockLoading(false)
       }

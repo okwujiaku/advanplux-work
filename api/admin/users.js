@@ -7,16 +7,26 @@ export default async function handler(req, res) {
   }
 
   if (req.method === 'GET') {
-    const { data, error } = await supabase
+    const { data: usersData, error } = await supabase
       .from('users')
       .select('id,email,phone,invitation_code,referred_by_user_id,created_at,banned')
       .order('created_at', { ascending: false })
 
     if (error) return json(res, 500, { ok: false, error: 'Failed to fetch users.' })
 
+    const userIds = (usersData || []).map((u) => u.id)
+    const balanceByUser = new Map()
+    if (userIds.length > 0) {
+      const { data: wallets } = await supabase
+        .from('user_wallet')
+        .select('user_id, balance_usd')
+        .in('user_id', userIds)
+      ;(wallets || []).forEach((w) => balanceByUser.set(w.user_id, Number(w.balance_usd) || 0))
+    }
+
     return json(res, 200, {
       ok: true,
-      users: (data || []).map((user) => ({
+      users: (usersData || []).map((user) => ({
         id: user.id,
         email: user.email || '',
         phone: user.phone || '',
@@ -24,6 +34,7 @@ export default async function handler(req, res) {
         referredByUserId: user.referred_by_user_id || null,
         createdAt: user.created_at || null,
         banned: !!user.banned,
+        balanceUsd: balanceByUser.get(user.id) ?? 0,
       })),
     })
   }

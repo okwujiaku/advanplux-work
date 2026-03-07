@@ -689,8 +689,9 @@ export function AppProvider({ children }) {
             }
             return out.withdrawal.id
           }
-        } catch {
-          // fall through to local
+          if (!out?.ok && out?.error) throw new Error(out.error)
+        } catch (err) {
+          if (err?.message) throw err
         }
       }
       const id = newId('wd')

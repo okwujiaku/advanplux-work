@@ -44,7 +44,8 @@ export default async function handler(req, res) {
       .select('value')
       .eq('key', 'withdrawal_locked')
       .maybeSingle()
-    if (lockRow?.value === true) {
+    const lockVal = lockRow?.value
+    if (lockVal === true || lockVal === 'true') {
       return json(res, 400, { ok: false, error: 'Withdrawals are currently locked. Try again later.' })
     }
     const body = req.body || {}

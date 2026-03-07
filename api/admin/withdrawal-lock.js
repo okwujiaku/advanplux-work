@@ -15,13 +15,14 @@ export default async function handler(req, res) {
     if (error) {
       return json(res, 200, { ok: true, locked: false })
     }
-    const locked = data?.value === true
-    return json(res, 200, { ok: true, locked })
+    const v = data?.value
+    const locked = v === true || v === 'true'
+    return json(res, 200, { ok: true, locked: !!locked })
   }
 
   if (req.method === 'PATCH' && isAdminRequest(req)) {
     const { lock } = req.body || {}
-    const locked = lock === true
+    const locked = lock === true || lock === 'true'
     const { error } = await supabase
       .from('platform_settings')
       .upsert({ key: LOCK_KEY, value: locked }, { onConflict: 'key' })
