@@ -37,6 +37,7 @@ function AdminLayout() {
   const [selectedMemberId, setSelectedMemberId] = useState(DEFAULT_MEMBER.id)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [adminDeposits, setAdminDeposits] = useState([])
+  const [adminWithdrawals, setAdminWithdrawals] = useState([])
 
   const {
     users,
@@ -104,6 +105,24 @@ function AdminLayout() {
     if (!loggedIn) return
     const controller = new AbortController()
     const key = getAdminKey()
+    const loadAdminWithdrawals = async () => {
+      try {
+        const res = await fetch('/api/admin/withdrawals', { signal: controller.signal, headers: key ? { 'X-Admin-Key': key } : {} })
+        const data = await res.json().catch(() => ({}))
+        if (res.ok && data?.ok && Array.isArray(data.withdrawals)) setAdminWithdrawals(data.withdrawals)
+        else setAdminWithdrawals([])
+      } catch {
+        setAdminWithdrawals([])
+      }
+    }
+    loadAdminWithdrawals()
+    return () => controller.abort()
+  }, [loggedIn])
+
+  useEffect(() => {
+    if (!loggedIn) return
+    const controller = new AbortController()
+    const key = getAdminKey()
     const loadPlatformBankAccounts = async () => {
       try {
         const response = await fetch('/api/admin/platform-bank-accounts', {
@@ -163,7 +182,8 @@ function AdminLayout() {
     }))
     const allUsers = [...users, ...normalizedRemoteUsers]
     const authUserById = new Map(allUsers.map((user) => [user.id, user]))
-    const ids = new Set([DEFAULT_MEMBER.id, ...allUsers.map((user) => user.id), ...depositsForAdmin.map((d) => d.userId), ...withdrawals.map((w) => w.userId)])
+    const withdrawalList = adminWithdrawals.length > 0 ? adminWithdrawals : withdrawals
+    const ids = new Set([DEFAULT_MEMBER.id, ...allUsers.map((user) => user.id), ...depositsForAdmin.map((d) => d.userId), ...withdrawalList.map((w) => w.userId)])
     setMembers((prev) => {
       let changed = false
       const next = [...prev]
@@ -214,7 +234,7 @@ function AdminLayout() {
       })
       return changed ? merged : prev
     })
-  }, [depositsForAdmin, remoteUsers, users, withdrawals])
+  }, [depositsForAdmin, remoteUsers, users, withdrawals, adminWithdrawals])
 
   const editableMembers = useMemo(
     () => members.filter((member) => member.id !== DEFAULT_MEMBER.id),
@@ -229,8 +249,69 @@ function AdminLayout() {
   }, [editableMembers, members, selectedMemberId])
 
   const pendingDepositsCount = depositsForAdmin.filter((d) => d.status === 'pending').length
-  const pendingWithdrawalsCount = withdrawals.filter((w) => w.status === 'pending').length
+  const withdrawalsForAdmin = adminWithdrawals.length > 0 ? adminWithdrawals : withdrawals
+  const pendingWithdrawalsCount = withdrawalsForAdmin.filter((w) => w.status === 'pending').length
   const pendingBonusWithdrawalsCount = bonusWithdrawals.filter((w) => w.status === 'pending').length
+
+  const approveWithdrawalAdmin = async (id) => {
+    const key = getAdminKey()
+    try {
+      const res = await fetch('/api/admin/withdrawals', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', ...(key ? { 'X-Admin-Key': key } : {}) },
+        body: JSON.stringify({ id, status: 'approved' }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (res.ok && data?.ok) {
+        setAdminWithdrawals((prev) => prev.map((w) => (w.id === id ? { ...w, status: 'approved', approvedAt: data.withdrawal?.approvedAt } : w)))
+        return true
+      }
+      alert(data?.error || 'Could not approve.')
+    } catch {
+      alert('Network error.')
+    }
+    return false
+  }
+
+  const rejectWithdrawalAdmin = async (id) => {
+    const key = getAdminKey()
+    try {
+      const res = await fetch('/api/admin/withdrawals', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', ...(key ? { 'X-Admin-Key': key } : {}) },
+        body: JSON.stringify({ id, status: 'rejected' }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (res.ok && data?.ok) {
+        setAdminWithdrawals((prev) => prev.map((w) => (w.id === id ? { ...w, status: 'rejected', rejectedAt: data.withdrawal?.rejectedAt } : w)))
+        return true
+      }
+      alert(data?.error || 'Could not reject.')
+    } catch {
+      alert('Network error.')
+    }
+    return false
+  }
+
+  const reverseWithdrawalAdmin = async (id) => {
+    const key = getAdminKey()
+    try {
+      const res = await fetch('/api/admin/withdrawals', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', ...(key ? { 'X-Admin-Key': key } : {}) },
+        body: JSON.stringify({ id, status: 'reversed' }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (res.ok && data?.ok) {
+        setAdminWithdrawals((prev) => prev.map((w) => (w.id === id ? { ...w, status: 'reversed', reversedAt: data.withdrawal?.reversedAt } : w)))
+        return true
+      }
+      alert(data?.error || 'Could not reverse.')
+    } catch {
+      alert('Network error.')
+    }
+    return false
+  }
 
   const approveDepositAdmin = async (id) => {
     const key = getAdminKey()
@@ -302,7 +383,7 @@ function AdminLayout() {
     { to: '/admin/change-password', icon: '🔒', label: 'Change Password' },
     { to: '/admin/announcement', icon: '🔔', label: 'Make Announcement' },
     { to: '/admin/deposit-history', icon: '↻', label: 'Deposit History' },
-    { to: '/admin/withdrawal-history', icon: '↻', label: 'Withdrawal History', count: withdrawals.length },
+    { to: '/admin/withdrawal-history', icon: '↻', label: 'Withdrawal History', count: withdrawalsForAdmin.length },
   ]
 
   const handleLogin = async (e) => {
@@ -443,7 +524,7 @@ function AdminLayout() {
 
   const applyWalletChange = async (form, mode, source) => {
     const amount = Number(form.amount)
-    if (!form.memberId || !amount || amount <= 0) return
+    if (!form.memberId || !amount || amount <= 0) return false
     const key = getAdminKey()
     const addUsd = mode === 'add' ? amount : -amount
     try {
@@ -462,7 +543,7 @@ function AdminLayout() {
           { id: newId('hist'), type: source, memberId: form.memberId, amount, date: new Date().toISOString() },
           ...prev,
         ])
-        return
+        return true
       }
     } catch {
       // fallback local
@@ -475,6 +556,7 @@ function AdminLayout() {
       { id: newId('hist'), type: source, memberId: form.memberId, amount, date: new Date().toISOString() },
       ...prev,
     ])
+    return false
   }
 
   const createBonusWithdrawal = async (payload) => {
@@ -643,13 +725,13 @@ function AdminLayout() {
     investmentHistory,
     adminAccounts,
     deposits: depositsForAdmin,
-    withdrawals,
+    withdrawals: withdrawalsForAdmin,
     approveDeposit: approveDepositAdmin,
     rejectDeposit: rejectDepositAdmin,
     reverseDeposit: () => {},
-    approveWithdrawal,
-    rejectWithdrawal,
-    reverseWithdrawal,
+    approveWithdrawal: approveWithdrawalAdmin,
+    rejectWithdrawal: rejectWithdrawalAdmin,
+    reverseWithdrawal: reverseWithdrawalAdmin,
     submitBankAccount,
     deleteBankAccount,
     saveMemberEdits,

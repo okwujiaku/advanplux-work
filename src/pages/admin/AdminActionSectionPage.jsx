@@ -285,11 +285,15 @@ function AdminActionSectionPage() {
   }
 
   if (section === 'account-topup') {
-    const handleTopup = () => {
+    const handleTopup = async () => {
       const email = (topupForm.email || '').trim().toLowerCase()
       const amount = Number(topupForm.amount)
-      if (!email || !amount || amount <= 0) {
-        alert('Enter a valid email and amount.')
+      if (!email) {
+        alert('Enter the member\'s email.')
+        return
+      }
+      if (!amount || amount <= 0 || !Number.isFinite(amount)) {
+        alert('Enter a valid amount (e.g. 10 or 10.50).')
         return
       }
       const member = editableMembers.find((m) => (m.email || '').toLowerCase() === email)
@@ -297,8 +301,13 @@ function AdminActionSectionPage() {
         alert('No member found with that email.')
         return
       }
-      applyWalletChange({ memberId: member.id, amount: String(amount) }, 'add', 'topup')
-      setTopupForm((p) => ({ ...p, amount: '' }))
+      const ok = await applyWalletChange({ memberId: member.id, amount: String(amount) }, 'add', 'topup')
+      if (ok) {
+        alert(`Top up successful. $${amount.toFixed(2)} has been added to ${email}'s wallet.`)
+        setTopupForm({ email: '', amount: '' })
+      } else {
+        alert('Top up failed. Please try again.')
+      }
     }
     return (
       <section className="bg-white rounded-xl border border-gray-200 p-6">

@@ -4,15 +4,17 @@ import { getUserDisplay } from './memberDisplay'
 function AdminDepositsPage() {
   const { deposits, approveDeposit, rejectDeposit, members } = useOutletContext()
   const getUserLabel = (userId) => getUserDisplay(userId, members)
+  const pendingDeposits = deposits.filter((d) => d.status === 'pending')
 
   return (
     <section className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
       <h2 className="text-lg font-semibold text-gray-900 p-4 border-b">Confirm Pending Deposit</h2>
+      <p className="text-sm text-gray-600 px-4 pb-2">Only pending deposits appear here. Approved or rejected deposits are in Deposit History.</p>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead><tr className="bg-gray-50 text-left"><th className="p-3">Date</th><th className="p-3">User</th><th className="p-3">Amount</th><th className="p-3">Currency</th><th className="p-3">Status</th><th className="p-3">Action</th></tr></thead>
           <tbody>
-            {deposits.length === 0 ? <tr><td colSpan={6} className="p-4 text-gray-500">No deposits yet.</td></tr> : deposits.map((d) => (
+            {pendingDeposits.length === 0 ? <tr><td colSpan={6} className="p-4 text-gray-500">No pending deposits.</td></tr> : pendingDeposits.map((d) => (
               <tr key={d.id} className="border-t">
                 <td className="p-3">{new Date(d.date).toLocaleString()}</td>
                 <td className="p-3">{getUserLabel(d.userId)}</td>

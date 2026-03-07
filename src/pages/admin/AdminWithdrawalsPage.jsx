@@ -37,9 +37,9 @@ function AdminWithdrawalsPage() {
                 </td>
                 <td className="p-3">{w.currency}</td>
                 <td className="p-3 max-w-[200px]">
-                  <span className="block font-medium text-gray-900">Bank: {bank}</span>
-                  <span className="block text-gray-700">Account name: {accName}</span>
-                  <span className="block font-mono text-gray-800">Account number: {accNum}</span>
+                  <span className="block font-mono">{accNum}</span>
+                  <span className="block text-gray-800">{accName}</span>
+                  <span className="block text-gray-700">{bank}</span>
                 </td>
                 <td className="p-3">{w.status}</td>
                 <td className="p-3">
@@ -47,18 +47,18 @@ function AdminWithdrawalsPage() {
                     {w.status === 'pending' && (
                       <>
                         <button
-                          onClick={() => {
-                            const ok = approveWithdrawal(w.id)
+                          onClick={async () => {
+                            const ok = await approveWithdrawal(w.id)
                             if (!ok) alert('Cannot approve: user wallet is lower than request.')
                           }}
                           className="px-2 py-1 bg-green-600 text-white rounded text-xs"
                         >
                           Approve
                         </button>
-                        <button onClick={() => rejectWithdrawal(w.id)} className="px-2 py-1 bg-red-600 text-white rounded text-xs">Reject</button>
+                        <button onClick={async () => await rejectWithdrawal(w.id)} className="px-2 py-1 bg-red-600 text-white rounded text-xs">Reject</button>
                       </>
                     )}
-                    {w.status === 'approved' && <button onClick={() => reverseWithdrawal(w.id)} className="px-2 py-1 bg-gray-700 text-white rounded text-xs">Reverse</button>}
+                    {w.status === 'approved' && <button onClick={async () => await reverseWithdrawal(w.id)} className="px-2 py-1 bg-gray-700 text-white rounded text-xs">Reverse</button>}
                   </div>
                 </td>
               </tr>
