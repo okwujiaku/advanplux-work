@@ -51,7 +51,6 @@ function AdminUsersPage() {
                 <th className="p-3">Phone</th>
                 <th className="p-3">Invitation code</th>
                 <th className="p-3">Referred by</th>
-                <th className="p-3">Joined</th>
                 <th className="p-3">Balance</th>
                 <th className="p-3">Actions</th>
               </tr>
@@ -59,11 +58,11 @@ function AdminUsersPage() {
             <tbody>
               {displayMembers.length === 0 ? (
                 <tr className="border-t">
-                  <td className="p-4 text-gray-500" colSpan={11}>No registered users yet.</td>
+                  <td className="p-4 text-gray-500" colSpan={10}>No registered users yet.</td>
                 </tr>
               ) : filteredMembers.length === 0 ? (
                 <tr className="border-t">
-                  <td className="p-4 text-gray-500" colSpan={11}>No members match your search.</td>
+                  <td className="p-4 text-gray-500" colSpan={10}>No members match your search.</td>
                 </tr>
               ) : (
                 filteredMembers.map((member, index) => {
@@ -87,7 +86,6 @@ function AdminUsersPage() {
                     <td className="p-3">{member.phone || '-'}</td>
                     <td className="p-3 font-mono">{member.invitationCode || '-'}</td>
                     <td className="p-3">{referrerLabel}</td>
-                    <td className="p-3">{member.joinedAt ? new Date(member.joinedAt).toLocaleString() : '-'}</td>
                     <td className="p-3">${Number(member.balance ?? 0).toFixed(2)}</td>
                     <td className="p-3 space-y-1">
                       <div className="flex flex-wrap items-center gap-1">
