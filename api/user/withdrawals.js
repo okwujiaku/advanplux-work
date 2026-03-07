@@ -1,4 +1,4 @@
-import { getCurrentUserIdFromRequest, getSupabaseAdmin, json } from '../_lib/auth-utils.js'
+import { getEffectiveUserIdFromRequest, getSupabaseAdmin, json } from '../_lib/auth-utils.js'
 
 function mapRow(w) {
   return {
@@ -20,7 +20,7 @@ function mapRow(w) {
 }
 
 export default async function handler(req, res) {
-  const userId = getCurrentUserIdFromRequest(req)
+  const userId = getEffectiveUserIdFromRequest(req)
   if (!userId) return json(res, 401, { ok: false, error: 'Unauthorized.' })
 
   const supabase = getSupabaseAdmin()

@@ -33,6 +33,26 @@ function getStoredToken() {
   if (typeof window === 'undefined' || !window.localStorage) return null
   return window.localStorage.getItem(AUTH_SESSION_TOKEN_KEY)
 }
+
+const ADMIN_VIEW_AS_USER_KEY = 'adminViewAsUserId'
+const ADMIN_VIEW_AS_KEY = 'adminViewAsKey'
+
+function getAuthHeaders() {
+  if (typeof window === 'undefined' || !window.localStorage) return {}
+  const viewAsId = window.localStorage.getItem(ADMIN_VIEW_AS_USER_KEY)
+  const viewAsKey = window.localStorage.getItem(ADMIN_VIEW_AS_KEY)
+  if (viewAsId && viewAsKey) return { 'X-Admin-Key': viewAsKey, 'X-View-As-User': viewAsId }
+  const token = getStoredToken()
+  return token ? { Authorization: `Bearer ${token}` } : {}
+}
+
+function clearAdminViewAs() {
+  if (typeof window !== 'undefined' && window.localStorage) {
+    window.localStorage.removeItem(ADMIN_VIEW_AS_USER_KEY)
+    window.localStorage.removeItem(ADMIN_VIEW_AS_KEY)
+  }
+}
+
 function getAdminSession() {
   if (typeof window === 'undefined' || !window.sessionStorage) return false
   return window.sessionStorage.getItem('adminLoggedIn') === 'true'
@@ -67,6 +87,7 @@ function isYouTubeUrl(value) {
 export function AppProvider({ children }) {
   const [users, setUsers] = useState([])
   const [currentUserId, setCurrentUserId] = useState(null)
+  const [isAdminViewAsMode, setIsAdminViewAsMode] = useState(false)
   const [userPack, setUserPack] = useState(null)
   const [activePacks, setActivePacks] = useState([])
   const [savedAccount, setSavedAccount] = useState(null)
@@ -271,6 +292,7 @@ export function AppProvider({ children }) {
     setCurrentUserId(null)
     setReferralCountFromApi(null)
     saveSessionToken('')
+    clearAdminViewAs()
   }, [saveSessionToken])
 
   const resetPassword = useCallback(
@@ -315,18 +337,21 @@ export function AppProvider({ children }) {
     [],
   )
 
-  // Restore user session from token; avoid showing sign-in until we've checked
+  // Restore user session from token or admin view-as; avoid showing sign-in until we've checked
   useEffect(() => {
-    const token = getStoredToken()
-    if (!token) {
+    const headers = getAuthHeaders()
+    const hasViewAs = typeof window !== 'undefined' && window.localStorage && window.localStorage.getItem(ADMIN_VIEW_AS_USER_KEY)
+    if (!hasViewAs) setIsAdminViewAsMode(false)
+    if (!hasViewAs && !headers.Authorization) {
       setAuthCheckDone(true)
       return
     }
-    fetch('/api/auth/me', { headers: { Authorization: `Bearer ${token}` } })
+    fetch('/api/auth/me', { headers })
       .then((r) => r.json())
       .then((d) => {
         if (d?.ok && d?.user) {
           const u = d.user
+          setIsAdminViewAsMode(!!hasViewAs)
           setUsers((prev) => {
             const exists = prev.some((x) => x.id === u.id)
             const merged = { id: u.id, email: u.email, phone: u.phone, myInvitationCode: u.invitationCode, referredByUserId: u.referredByUserId, referrerInvitationCode: u.referrerInvitationCode ?? null, createdAt: u.createdAt }
@@ -334,9 +359,9 @@ export function AppProvider({ children }) {
             return [merged]
           })
           setCurrentUserId(u.id)
-          // Fetch wallet immediately so balance shows after refresh (same token)
-          const headers = { Authorization: `Bearer ${token}` }
-          fetch('/api/user/wallet', { headers })
+          // Fetch wallet immediately so balance shows after refresh
+          const h = getAuthHeaders()
+          fetch('/api/user/wallet', { headers: h })
             .then((r) => r.json())
             .then((w) => {
               if (w?.ok && w.balanceUsd != null) setWalletUsd(w.balanceUsd)
@@ -344,13 +369,13 @@ export function AppProvider({ children }) {
               if (w?.ok) setUserPack(w.activePackUsd ?? null)
             })
             .catch(() => {})
-          fetch('/api/user/deposits', { headers }).then((r) => r.json()).then((d2) => {
+          fetch('/api/user/deposits', { headers: h }).then((r) => r.json()).then((d2) => {
             if (d2?.ok && Array.isArray(d2.deposits)) setDeposits(d2.deposits)
           }).catch(() => {})
-          fetch('/api/user/withdrawals', { headers }).then((r) => r.json()).then((wd) => {
+          fetch('/api/user/withdrawals', { headers: h }).then((r) => r.json()).then((wd) => {
             if (wd?.ok && Array.isArray(wd.withdrawals)) setWithdrawals(wd.withdrawals)
           }).catch(() => {})
-          fetch('/api/user/earnings', { headers }).then((r) => r.json()).then((e) => {
+          fetch('/api/user/earnings', { headers: h }).then((r) => r.json()).then((e) => {
             if (e?.ok && Array.isArray(e.earnings)) {
               setEarningsHistory(e.earnings)
               const today = new Date()
@@ -371,7 +396,7 @@ export function AppProvider({ children }) {
               setReferralEarnings({ level1: l1Usd, level2: l2Usd, level3: l3Usd })
             }
           }).catch(() => {})
-          fetch('/api/user/referral-stats', { headers })
+          fetch('/api/user/referral-stats', { headers: h })
             .then((r) => r.json())
             .then((d) => {
               if (d?.ok && d.level1 != null) setReferralCountFromApi({ level1: d.level1, level2: d.level2 ?? 0, level3: d.level3 ?? 0 })
@@ -403,12 +428,12 @@ export function AppProvider({ children }) {
       setRemoteHasPin(null)
       return
     }
-    const token = getStoredToken()
-    if (!token) {
+    const headers = getAuthHeaders()
+    if (!headers.Authorization && !headers['X-Admin-Key']) {
       setRemoteHasPin(null)
       return
     }
-    fetch('/api/auth/pin-status', { headers: { Authorization: `Bearer ${token}` } })
+    fetch('/api/auth/pin-status', { headers })
       .then((r) => r.json())
       .then((d) => {
         if (d.ok) setRemoteHasPin(!!d.hasPin)
@@ -418,9 +443,9 @@ export function AppProvider({ children }) {
 
   // When authenticated, fetch withdrawal details from Supabase
   useEffect(() => {
-    const token = getStoredToken()
-    if (!currentUserId || !token) return
-    fetch('/api/user/withdrawal-details', { headers: { Authorization: `Bearer ${token}` } })
+    const headers = getAuthHeaders()
+    if (!currentUserId || (!headers.Authorization && !headers['X-Admin-Key'])) return
+    fetch('/api/user/withdrawal-details', { headers })
       .then((r) => r.json())
       .then((d) => {
         if (d.ok && d.detail) {
@@ -443,9 +468,8 @@ export function AppProvider({ children }) {
   }, [currentUserId])
 
   const refetchWalletAndDeposits = useCallback(() => {
-    const token = getStoredToken()
-    if (!currentUserId || !token) return
-    const headers = { Authorization: `Bearer ${token}` }
+    const headers = getAuthHeaders()
+    if (!currentUserId || (!headers.Authorization && !headers['X-Admin-Key'])) return
     Promise.all([
       fetch('/api/user/wallet', { headers }).then((r) => r.json()),
       fetch('/api/user/deposits', { headers }).then((r) => r.json()),
@@ -533,15 +557,12 @@ export function AppProvider({ children }) {
         createdAt: detail.createdAt || new Date().toISOString(),
       }
 
-      const token =
-        typeof window !== 'undefined' && window.localStorage
-          ? getStoredToken()
-          : null
-      if (token) {
+      const headers = getAuthHeaders()
+      if (headers.Authorization || headers['X-Admin-Key']) {
         try {
           const res = await fetch('/api/user/withdrawal-details', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            headers: { 'Content-Type': 'application/json', ...headers },
             body: JSON.stringify({
               currency: normalized.currency,
               accountName: normalized.accountName,
@@ -585,15 +606,12 @@ export function AppProvider({ children }) {
         accountUsed: data.accountNumber || data.accountUsed || '',
         pack: data.pack,
       }
-      const token =
-        typeof window !== 'undefined' && window.localStorage
-          ? getStoredToken()
-          : null
-      if (token) {
+      const headers = getAuthHeaders()
+      if (headers.Authorization || headers['X-Admin-Key']) {
         try {
           const res = await fetch('/api/user/deposits', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            headers: { 'Content-Type': 'application/json', ...headers },
             body: JSON.stringify(payload),
           })
           const out = await res.json().catch(() => ({}))
@@ -691,12 +709,12 @@ export function AppProvider({ children }) {
   )
 
   const activatePack = useCallback(async (packUsd) => {
-    const token = getStoredToken()
-    if (!token || !packUsd) return false
+    const headers = getAuthHeaders()
+    if ((!headers.Authorization && !headers['X-Admin-Key']) || !packUsd) return false
     try {
       const res = await fetch('/api/user/wallet', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        headers: { 'Content-Type': 'application/json', ...headers },
         body: JSON.stringify({ activatePackUsd: packUsd }),
       })
       const data = await res.json().catch(() => ({}))
@@ -713,8 +731,8 @@ export function AppProvider({ children }) {
   }, [])
 
   const hasToken = useMemo(() => {
-    if (typeof window === 'undefined' || !window.localStorage) return false
-    return !!getStoredToken()
+    const h = getAuthHeaders()
+    return !!(h.Authorization || h['X-Admin-Key'])
   }, [currentUserId])
 
   const hasSecurityPin = useMemo(() => {
@@ -727,15 +745,12 @@ export function AppProvider({ children }) {
     async (pin) => {
       const normalized = String(pin || '').trim()
       if (!currentUserId || !/^\d{4}$/.test(normalized)) return false
-      const token =
-        typeof window !== 'undefined' && window.localStorage
-          ? getStoredToken()
-          : null
-      if (token) {
+      const headers = getAuthHeaders()
+      if (headers.Authorization || headers['X-Admin-Key']) {
         try {
           const res = await fetch('/api/auth/set-pin', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            headers: { 'Content-Type': 'application/json', ...headers },
             body: JSON.stringify({ pin: normalized }),
           })
           const data = await res.json().catch(() => ({}))
@@ -763,15 +778,12 @@ export function AppProvider({ children }) {
     async (pin) => {
       const normalized = String(pin || '').trim()
       if (!currentUserId || !/^\d{4}$/.test(normalized)) return false
-      const token =
-        typeof window !== 'undefined' && window.localStorage
-          ? getStoredToken()
-          : null
-      if (token) {
+      const headers = getAuthHeaders()
+      if (headers.Authorization || headers['X-Admin-Key']) {
         try {
           const res = await fetch('/api/auth/verify-pin', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            headers: { 'Content-Type': 'application/json', ...headers },
             body: JSON.stringify({ pin: normalized }),
           })
           const data = await res.json().catch(() => ({}))
@@ -854,12 +866,12 @@ export function AppProvider({ children }) {
   }, [])
 
   const claimSalary = useCallback((amount) => {
-    const token = typeof window !== 'undefined' && window.localStorage ? getStoredToken() : null
+    const headers = getAuthHeaders()
     const amountUsd = Number(amount || 0)
-    if (token && amountUsd > 0) {
+    if ((headers.Authorization || headers['X-Admin-Key']) && amountUsd > 0) {
       fetch('/api/user/earnings', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        headers: { 'Content-Type': 'application/json', ...headers },
         body: JSON.stringify({
           source: 'team-salary',
           amountUsd,
@@ -868,7 +880,7 @@ export function AppProvider({ children }) {
       }).catch(() => {})
       fetch('/api/user/wallet', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        headers: { 'Content-Type': 'application/json', ...headers },
         body: JSON.stringify({ addUsd: amountUsd }),
       })
         .then((r) => r.json())
@@ -997,6 +1009,8 @@ export function AppProvider({ children }) {
     setAdVideoIds,
     refetchWalletAndDeposits,
     authCheckDone,
+    isAdminViewAsMode,
+    clearAdminViewAs,
   }
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>
 }

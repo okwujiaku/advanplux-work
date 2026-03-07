@@ -23,6 +23,21 @@ export function getCurrentUserIdFromRequest(req) {
   }
 }
 
+const VIEW_AS_HEADER = 'x-view-as-user'
+
+/**
+ * Get effective user id: when admin sends X-Admin-Key and X-View-As-User, return that user id.
+ * Otherwise return the JWT user id (getCurrentUserIdFromRequest).
+ */
+export function getEffectiveUserIdFromRequest(req) {
+  if (isAdminRequest(req)) {
+    const viewAs = req?.headers?.[VIEW_AS_HEADER] || req?.headers?.['X-View-As-User']
+    const id = typeof viewAs === 'string' ? viewAs.trim() : null
+    if (id) return id
+  }
+  return getCurrentUserIdFromRequest(req)
+}
+
 export function normalizeEmail(value) {
   return String(value || '').trim().toLowerCase()
 }

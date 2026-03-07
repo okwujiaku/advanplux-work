@@ -1,5 +1,5 @@
 import {
-  getCurrentUserIdFromRequest,
+  getEffectiveUserIdFromRequest,
   getSupabaseAdmin,
   json,
   stripSensitiveUser,
@@ -11,7 +11,7 @@ import {
 export default async function handler(req, res) {
   if (req.method !== 'GET') return json(res, 405, { ok: false, error: 'Method not allowed.' })
 
-  const userId = getCurrentUserIdFromRequest(req)
+  const userId = getEffectiveUserIdFromRequest(req)
   if (!userId) return json(res, 401, { ok: false, error: 'Unauthorized.' })
 
   const supabase = getSupabaseAdmin()

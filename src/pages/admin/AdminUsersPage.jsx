@@ -3,7 +3,7 @@ import { useNavigate, useOutletContext } from 'react-router-dom'
 import { getMemberDisplay } from './memberDisplay'
 
 function AdminUsersPage() {
-  const { members, setSelectedMemberId, setMemberBanned } = useOutletContext()
+  const { members, setSelectedMemberId, setMemberBanned, getAdminKey } = useOutletContext()
   const navigate = useNavigate()
   const [searchTerm, setSearchTerm] = useState('')
   const displayMembers = members.filter((member) => member.id !== 'current-user')
@@ -99,34 +99,15 @@ function AdminUsersPage() {
                             if (typeof window === 'undefined') return
                             try {
                               const storage = window.localStorage
-                              storage.setItem('authCurrentUserId', JSON.stringify(member.id))
-                              const nextSession = { userId: member.id, email: member.email }
-                              storage.setItem('authSession', JSON.stringify(nextSession))
-                              let authUsers = []
-                              try {
-                                const raw = storage.getItem('authUsers')
-                                authUsers = raw ? JSON.parse(raw) : []
-                              } catch {
-                                authUsers = []
-                              }
-                              if (!Array.isArray(authUsers)) authUsers = []
-                              const exists = authUsers.some((u) => u.id === member.id)
-                              if (!exists) {
-                                authUsers.push({
-                                  id: member.id,
-                                  email: member.email || '',
-                                  phone: member.phone || '',
-                                  password: '',
-                                  myInvitationCode: member.invitationCode || '',
-                                  referredByUserId: member.referredByUserId || null,
-                                  createdAt: member.joinedAt || new Date().toISOString(),
-                                })
-                                storage.setItem('authUsers', JSON.stringify(authUsers))
-                              }
+                              storage.setItem('adminViewAsUserId', member.id)
+                              const adminKey = (typeof getAdminKey === 'function' ? getAdminKey() : '') ||
+                                (window.sessionStorage?.getItem('adminApiKey') || '') ||
+                                (typeof import.meta !== 'undefined' && import.meta.env?.VITE_ADMIN_SECRET) || ''
+                              if (adminKey) storage.setItem('adminViewAsKey', adminKey)
+                              window.open('/dashboard', '_blank')
                             } catch {
-                              // ignore storage errors
+                              // ignore
                             }
-                            window.open('/dashboard', '_blank')
                           }}
                           className="rounded bg-primary-600 px-2 py-1 text-xs font-medium text-white hover:bg-primary-700"
                         >

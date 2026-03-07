@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, NavLink, Outlet } from 'react-router-dom'
+import { NavLink, Outlet } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
 
 const DEFAULT_MEMBER = {
@@ -370,7 +370,6 @@ function AdminLayout() {
   const menuItems = [
     { to: '/admin/users', icon: '🏠', label: 'Registered Members', count: members.length },
     { to: '/admin/add-bank', icon: '➕', label: 'Add Bank Account' },
-    { to: '/admin/edit-users', icon: '✏️', label: 'Edit Users Info.', count: members.length },
     { to: '/admin/deposits', icon: '$', label: 'Confirm Pending Deposit', count: pendingDepositsCount },
     { to: '/admin/withdrawals', icon: '📥', label: 'Members withdrawals', count: pendingWithdrawalsCount },
     { to: '/admin/gift-code', icon: '🎁', label: 'Generate Gift Code' },
@@ -746,6 +745,7 @@ function AdminLayout() {
     registerAdmin,
     changePassword,
     postAnnouncement,
+    getAdminKey,
   }
 
   return (
@@ -766,9 +766,7 @@ function AdminLayout() {
           <div className="text-right">
             <p className="font-semibold">Welcome Admin</p>
             <div className="flex gap-2 justify-end mt-1">
-              <Link to="/dashboard" className="text-xs px-3 py-1 rounded border border-white/20 text-white hover:bg-white/10">Dashboard</Link>
-              <Link to="/dashboard/watch" className="text-xs px-3 py-1 rounded border border-white/20 text-white hover:bg-white/10">Watch & Earn</Link>
-              <button onClick={handleLogout} className="text-xs px-3 py-1 rounded border border-red-300 text-red-100 hover:bg-red-700/30">Logout</button>
+              <button onClick={handleLogout} className="px-4 py-2 text-sm font-medium rounded-md bg-red-600 text-white hover:bg-red-700 border border-red-500 shadow">Logout</button>
             </div>
           </div>
         </div>

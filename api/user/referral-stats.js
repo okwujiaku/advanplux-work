@@ -1,4 +1,4 @@
-import { getCurrentUserIdFromRequest, getSupabaseAdmin, json } from '../_lib/auth-utils.js'
+import { getEffectiveUserIdFromRequest, getSupabaseAdmin, json } from '../_lib/auth-utils.js'
 
 /**
  * GET: return referral counts (level1, level2, level3) for the current user.
@@ -6,7 +6,7 @@ import { getCurrentUserIdFromRequest, getSupabaseAdmin, json } from '../_lib/aut
 export default async function handler(req, res) {
   if (req.method !== 'GET') return json(res, 405, { ok: false, error: 'Method not allowed.' })
 
-  const userId = getCurrentUserIdFromRequest(req)
+  const userId = getEffectiveUserIdFromRequest(req)
   if (!userId) return json(res, 401, { ok: false, error: 'Unauthorized.' })
 
   const supabase = getSupabaseAdmin()
