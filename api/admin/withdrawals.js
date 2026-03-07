@@ -78,13 +78,7 @@ export default async function handler(req, res) {
     if (s === 'rejected') {
       if (row.status !== 'pending') return json(res, 400, { ok: false, error: 'Withdrawal is not pending.' })
       const now = new Date().toISOString()
-      // Refund amount back to user wallet so it appears on their dashboard
-      const { data: wallet } = await supabase.from('user_wallet').select('balance_usd').eq('user_id', userId).maybeSingle()
-      const balance = wallet ? Number(wallet.balance_usd) : 0
-      await supabase.from('user_wallet').upsert(
-        { user_id: userId, balance_usd: Number((balance + amountUsd).toFixed(2)), updated_at: now },
-        { onConflict: 'user_id' },
-      )
+      // Do not change wallet: we only deduct on approve, so nothing was taken on request; no refund on reject.
       const { data: updated, error: updateErr } = await supabase
         .from('withdrawals')
         .update({ status: 'rejected', rejected_at: now })
