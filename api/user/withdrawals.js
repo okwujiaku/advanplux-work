@@ -53,6 +53,26 @@ export default async function handler(req, res) {
     const amount_usd = Number(amountUsd) || 0
     const fee_usd = Number(feeUsd) || 0
     const net_amount_usd = Number(netAmountUsd) || amount_usd
+    if (amount_usd <= 0) return json(res, 400, { ok: false, error: 'Invalid withdrawal amount.' })
+
+    const { data: walletRow, error: walletFetchErr } = await supabase
+      .from('user_wallet')
+      .select('balance_usd')
+      .eq('user_id', userId)
+      .maybeSingle()
+    if (walletFetchErr) return json(res, 500, { ok: false, error: 'Unable to load balance.' })
+    const balance = walletRow ? Number(walletRow.balance_usd) : 0
+    if (balance < amount_usd) {
+      return json(res, 400, { ok: false, error: 'Insufficient balance. You cannot request more than your available balance.' })
+    }
+
+    const now = new Date().toISOString()
+    const newBalance = Number((balance - amount_usd).toFixed(2))
+    const { error: walletErr } = await supabase
+      .from('user_wallet')
+      .upsert({ user_id: userId, balance_usd: newBalance, updated_at: now }, { onConflict: 'user_id' })
+    if (walletErr) return json(res, 500, { ok: false, error: 'Unable to process withdrawal.' })
+
     const { data: inserted, error } = await supabase
       .from('withdrawals')
       .insert({
@@ -68,7 +88,13 @@ export default async function handler(req, res) {
       })
       .select()
       .single()
-    if (error) return json(res, 500, { ok: false, error: 'Unable to create withdrawal.' })
+    if (error) {
+      const refundErr = await supabase
+        .from('user_wallet')
+        .upsert({ user_id: userId, balance_usd: balance, updated_at: now }, { onConflict: 'user_id' })
+      if (refundErr) console.error('Withdrawal insert failed and refund failed', refundErr)
+      return json(res, 500, { ok: false, error: 'Unable to create withdrawal.' })
+    }
     return json(res, 200, { ok: true, withdrawal: mapRow(inserted) })
   }
 

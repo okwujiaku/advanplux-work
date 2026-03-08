@@ -55,16 +55,8 @@ export default async function handler(req, res) {
 
     if (s === 'approved') {
       if (row.status !== 'pending') return json(res, 400, { ok: false, error: 'Withdrawal is not pending.' })
-      const { data: wallet } = await supabase.from('user_wallet').select('balance_usd').eq('user_id', userId).maybeSingle()
-      const balance = wallet ? Number(wallet.balance_usd) : 0
-      if (balance < amountUsd) {
-        return json(res, 400, { ok: false, error: 'User wallet balance is lower than withdrawal amount.' })
-      }
       const now = new Date().toISOString()
-      await supabase.from('user_wallet').upsert(
-        { user_id: userId, balance_usd: Number((balance - amountUsd).toFixed(2)), updated_at: now },
-        { onConflict: 'user_id' },
-      )
+      // Amount was already deducted when user requested; just mark approved.
       const { data: updated, error: updateErr } = await supabase
         .from('withdrawals')
         .update({ status: 'approved', approved_at: now })
@@ -78,7 +70,13 @@ export default async function handler(req, res) {
     if (s === 'rejected') {
       if (row.status !== 'pending') return json(res, 400, { ok: false, error: 'Withdrawal is not pending.' })
       const now = new Date().toISOString()
-      // Do not change wallet: we only deduct on approve, so nothing was taken on request; no refund on reject.
+      // Refund: amount was deducted when user requested, so add it back on reject.
+      const { data: wallet } = await supabase.from('user_wallet').select('balance_usd').eq('user_id', userId).maybeSingle()
+      const balance = wallet ? Number(wallet.balance_usd) : 0
+      await supabase.from('user_wallet').upsert(
+        { user_id: userId, balance_usd: Number((balance + amountUsd).toFixed(2)), updated_at: now },
+        { onConflict: 'user_id' },
+      )
       const { data: updated, error: updateErr } = await supabase
         .from('withdrawals')
         .update({ status: 'rejected', rejected_at: now })
