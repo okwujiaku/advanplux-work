@@ -41,32 +41,32 @@ function Announcements() {
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-[#143D59]">Announcements</h1>
-        <p className="text-[#1B4965] mt-1">Latest platform updates and notices.</p>
+        <h1 className="text-2xl font-bold text-[#143D59] dark:text-primary-400">Announcements</h1>
+        <p className="text-[#1B4965] dark:text-gray-400 mt-1">Latest platform updates and notices.</p>
       </div>
 
       {loading && (
-        <p className="text-[#1B4965]">Loading announcements...</p>
+        <p className="text-[#1B4965] dark:text-gray-400">Loading announcements...</p>
       )}
 
       {error && (
-        <p className="text-red-600">{error}</p>
+        <p className="text-red-600 dark:text-red-400">{error}</p>
       )}
 
       {!loading && !error && announcements.length === 0 && (
-        <div className="bg-[#1B4965] rounded-xl border border-[#2b607f] shadow-lg p-6 text-white">
-          <p className="text-white/85">No announcements yet. Check back later.</p>
+        <div className="bg-[#1B4965] dark:bg-gray-800 rounded-xl border border-[#2b607f] dark:border-gray-700 shadow-lg p-6 text-white dark:text-gray-200">
+          <p className="text-white/85 dark:text-gray-400">No announcements yet. Check back later.</p>
         </div>
       )}
 
       {!loading && !error && announcements.length > 0 && (
-        <div className="bg-[#1B4965] rounded-xl border border-[#2b607f] shadow-lg p-6 text-white space-y-3">
+        <div className="bg-[#1B4965] dark:bg-gray-800 rounded-xl border border-[#2b607f] dark:border-gray-700 shadow-lg p-6 text-white dark:text-gray-200 space-y-3">
           {announcements.map((item) => {
             const { title, description } = parseAnnouncement(item.text)
             return (
-              <div key={item.id} className="rounded-lg bg-[#143D59] border border-[#2b607f] p-4">
-                <p className="font-semibold">{title}</p>
-                <p className="text-sm text-white/75">{description}</p>
+              <div key={item.id} className="rounded-lg bg-[#143D59] dark:bg-gray-700/50 border border-[#2b607f] dark:border-gray-600 p-4">
+                <p className="font-semibold dark:text-white">{title}</p>
+                <p className="text-sm text-white/75 dark:text-gray-400">{description}</p>
               </div>
             )
           })}

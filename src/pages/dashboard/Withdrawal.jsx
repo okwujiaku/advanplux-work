@@ -44,8 +44,8 @@ function Withdrawal() {
   return (
     <div className="max-w-4xl mx-auto space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Withdrawal Details</h1>
-        <p className="text-gray-600 mt-1">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Withdrawal Details</h1>
+        <p className="text-gray-600 dark:text-gray-400 mt-1">
           {savedWithdrawalDetail
             ? 'Your saved payout account for withdrawals. Details cannot be changed once saved.'
             : 'Add your withdrawal details once for future payouts. This cannot be edited later.'}
@@ -53,18 +53,19 @@ function Withdrawal() {
       </div>
 
       {showForm ? (
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Add withdrawal details</h2>
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Add withdrawal details</h2>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Currency</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Currency</label>
               <select
                 value={currency}
                 onChange={(e) => setCurrency(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg"
+                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-lg"
               >
                 <option value="NGN">NGN (Naira) - Nigeria</option>
                 <option value="CFA">CFA - Cameroon</option>
+                <option value="RWF">RWF (Rwandan Franc) - Rwanda</option>
               </select>
             </div>
 
@@ -77,12 +78,12 @@ function Withdrawal() {
                 value={accountNumber}
                 onChange={(e) => setAccountNumber(e.target.value)}
                 placeholder={currency === 'NGN' ? 'Your account number' : 'Your mobile money number'}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg"
+                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-lg"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 {currency === 'NGN' ? 'Account name' : 'Mobile money name'}
               </label>
               <input
@@ -90,12 +91,12 @@ function Withdrawal() {
                 value={accountName}
                 onChange={(e) => setAccountName(e.target.value)}
                 placeholder={currency === 'NGN' ? 'Your account name' : 'Your mobile money name'}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg"
+                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-lg"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 {currency === 'NGN' ? 'Bank name' : 'Mobile money network'}
               </label>
               <input
@@ -103,7 +104,7 @@ function Withdrawal() {
                 value={bankName}
                 onChange={(e) => setBankName(e.target.value)}
                 placeholder={currency === 'NGN' ? 'Your bank name' : 'Your mobile money network'}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg"
+                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-lg"
               />
             </div>
           </div>
@@ -117,18 +118,18 @@ function Withdrawal() {
               {saving ? 'Saving…' : 'Save details'}
             </button>
           </div>
-          {saveError && <p className="text-red-600 text-sm mt-2">{saveError}</p>}
+          {saveError && <p className="text-red-600 dark:text-red-400 text-sm mt-2">{saveError}</p>}
           {saved && (
-            <p className="text-green-600 font-medium mt-3">
+            <p className="text-green-600 dark:text-green-400 font-medium mt-3">
               Withdrawal details saved successfully. They cannot be changed later.
             </p>
           )}
         </div>
       ) : (
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-3">Saved withdrawal account</h2>
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Saved withdrawal account</h2>
           <div className="space-y-2">
-            <div className="rounded-lg border border-gray-200 p-3 text-sm text-gray-700">
+            <div className="rounded-lg border border-gray-200 dark:border-gray-600 p-3 text-sm text-gray-700 dark:text-gray-300">
               <p><span className="font-medium">Currency:</span> {savedWithdrawalDetail.currency}</p>
               <p><span className="font-medium">Name:</span> {savedWithdrawalDetail.accountName || '-'}</p>
               <p><span className="font-medium">Number:</span> {savedWithdrawalDetail.accountNumber}</p>
@@ -139,27 +140,27 @@ function Withdrawal() {
       )}
 
       {withdrawals.filter((w) => w.userId === 'current-user').length > 0 && (
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-3">Your withdrawal history</h2>
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Your withdrawal history</h2>
           <div className="space-y-2">
             {withdrawals
               .filter((w) => w.userId === 'current-user')
               .slice(0, 6)
               .map((w) => (
-                <div key={w.id} className="flex items-center justify-between gap-3 rounded-lg border border-gray-200 p-3">
+                <div key={w.id} className="flex items-center justify-between gap-3 rounded-lg border border-gray-200 dark:border-gray-600 p-3">
                   <div className="text-sm">
-                    <p className="font-medium text-gray-900">{w.currency} withdrawal</p>
-                    <p className="text-gray-500">{new Date(w.date).toLocaleString()}</p>
+                    <p className="font-medium text-gray-900 dark:text-gray-200">{w.currency} withdrawal</p>
+                    <p className="text-gray-500 dark:text-gray-400">{new Date(w.date).toLocaleString()}</p>
                   </div>
                   <span
                     className={`text-xs px-2 py-1 rounded-full ${
                       w.status === 'approved'
-                        ? 'bg-green-100 text-green-700'
+                        ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
                         : w.status === 'rejected'
-                          ? 'bg-red-100 text-red-700'
+                          ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
                           : w.status === 'reversed'
-                            ? 'bg-gray-200 text-gray-700'
-                            : 'bg-amber-100 text-amber-700'
+                            ? 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300'
+                            : 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'
                     }`}
                   >
                     {w.status}

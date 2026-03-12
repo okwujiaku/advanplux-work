@@ -10,18 +10,22 @@
 }
 
 @layer base {
-  body {
-    @apply bg-gray-50 text-gray-900;
-  }
-  
   html {
     scroll-behavior: smooth;
+    @apply min-h-full;
+  }
+  html.dark {
+    background-color: #0a0f1a;
+  }
+  body {
+    @apply min-h-screen bg-gray-50 text-gray-900 dark:text-gray-100;
+    @apply dark:bg-[#0a0f1a];
   }
 }
 
 @layer components {
   .surface-card {
-    @apply bg-white rounded-xl border border-gray-200 shadow-sm;
+    @apply bg-white rounded-xl border border-gray-200 shadow-sm dark:bg-gray-800 dark:border-gray-700;
   }
 }
 

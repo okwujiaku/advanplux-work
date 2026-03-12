@@ -92,18 +92,18 @@ function AdminActionSectionPage() {
 
   if (section === 'add-bank') {
     return (
-      <section className="bg-white rounded-xl border border-gray-200 p-6">
-        <h2 className="text-lg font-semibold mb-3">Add Bank Account</h2>
+      <section className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Add Bank Account</h2>
         <div className="grid sm:grid-cols-2 gap-3">
-          <input value={bankForm.bankName} onChange={(e) => setBankForm((p) => ({ ...p, bankName: e.target.value }))} placeholder="Bank name" className="px-4 py-3 border border-gray-300 rounded-lg" />
-          <input value={bankForm.accountName} onChange={(e) => setBankForm((p) => ({ ...p, accountName: e.target.value }))} placeholder="Account name" className="px-4 py-3 border border-gray-300 rounded-lg" />
-          <input value={bankForm.accountNumber} onChange={(e) => setBankForm((p) => ({ ...p, accountNumber: e.target.value }))} placeholder="Account number" className="px-4 py-3 border border-gray-300 rounded-lg" />
-          <select value={bankForm.currency} onChange={(e) => setBankForm((p) => ({ ...p, currency: e.target.value }))} className="px-4 py-3 border border-gray-300 rounded-lg"><option value="NGN">NGN</option><option value="CFA">CFA</option><option value="USD">USD</option></select>
+          <input value={bankForm.bankName} onChange={(e) => setBankForm((p) => ({ ...p, bankName: e.target.value }))} placeholder="Bank name" className="px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-200 dark:placeholder-gray-400" />
+          <input value={bankForm.accountName} onChange={(e) => setBankForm((p) => ({ ...p, accountName: e.target.value }))} placeholder="Account name" className="px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-200 dark:placeholder-gray-400" />
+          <input value={bankForm.accountNumber} onChange={(e) => setBankForm((p) => ({ ...p, accountNumber: e.target.value }))} placeholder="Account number" className="px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-200 dark:placeholder-gray-400" />
+          <select value={bankForm.currency} onChange={(e) => setBankForm((p) => ({ ...p, currency: e.target.value }))} className="px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-200 dark:placeholder-gray-400"><option value="NGN">NGN</option><option value="CFA">CFA</option><option value="RWF">RWF</option><option value="USD">USD</option></select>
         </div>
         <button onClick={() => { submitBankAccount(bankForm); setBankForm({ bankName: '', accountName: '', accountNumber: '', currency: 'USD' }) }} className="mt-3 px-4 py-2 bg-primary-600 text-white rounded-lg">Add account</button>
         <div className="space-y-2 mt-3">
           {platformBankAccounts.map((acc) => (
-            <div key={acc.id} className="flex items-center justify-between gap-3 rounded-lg border border-gray-200 p-2 text-sm text-gray-700">
+            <div key={acc.id} className="flex items-center justify-between gap-3 rounded-lg border border-gray-200 dark:border-gray-700 p-2 text-sm text-gray-700 dark:text-gray-200">
               <p>{acc.bankName} - {acc.accountName} ({acc.accountNumber}) [{acc.currency}]</p>
               <button
                 onClick={() => deleteBankAccount(acc.id)}
@@ -122,21 +122,21 @@ function AdminActionSectionPage() {
     const showSearchResults = editUserSearch.trim().length > 0
 
     return (
-      <section className="bg-white rounded-xl border border-gray-200 p-6">
-        <h2 className="text-lg font-semibold mb-4">Edit Users Info.</h2>
+      <section className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Edit Users Info.</h2>
 
-        <label className="block text-sm font-medium text-gray-700 mb-1">Search member</label>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-1">Search member</label>
         <input
           type="text"
           value={editUserSearch}
           onChange={(e) => setEditUserSearch(e.target.value)}
           placeholder="Search by name, email, phone, invitation code, account ID..."
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg mb-2"
+          className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg mb-2 dark:bg-gray-700 dark:text-gray-200 dark:placeholder-gray-400"
         />
         {showSearchResults && (
-          <ul className="border border-gray-200 rounded-lg max-h-48 overflow-y-auto mb-4">
+          <ul className="border border-gray-200 dark:border-gray-700 rounded-lg max-h-48 overflow-y-auto mb-4">
             {editUserFiltered.length === 0 ? (
-              <li className="p-3 text-gray-500 text-sm">No members match.</li>
+              <li className="p-3 text-gray-500 dark:text-gray-400 text-sm">No members match.</li>
             ) : (
               editUserFiltered.map((m) => (
                 <li key={m.id}>
@@ -147,7 +147,7 @@ function AdminActionSectionPage() {
                       setEditForm({ email: m.email || '', bankName: '', accountName: '', accountNumber: '' })
                       setEditUserSearch('')
                     }}
-                    className={`w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 border-b border-gray-100 last:border-0 ${selectedMemberId === m.id ? 'bg-primary-50 text-primary-800' : ''}`}
+                    className={`w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 dark:hover:bg-gray-600 border-b border-gray-100 dark:border-gray-700 last:border-0 ${selectedMemberId === m.id ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-800 dark:text-primary-200' : 'dark:text-gray-200'}`}
                   >
                     {getMemberDisplay(m)}
                   </button>
@@ -159,17 +159,17 @@ function AdminActionSectionPage() {
 
         {selectedMember && (
           <>
-            <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 mb-4">
-              <h3 className="text-sm font-semibold text-gray-700 mb-3">Member details</h3>
-              <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-sm">
-                <div><dt className="text-gray-500">Email / Name</dt><dd>{getMemberDisplay(selectedMember)}</dd></div>
-                <div><dt className="text-gray-500">Joined</dt><dd>{selectedMember.joinedAt ? new Date(selectedMember.joinedAt).toLocaleString() : '–'}</dd></div>
-                <div><dt className="text-gray-500">Phone</dt><dd>{selectedMember.phone || '–'}</dd></div>
-                <div><dt className="text-gray-500">Invitation code</dt><dd className="font-mono">{selectedMember.invitationCode || '–'}</dd></div>
-                <div><dt className="text-gray-500">Referred by</dt><dd className="truncate font-mono">{selectedMember.referredByUserId ? (members.find((m) => m.id === selectedMember.referredByUserId))?.invitationCode ?? '–' : '–'}</dd></div>
-                <div><dt className="text-gray-500">Wallet balance</dt><dd>${Number(selectedMember.balance ?? 0).toLocaleString()}</dd></div>
-                <div><dt className="text-gray-500">Bonus balance</dt><dd>${Number(selectedMember.bonusBalance ?? 0).toLocaleString()}</dd></div>
-                <div><dt className="text-gray-500">Withdrawal</dt><dd>{selectedMember.withdrawalLocked ? 'Locked' : 'Unlocked'}</dd></div>
+            <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50 p-4 mb-4">
+              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">Member details</h3>
+              <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-sm dark:text-gray-200">
+                <div><dt className="text-gray-500 dark:text-gray-400">Email / Name</dt><dd>{getMemberDisplay(selectedMember)}</dd></div>
+                <div><dt className="text-gray-500 dark:text-gray-400">Joined</dt><dd>{selectedMember.joinedAt ? new Date(selectedMember.joinedAt).toLocaleString() : '–'}</dd></div>
+                <div><dt className="text-gray-500 dark:text-gray-400">Phone</dt><dd>{selectedMember.phone || '–'}</dd></div>
+                <div><dt className="text-gray-500 dark:text-gray-400">Invitation code</dt><dd className="font-mono">{selectedMember.invitationCode || '–'}</dd></div>
+                <div><dt className="text-gray-500 dark:text-gray-400">Referred by</dt><dd className="truncate font-mono">{selectedMember.referredByUserId ? (members.find((m) => m.id === selectedMember.referredByUserId))?.invitationCode ?? '–' : '–'}</dd></div>
+                <div><dt className="text-gray-500 dark:text-gray-400">Wallet balance</dt><dd>${Number(selectedMember.balance ?? 0).toLocaleString()}</dd></div>
+                <div><dt className="text-gray-500 dark:text-gray-400">Bonus balance</dt><dd>${Number(selectedMember.bonusBalance ?? 0).toLocaleString()}</dd></div>
+                <div><dt className="text-gray-500 dark:text-gray-400">Withdrawal</dt><dd>{selectedMember.withdrawalLocked ? 'Locked' : 'Unlocked'}</dd></div>
               </dl>
             </div>
 
@@ -179,25 +179,25 @@ function AdminActionSectionPage() {
                 value={editForm.email}
                 onChange={(e) => setEditForm((p) => ({ ...p, email: e.target.value }))}
                 placeholder="Email"
-                className="px-4 py-3 border border-gray-300 rounded-lg"
+                className="px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-200 dark:placeholder-gray-400"
               />
               <input
                 value={editForm.bankName}
                 onChange={(e) => setEditForm((p) => ({ ...p, bankName: e.target.value }))}
                 placeholder="Bank name"
-                className="px-4 py-3 border border-gray-300 rounded-lg"
+                className="px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-200 dark:placeholder-gray-400"
               />
               <input
                 value={editForm.accountName}
                 onChange={(e) => setEditForm((p) => ({ ...p, accountName: e.target.value }))}
                 placeholder="Account name"
-                className="px-4 py-3 border border-gray-300 rounded-lg"
+                className="px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-200 dark:placeholder-gray-400"
               />
               <input
                 value={editForm.accountNumber}
                 onChange={(e) => setEditForm((p) => ({ ...p, accountNumber: e.target.value }))}
                 placeholder="Account number"
-                className="px-4 py-3 border border-gray-300 rounded-lg font-mono"
+                className="px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg font-mono dark:bg-gray-700 dark:text-gray-200"
               />
             </div>
             <button onClick={() => saveMemberEdits(selectedMemberId, editForm)} className="mt-3 px-4 py-2 bg-primary-600 text-white rounded-lg">Save changes</button>
@@ -209,13 +209,13 @@ function AdminActionSectionPage() {
 
   if (section === 'gift-code') {
     return (
-      <section className="bg-white rounded-xl border border-gray-200 p-6">
-        <h2 className="text-lg font-semibold mb-3">Generate Gift Code</h2>
+      <section className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Generate Gift Code</h2>
         <div className="grid sm:grid-cols-2 gap-3">
-          <input value={giftForm.value} onChange={(e) => setGiftForm((p) => ({ ...p, value: e.target.value }))} placeholder="Gift value (Dollar)" className="px-4 py-3 border border-gray-300 rounded-lg" />
+          <input value={giftForm.value} onChange={(e) => setGiftForm((p) => ({ ...p, value: e.target.value }))} placeholder="Gift value (Dollar)" className="px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-200 dark:placeholder-gray-400" />
         </div>
         <button onClick={() => { generateGiftCode(giftForm); setGiftForm({ value: '' }) }} className="mt-3 px-4 py-2 bg-primary-600 text-white rounded-lg">Generate</button>
-        {giftCodes.map((gift) => (<div key={gift.id} className="p-3 border border-gray-200 rounded-lg text-sm mt-2"><p><span className="font-semibold">{gift.code}</span> - ${Number(gift.value).toLocaleString()}</p></div>))}
+        {giftCodes.map((gift) => (<div key={gift.id} className="p-3 border border-gray-200 dark:border-gray-700 rounded-lg text-sm mt-2 dark:text-gray-200"><p><span className="font-semibold">{gift.code}</span> - ${Number(gift.value).toLocaleString()}</p></div>))}
       </section>
     )
   }
@@ -263,23 +263,23 @@ function AdminActionSectionPage() {
     }
 
     return (
-      <section className="bg-white rounded-xl border border-gray-200 p-6">
-        <h2 className="text-lg font-semibold mb-2">Video Manager</h2>
-        <p className="text-sm text-gray-600 mb-3">
+      <section className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Video Manager</h2>
+        <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
           Paste one YouTube link per line. Only YouTube links are supported.
         </p>
         <textarea
           value={videoUrlsText}
           onChange={(e) => setVideoUrlsText(e.target.value)}
           rows={10}
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg"
+          className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-200 dark:placeholder-gray-400"
           placeholder={'https://www.youtube.com/watch?v=example\nhttps://youtu.be/example'}
         />
         <div className="mt-3 flex items-center gap-2">
           <button onClick={saveVideoUrls} className="px-4 py-2 bg-primary-600 text-white rounded-lg">
             Save YouTube links
           </button>
-          <span className="text-sm text-gray-500">Current links: {Array.isArray(adVideoIds) ? adVideoIds.length : 0}</span>
+          <span className="text-sm text-gray-500 dark:text-gray-400">Current links: {Array.isArray(adVideoIds) ? adVideoIds.length : 0}</span>
         </div>
       </section>
     )
@@ -311,16 +311,16 @@ function AdminActionSectionPage() {
       }
     }
     return (
-      <section className="bg-white rounded-xl border border-gray-200 p-6">
-        <h2 className="text-lg font-semibold mb-3">Account Top up</h2>
-        <p className="text-sm text-gray-600 mb-3">Enter the member&apos;s email and amount to credit their wallet.</p>
+      <section className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Account Top up</h2>
+        <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">Enter the member&apos;s email and amount to credit their wallet.</p>
         <div className="grid sm:grid-cols-3 gap-3">
           <input
             type="email"
             value={topupForm.email || ''}
             onChange={(e) => setTopupForm((p) => ({ ...p, email: e.target.value }))}
             placeholder="Member email"
-            className="px-4 py-3 border border-gray-300 rounded-lg"
+            className="px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-200 dark:placeholder-gray-400"
           />
           <input
             type="number"
@@ -329,7 +329,7 @@ function AdminActionSectionPage() {
             value={topupForm.amount}
             onChange={(e) => setTopupForm((p) => ({ ...p, amount: e.target.value }))}
             placeholder="Top up amount (USD)"
-            className="px-4 py-3 border border-gray-300 rounded-lg"
+            className="px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-200 dark:placeholder-gray-400"
           />
           <button onClick={handleTopup} className="px-4 py-2 bg-primary-600 text-white rounded-lg">Top up</button>
         </div>
@@ -363,16 +363,16 @@ function AdminActionSectionPage() {
       }
     }
     return (
-      <section className="bg-white rounded-xl border border-gray-200 p-6">
-        <h2 className="text-lg font-semibold mb-3">Deduct Account</h2>
-        <p className="text-sm text-gray-600 mb-3">Enter the member&apos;s email and amount to deduct from their wallet.</p>
+      <section className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Deduct Account</h2>
+        <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">Enter the member&apos;s email and amount to deduct from their wallet.</p>
         <div className="grid sm:grid-cols-3 gap-3">
           <input
             type="email"
             value={deductForm.email || ''}
             onChange={(e) => setDeductForm((p) => ({ ...p, email: e.target.value }))}
             placeholder="Member email"
-            className="px-4 py-3 border border-gray-300 rounded-lg"
+            className="px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-200 dark:placeholder-gray-400"
           />
           <input
             type="number"
@@ -381,7 +381,7 @@ function AdminActionSectionPage() {
             value={deductForm.amount}
             onChange={(e) => setDeductForm((p) => ({ ...p, amount: e.target.value }))}
             placeholder="Deduct amount (USD)"
-            className="px-4 py-3 border border-gray-300 rounded-lg"
+            className="px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-200 dark:placeholder-gray-400"
           />
           <button onClick={handleDeduct} className="px-4 py-2 bg-red-600 text-white rounded-lg">Deduct</button>
         </div>
@@ -407,10 +407,10 @@ function AdminActionSectionPage() {
       }
     }
     return (
-      <section className="bg-white rounded-xl border border-gray-200 p-6">
-        <h2 className="text-lg font-semibold mb-3">Lock/Unlock Withdrawal</h2>
-        <p className="text-sm text-gray-600 mb-4">One setting applies to all members. When locked, no one can request a withdrawal.</p>
-        <p className="text-sm font-medium text-gray-700 mb-2">Status: {globalWithdrawalLocked === null ? '…' : globalWithdrawalLocked ? 'Locked for everyone' : 'Unlocked'}</p>
+      <section className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Lock/Unlock Withdrawal</h2>
+        <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">One setting applies to all members. When locked, no one can request a withdrawal.</p>
+        <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Status: {globalWithdrawalLocked === null ? '…' : globalWithdrawalLocked ? 'Locked for everyone' : 'Unlocked'}</p>
         <div className="flex gap-2">
           <button
             onClick={() => setLock(true)}
@@ -433,25 +433,25 @@ function AdminActionSectionPage() {
 
   if (section === 'register-admin') {
     return (
-      <section className="bg-white rounded-xl border border-gray-200 p-6">
-        <h2 className="text-lg font-semibold mb-3">Register Admin</h2>
+      <section className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Register Admin</h2>
         <div className="grid sm:grid-cols-2 gap-3">
-          <input value={registerAdminForm.email} onChange={(e) => setRegisterAdminForm((p) => ({ ...p, email: e.target.value }))} placeholder="Admin email" className="px-4 py-3 border border-gray-300 rounded-lg" />
-          <input value={registerAdminForm.password} onChange={(e) => setRegisterAdminForm((p) => ({ ...p, password: e.target.value }))} placeholder="Password" className="px-4 py-3 border border-gray-300 rounded-lg" />
+          <input value={registerAdminForm.email} onChange={(e) => setRegisterAdminForm((p) => ({ ...p, email: e.target.value }))} placeholder="Admin email" className="px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-200 dark:placeholder-gray-400" />
+          <input value={registerAdminForm.password} onChange={(e) => setRegisterAdminForm((p) => ({ ...p, password: e.target.value }))} placeholder="Password" className="px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-200 dark:placeholder-gray-400" />
         </div>
         <button onClick={() => { registerAdmin(registerAdminForm); setRegisterAdminForm({ email: '', password: '' }) }} className="mt-3 px-4 py-2 bg-primary-600 text-white rounded-lg">Register</button>
-        <ul className="text-sm text-gray-700 mt-3">{adminAccounts.map((admin) => <li key={admin.email}>{admin.email}</li>)}</ul>
+        <ul className="text-sm text-gray-700 dark:text-gray-300 mt-3">{adminAccounts.map((admin) => <li key={admin.email}>{admin.email}</li>)}</ul>
       </section>
     )
   }
 
   if (section === 'change-password') {
     return (
-      <section className="bg-white rounded-xl border border-gray-200 p-6">
-        <h2 className="text-lg font-semibold mb-3">Change Password</h2>
+      <section className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Change Password</h2>
         <div className="grid sm:grid-cols-2 gap-3">
-          <input type="password" value={changePasswordForm.oldPassword} onChange={(e) => setChangePasswordForm((p) => ({ ...p, oldPassword: e.target.value }))} placeholder="Old password" className="px-4 py-3 border border-gray-300 rounded-lg" />
-          <input type="password" value={changePasswordForm.newPassword} onChange={(e) => setChangePasswordForm((p) => ({ ...p, newPassword: e.target.value }))} placeholder="New password" className="px-4 py-3 border border-gray-300 rounded-lg" />
+          <input type="password" value={changePasswordForm.oldPassword} onChange={(e) => setChangePasswordForm((p) => ({ ...p, oldPassword: e.target.value }))} placeholder="Old password" className="px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-200 dark:placeholder-gray-400" />
+          <input type="password" value={changePasswordForm.newPassword} onChange={(e) => setChangePasswordForm((p) => ({ ...p, newPassword: e.target.value }))} placeholder="New password" className="px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-200 dark:placeholder-gray-400" />
         </div>
         <button onClick={async () => { const ok = await changePassword(changePasswordForm); if (!ok) alert('Password change failed'); setChangePasswordForm({ oldPassword: '', newPassword: '' }) }} className="mt-3 px-4 py-2 bg-primary-600 text-white rounded-lg">Update</button>
       </section>
@@ -460,19 +460,19 @@ function AdminActionSectionPage() {
 
   if (section === 'announcement') {
     return (
-      <section className="bg-white rounded-xl border border-gray-200 p-6">
-        <h2 className="text-lg font-semibold mb-3">Make Announcement</h2>
-        <p className="text-sm text-gray-500 mb-2">These appear on the dashboard Announcements page. First line = title, rest = description.</p>
-        <textarea value={announcementText} onChange={(e) => setAnnouncementText(e.target.value)} rows={4} className="w-full px-4 py-3 border border-gray-300 rounded-lg" placeholder={'Title (first line)\nDescription (following lines)...'} />
+      <section className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Make Announcement</h2>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">These appear on the dashboard Announcements page. First line = title, rest = description.</p>
+        <textarea value={announcementText} onChange={(e) => setAnnouncementText(e.target.value)} rows={4} className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-200 dark:placeholder-gray-400" placeholder={'Title (first line)\nDescription (following lines)...'} />
         <button onClick={() => { postAnnouncement(announcementText); setAnnouncementText('') }} className="mt-3 px-4 py-2 bg-primary-600 text-white rounded-lg">Post</button>
-        {announcements.map((item) => (<div key={item.id} className="p-3 border border-gray-200 rounded-lg text-sm mt-2"><p>{item.text}</p></div>))}
+        {announcements.map((item) => (<div key={item.id} className="p-3 border border-gray-200 dark:border-gray-700 rounded-lg text-sm mt-2 dark:text-gray-200"><p>{item.text}</p></div>))}
       </section>
     )
   }
 
   return (
-    <section className="bg-white rounded-xl border border-gray-200 p-6">
-      <p className="text-gray-600">Section not found.</p>
+    <section className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+      <p className="text-gray-600 dark:text-gray-400">Section not found.</p>
     </section>
   )
 }

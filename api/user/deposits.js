@@ -44,12 +44,33 @@ export default async function handler(req, res) {
   if (req.method === 'POST') {
     const body = req.body || {}
     const { amount, amountUsd, currency, country, paymentType, accountName, accountNumber, bankName, accountUsed, pack } = body
+
+    // Prevent multiple pending deposits: user must wait for admin to approve
+    const { data: existingPending, error: pendingErr } = await supabase
+      .from('deposits')
+      .select('id, status')
+      .eq('user_id', userId)
+      .eq('status', 'pending')
+      .limit(1)
+      .maybeSingle()
+    if (pendingErr) {
+      return json(res, 500, { ok: false, error: 'Unable to check existing deposits. Please try again.' })
+    }
+    if (existingPending) {
+      return json(res, 400, {
+        ok: false,
+        error: 'You already have a pending deposit. Please wait for it to be approved before submitting another.',
+        code: 'DEPOSIT_PENDING_EXISTS',
+      })
+    }
+
     let amount_usd = Number(amountUsd) || 0
     if (amount_usd <= 0 && amount != null && currency) {
       const local = Number(String(amount).replace(/\s/g, '')) || 0
       const cur = String(currency).toUpperCase()
       if (cur === 'NGN' && local > 0) amount_usd = Math.round((local / 1450) * 100) / 100
       else if (cur === 'CFA' && local > 0) amount_usd = Math.round((local / 600) * 100) / 100
+      else if (cur === 'RWF' && local > 0) amount_usd = Math.round((local / 1500) * 100) / 100
     }
     const { data: inserted, error } = await supabase
       .from('deposits')

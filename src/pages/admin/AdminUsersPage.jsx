@@ -29,40 +29,40 @@ function AdminUsersPage() {
 
   return (
     <div className="space-y-4">
-      <section className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-        <h2 className="text-lg font-semibold text-gray-900 p-4 border-b">Registered Members</h2>
-        <div className="p-4 border-b bg-gray-50">
+      <section className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white p-4 border-b dark:border-gray-700">Registered Members</h2>
+        <div className="p-4 border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
           <input
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Search by name, email, phone, invitation code, or referred by..."
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm"
+            className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg text-sm dark:bg-gray-700 dark:text-gray-200 dark:placeholder-gray-400"
           />
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="bg-gray-50 text-left">
-                <th className="p-3">S/N</th>
-                <th className="p-3">Account ID</th>
-                <th className="p-3">Name</th>
-                <th className="p-3">Email</th>
-                <th className="p-3">Phone</th>
-                <th className="p-3">Invitation code</th>
-                <th className="p-3">Referred by</th>
-                <th className="p-3">Balance</th>
-                <th className="p-3">Actions</th>
+              <tr className="bg-gray-50 dark:bg-gray-700/50 text-left">
+                <th className="p-3 dark:text-gray-200">S/N</th>
+                <th className="p-3 dark:text-gray-200">Account ID</th>
+                <th className="p-3 dark:text-gray-200">Name</th>
+                <th className="p-3 dark:text-gray-200">Email</th>
+                <th className="p-3 dark:text-gray-200">Phone</th>
+                <th className="p-3 dark:text-gray-200">Invitation code</th>
+                <th className="p-3 dark:text-gray-200">Referred by</th>
+                <th className="p-3 dark:text-gray-200">Balance</th>
+                <th className="p-3 dark:text-gray-200">Actions</th>
               </tr>
             </thead>
             <tbody>
               {displayMembers.length === 0 ? (
-                <tr className="border-t">
-                  <td className="p-4 text-gray-500" colSpan={10}>No registered users yet.</td>
+                <tr className="border-t dark:border-gray-700">
+                  <td className="p-4 text-gray-500 dark:text-gray-400" colSpan={10}>No registered users yet.</td>
                 </tr>
               ) : filteredMembers.length === 0 ? (
-                <tr className="border-t">
-                  <td className="p-4 text-gray-500" colSpan={10}>No members match your search.</td>
+                <tr className="border-t dark:border-gray-700">
+                  <td className="p-4 text-gray-500 dark:text-gray-400" colSpan={10}>No members match your search.</td>
                 </tr>
               ) : (
                 filteredMembers.map((member, index) => {
@@ -78,15 +78,15 @@ function AdminUsersPage() {
                   const hasRealName = member.name && !isUuidName && member.name !== member.email
                   const nameDisplay = hasRealName ? member.name : (emailLocal || displayLabel)
                   return (
-                  <tr key={member.id} className="border-t">
-                    <td className="p-3">{index + 1}</td>
-                    <td className="p-3 font-mono">{accountId}</td>
-                    <td className="p-3">{nameDisplay}</td>
-                    <td className="p-3">{emailDisplay || '-'}</td>
-                    <td className="p-3">{member.phone || '-'}</td>
-                    <td className="p-3 font-mono">{member.invitationCode || '-'}</td>
-                    <td className="p-3">{referrerLabel}</td>
-                    <td className="p-3">${Number(member.balance ?? 0).toFixed(2)}</td>
+                  <tr key={member.id} className="border-t dark:border-gray-700">
+                    <td className="p-3 dark:text-gray-200">{index + 1}</td>
+                    <td className="p-3 font-mono dark:text-gray-200">{accountId}</td>
+                    <td className="p-3 dark:text-gray-200">{nameDisplay}</td>
+                    <td className="p-3 dark:text-gray-200">{emailDisplay || '-'}</td>
+                    <td className="p-3 dark:text-gray-200">{member.phone || '-'}</td>
+                    <td className="p-3 font-mono dark:text-gray-200">{member.invitationCode || '-'}</td>
+                    <td className="p-3 dark:text-gray-200">{referrerLabel}</td>
+                    <td className="p-3 dark:text-gray-200">${Number(member.balance ?? 0).toFixed(2)}</td>
                     <td className="p-3 space-y-1">
                       <div className="flex flex-wrap items-center gap-1">
                         <button
@@ -116,7 +116,7 @@ function AdminUsersPage() {
                             setSelectedMemberId?.(member.id)
                             navigate('/admin/edit-users')
                           }}
-                          className="rounded border border-amber-500 px-2 py-1 text-xs font-medium text-amber-700 hover:bg-amber-50"
+                          className="rounded border border-amber-500 px-2 py-1 text-xs font-medium text-amber-700 dark:text-amber-400 dark:border-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/30"
                         >
                           Edit user info
                         </button>

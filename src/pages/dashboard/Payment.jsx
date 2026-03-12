@@ -31,14 +31,14 @@ function Payment() {
   return (
     <div className="max-w-4xl mx-auto space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Payment</h1>
-        <p className="text-gray-600 mt-1">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Payment</h1>
+        <p className="text-gray-600 dark:text-gray-400 mt-1">
           Make payment using any of the accounts below. Use the currency that suits you (Naira, CFA, or RWF).
         </p>
       </div>
 
       {/* Currency tabs */}
-      <div className="flex gap-2 border-b border-gray-200">
+      <div className="flex gap-2 border-b border-gray-200 dark:border-gray-700">
         {CURRENCIES.map((cur, i) => (
           <button
             key={cur.code}
@@ -46,7 +46,7 @@ function Payment() {
             className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${
               activeCurrency === i
                 ? 'bg-primary-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
             }`}
           >
             {cur.name}
@@ -55,23 +55,23 @@ function Payment() {
       </div>
 
       {/* Account details */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">{c.name}</h2>
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">{c.name}</h2>
         <div className="space-y-4">
           <div>
-            <p className="text-sm text-gray-500">Account name</p>
-            <p className="text-gray-900 font-medium">{c.accountName}</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Account name</p>
+            <p className="text-gray-900 dark:text-gray-200 font-medium">{c.accountName}</p>
           </div>
           <div>
-            <p className="text-sm text-gray-500">Account number</p>
-            <p className="text-gray-900 font-medium font-mono">{c.accountNumber}</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Account number</p>
+            <p className="text-gray-900 dark:text-gray-200 font-medium font-mono">{c.accountNumber}</p>
           </div>
           <div>
-            <p className="text-sm text-gray-500">Bank / Payment channel</p>
-            <p className="text-gray-900 font-medium">{c.bank}</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Bank / Payment channel</p>
+            <p className="text-gray-900 dark:text-gray-200 font-medium">{c.bank}</p>
           </div>
         </div>
-        <p className="text-sm text-gray-500 mt-4">
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">
           Account numbers will be updated here. Pay the exact amount for your chosen ad pack (see Ads Engine).
         </p>
       </div>

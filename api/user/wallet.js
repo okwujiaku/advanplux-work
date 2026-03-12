@@ -10,8 +10,8 @@ export default async function handler(req, res) {
   }
 
   if (req.method === 'GET') {
-    const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000
-    const cutoffIso = new Date(Date.now() - THIRTY_DAYS_MS).toISOString()
+    const NINETY_DAYS_MS = 90 * 24 * 60 * 60 * 1000
+    const cutoffIso = new Date(Date.now() - NINETY_DAYS_MS).toISOString()
     const [{ data: walletRow, error: walletErr }, { data: packsRows, error: packsErr }] = await Promise.all([
       supabase.from('user_wallet').select('balance_usd, active_pack_usd').eq('user_id', userId).maybeSingle(),
       supabase
@@ -88,6 +88,7 @@ export default async function handler(req, res) {
           if (amountUsd <= 0) continue
           await supabase.from('earnings_history').insert({
             user_id: referrerId,
+            from_user_id: userId,
             source: `referral-level${level}`,
             amount_usd: amountUsd,
             note: `Affiliate ${level === 1 ? '10' : level === 2 ? '2' : '1'}% of $${packUsd} pack`,

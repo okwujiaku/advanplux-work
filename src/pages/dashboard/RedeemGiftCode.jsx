@@ -12,7 +12,10 @@ function RedeemGiftCode() {
     setLoading(true)
     setStatus('')
     try {
-      const token = typeof window !== 'undefined' && window.localStorage && window.localStorage.getItem('authSessionToken')
+      const token =
+        typeof window !== 'undefined' && window.sessionStorage
+          ? window.sessionStorage.getItem('authSessionToken')
+          : null
       const res = await fetch('/api/user/redeem-gift-code', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
@@ -36,11 +39,11 @@ function RedeemGiftCode() {
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-[#143D59]">Redeem Gift Code</h1>
-        <p className="text-[#1B4965] mt-1">Enter your gift code to claim rewards on your account.</p>
+        <h1 className="text-2xl font-bold text-[#143D59] dark:text-white">Redeem Gift Code</h1>
+        <p className="text-[#1B4965] dark:text-gray-400 mt-1">Enter your gift code to claim rewards on your account.</p>
       </div>
 
-      <div className="bg-[#1B4965] rounded-xl border border-[#2b607f] shadow-lg p-6">
+      <div className="bg-[#1B4965] dark:bg-gray-800 rounded-xl border border-[#2b607f] dark:border-gray-700 shadow-lg p-6">
         <label className="block text-sm text-white/80 mb-2">Gift code</label>
         <div className="flex flex-col sm:flex-row gap-3">
           <input

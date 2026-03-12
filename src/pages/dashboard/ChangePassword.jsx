@@ -23,11 +23,11 @@ function ChangePassword() {
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-[#143D59]">Change Password</h1>
-        <p className="text-[#1B4965] mt-1">Update your account password securely.</p>
+        <h1 className="text-2xl font-bold text-[#143D59] dark:text-white">Change Password</h1>
+        <p className="text-[#1B4965] dark:text-gray-400 mt-1">Update your account password securely.</p>
       </div>
 
-      <form onSubmit={handleSubmit} className="bg-[#1B4965] rounded-xl border border-[#2b607f] shadow-lg p-6 space-y-4">
+      <form onSubmit={handleSubmit} className="bg-[#1B4965] dark:bg-gray-800 rounded-xl border border-[#2b607f] dark:border-gray-700 shadow-lg p-6 space-y-4">
         <div>
           <label className="block text-sm text-white/80 mb-2">Current password</label>
           <input

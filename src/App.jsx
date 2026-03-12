@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import Dashboard from './pages/Dashboard'
 import DashboardHome from './pages/dashboard/DashboardHome'
 import AboutUs from './pages/dashboard/AboutUs'
+import PromoteBusiness from './pages/dashboard/PromoteBusiness'
 import Profile from './pages/dashboard/Profile'
 import AdGenerator from './pages/dashboard/AdGenerator'
 import Deposit from './pages/dashboard/Deposit'
@@ -51,13 +52,13 @@ function App() {
   const { isAuthenticated, authCheckDone } = useApp()
   if (!authCheckDone) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <p className="text-slate-500">Loading…</p>
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-[#0a0f1a]">
+        <p className="text-slate-500 dark:text-gray-400">Loading…</p>
       </div>
     )
   }
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-gray-50 dark:bg-[#0a0f1a]">
       <Routes>
         <Route path="/" element={<Navigate to={isAuthenticated ? '/dashboard' : '/sign-in'} replace />} />
         <Route
@@ -117,6 +118,7 @@ function App() {
           <Route path="deposit-history" element={<DepositHistory />} />
           <Route path="withdrawal-history" element={<WithdrawalHistory />} />
           <Route path="about" element={<AboutUs />} />
+          <Route path="promote-business" element={<PromoteBusiness />} />
         </Route>
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<Navigate to="users" replace />} />

@@ -5,14 +5,15 @@ const AppContext = createContext(null)
 // Set to false so only users with an approved deposit (userPack) or admin can watch ads
 const FREE_ACCESS_FOR_SETUP = false
 
-// Packs in USD with Naira, CFA, plan name, and ads per day
+// Packs in USD with Naira, CFA, RWF, plan name, and ads per day
 export const PACKS_USD = [
-  { usd: 20, naira: 29000, cfa: 12000, adsPerDay: 2, planName: 'Mini Ads Engine' },
-  { usd: 50, naira: 72500, cfa: 30000, adsPerDay: 5, planName: 'Mini plux Ads Engine' },
-  { usd: 100, naira: 145000, cfa: 60000, adsPerDay: 10, planName: 'Midi Ads Engine' },
-  { usd: 200, naira: 290000, cfa: 120000, adsPerDay: 20, planName: 'Midi Plux Ads Engine' },
-  { usd: 500, naira: 725000, cfa: 300000, adsPerDay: 50, planName: 'Maxi Ads Engine' },
-  { usd: 1000, naira: 1450000, cfa: 600000, adsPerDay: 100, planName: 'Maxi Plux Ads Engine' },
+  { usd: 10, naira: 14500, cfa: 6000, rwf: 15000, adsPerDay: 1, planName: 'Mini Starter Ads Engine' },
+  { usd: 20, naira: 29000, cfa: 12000, rwf: 30000, adsPerDay: 2, planName: 'Mini Ads Engine' },
+  { usd: 50, naira: 72500, cfa: 30000, rwf: 75000, adsPerDay: 5, planName: 'Mini plux Ads Engine' },
+  { usd: 100, naira: 145000, cfa: 60000, rwf: 150000, adsPerDay: 10, planName: 'Midi Ads Engine' },
+  { usd: 200, naira: 290000, cfa: 120000, rwf: 300000, adsPerDay: 20, planName: 'Midi Plux Ads Engine' },
+  { usd: 500, naira: 725000, cfa: 300000, rwf: 750000, adsPerDay: 50, planName: 'Maxi Ads Engine' },
+  { usd: 1000, naira: 1450000, cfa: 600000, rwf: 1500000, adsPerDay: 100, planName: 'Maxi Plux Ads Engine' },
 ]
 
 const DEFAULT_AD_VIDEO_IDS = [
@@ -27,11 +28,19 @@ const EARN_PER_AD_USD = 0.4
 const NGN_TO_USD = 1 / 1450
 const USD_TO_NGN = 1 / NGN_TO_USD
 const AUTH_SESSION_TOKEN_KEY = 'authSessionToken'
+const THEME_STORAGE_KEY = 'advanplux-theme'
 
-// Only auth token stays in localStorage; all other data comes from Supabase/API.
+function getStoredTheme() {
+  if (typeof window === 'undefined' || !window.localStorage) return 'light'
+  const t = window.localStorage.getItem(THEME_STORAGE_KEY)
+  if (t === 'dark' || t === 'light') return t
+  return 'light'
+}
+
+// Only auth token stays in sessionStorage; all other data comes from Supabase/API.
 function getStoredToken() {
-  if (typeof window === 'undefined' || !window.localStorage) return null
-  return window.localStorage.getItem(AUTH_SESSION_TOKEN_KEY)
+  if (typeof window === 'undefined' || !window.sessionStorage) return null
+  return window.sessionStorage.getItem(AUTH_SESSION_TOKEN_KEY)
 }
 
 const ADMIN_VIEW_AS_USER_KEY = 'adminViewAsUserId'
@@ -101,6 +110,7 @@ export function AppProvider({ children }) {
   const [securityPins, setSecurityPins] = useState({})
   const [remoteHasPin, setRemoteHasPin] = useState(null)
   const [referralEarnings, setReferralEarnings] = useState({ level1: 0, level2: 0, level3: 0 })
+  const [teamCommissionEarnings, setTeamCommissionEarnings] = useState(0)
   const [referralCountFromApi, setReferralCountFromApi] = useState(null)
   const [claimedSalary, setClaimedSalary] = useState(0)
   const [adsViewedToday, setAdsViewedToday] = useState(0)
@@ -108,22 +118,38 @@ export function AppProvider({ children }) {
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(() => getAdminSession())
   const [adVideoIds, setAdVideoIds] = useState(DEFAULT_AD_VIDEO_IDS)
   const [authCheckDone, setAuthCheckDone] = useState(false)
+  const [theme, setThemeState] = useState(getStoredTheme)
+
+  const setTheme = useCallback((next) => {
+    const value = next === 'dark' ? 'dark' : 'light'
+    setThemeState(value)
+    if (typeof window !== 'undefined' && window.localStorage) {
+      window.localStorage.setItem(THEME_STORAGE_KEY, value)
+    }
+    if (typeof document !== 'undefined' && document.documentElement) {
+      document.documentElement.classList.toggle('dark', value === 'dark')
+    }
+  }, [])
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', theme === 'dark')
+  }, [theme])
 
   const saveSessionToken = useCallback((token) => {
-    if (typeof window === 'undefined' || !window.localStorage) return
+    if (typeof window === 'undefined' || !window.sessionStorage) return
     if (token) {
-      window.localStorage.setItem(AUTH_SESSION_TOKEN_KEY, token)
+      window.sessionStorage.setItem(AUTH_SESSION_TOKEN_KEY, token)
       return
     }
-    window.localStorage.removeItem(AUTH_SESSION_TOKEN_KEY)
+    window.sessionStorage.removeItem(AUTH_SESSION_TOKEN_KEY)
   }, [])
 
   const currentUser = users.find((user) => user.id === currentUserId) || null
   const isAuthenticated = !!currentUser
 
   const referralCount = useMemo(() => {
-    if (referralCountFromApi) return referralCountFromApi
-    if (!currentUser) return { level1: 0, level2: 0, level3: 0 }
+    if (referralCountFromApi) return { ...referralCountFromApi, directActiveDownlines: referralCountFromApi.directActiveDownlines ?? referralCountFromApi.level1 ?? 0 }
+    if (!currentUser) return { level1: 0, level2: 0, level3: 0, directActiveDownlines: 0 }
     const level1Users = users.filter((user) => user.referredByUserId === currentUser.id)
     const level1Ids = new Set(level1Users.map((user) => user.id))
     const level2Users = users.filter((user) => user.referredByUserId && level1Ids.has(user.referredByUserId))
@@ -133,6 +159,7 @@ export function AppProvider({ children }) {
       level1: level1Users.length,
       level2: level2Users.length,
       level3: level3Users.length,
+      directActiveDownlines: 0,
     }
   }, [currentUser, users, referralCountFromApi])
 
@@ -394,12 +421,16 @@ export function AppProvider({ children }) {
               const l2Usd = e.earnings.filter((x) => x && x.source === 'referral-level2').reduce((s, x) => s + (Number(x.amountUsd) || 0), 0)
               const l3Usd = e.earnings.filter((x) => x && x.source === 'referral-level3').reduce((s, x) => s + (Number(x.amountUsd) || 0), 0)
               setReferralEarnings({ level1: l1Usd, level2: l2Usd, level3: l3Usd })
+              const teamCommission = e.earnings
+                .filter((x) => x && (x.source === 'team-watch-level1' || x.source === 'team-watch-level2' || x.source === 'team-watch-level3'))
+                .reduce((s, x) => s + (Number(x.amountUsd) || 0), 0)
+              setTeamCommissionEarnings(teamCommission)
             }
           }).catch(() => {})
           fetch('/api/user/referral-stats', { headers: h })
             .then((r) => r.json())
             .then((d) => {
-              if (d?.ok && d.level1 != null) setReferralCountFromApi({ level1: d.level1, level2: d.level2 ?? 0, level3: d.level3 ?? 0 })
+              if (d?.ok && d.level1 != null) setReferralCountFromApi({ level1: d.level1, level2: d.level2 ?? 0, level3: d.level3 ?? 0, directActiveDownlines: d.directActiveDownlines ?? 0 })
             })
             .catch(() => {})
         }
@@ -503,8 +534,12 @@ export function AppProvider({ children }) {
           const l2Usd = e.earnings.filter((x) => x && x.source === 'referral-level2').reduce((s, x) => s + (Number(x.amountUsd) || 0), 0)
           const l3Usd = e.earnings.filter((x) => x && x.source === 'referral-level3').reduce((s, x) => s + (Number(x.amountUsd) || 0), 0)
           setReferralEarnings({ level1: l1Usd, level2: l2Usd, level3: l3Usd })
+          const teamCommission = e.earnings
+            .filter((x) => x && (x.source === 'team-watch-level1' || x.source === 'team-watch-level2' || x.source === 'team-watch-level3'))
+            .reduce((s, x) => s + (Number(x.amountUsd) || 0), 0)
+          setTeamCommissionEarnings(teamCommission)
         }
-        if (ref?.ok && ref.level1 != null) setReferralCountFromApi({ level1: ref.level1, level2: ref.level2 ?? 0, level3: ref.level3 ?? 0 })
+        if (ref?.ok && ref.level1 != null) setReferralCountFromApi({ level1: ref.level1, level2: ref.level2 ?? 0, level3: ref.level3 ?? 0, directActiveDownlines: ref.directActiveDownlines ?? 0 })
       })
       .catch(() => {})
   }, [currentUserId])
@@ -629,8 +664,9 @@ export function AppProvider({ children }) {
             }
             return out.deposit.id
           }
-        } catch {
-          // fall through to local
+          if (!out?.ok && out?.error) throw new Error(out.error)
+        } catch (err) {
+          if (err?.message) throw err
         }
       }
       const id = newId('dep')
@@ -866,42 +902,20 @@ export function AppProvider({ children }) {
     }
   }, [])
 
-  const claimSalary = useCallback((amount) => {
+  const claimSalary = useCallback(() => {
     const headers = getAuthHeaders()
-    const amountUsd = Number(amount || 0)
-    if ((headers.Authorization || headers['X-Admin-Key']) && amountUsd > 0) {
-      fetch('/api/user/earnings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...headers },
-        body: JSON.stringify({
-          source: 'team-salary',
-          amountUsd,
-          note: 'Weekly team salary claimed',
-        }),
-      }).catch(() => {})
-      fetch('/api/user/wallet', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', ...headers },
-        body: JSON.stringify({ addUsd: amountUsd }),
+    if (!headers.Authorization && !headers['X-Admin-Key']) return Promise.resolve({ ok: false, error: 'Unauthorized' })
+    return fetch('/api/user/claim-team-salary', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...headers },
+    })
+      .then((r) => r.json())
+      .then((d) => {
+        if (d?.ok) refetchWalletAndDeposits()
+        return d
       })
-        .then((r) => r.json())
-        .then((d) => {
-          if (d?.ok && d.balanceUsd != null) setWalletUsd(d.balanceUsd)
-        })
-        .catch(() => {})
-    }
-    setClaimedSalary((prev) => prev + amountUsd)
-    setEarningsHistory((prev) => [
-      {
-        id: newId('earn'),
-        source: 'team-salary',
-        amountUsd,
-        note: 'Weekly team salary claimed',
-        date: new Date().toISOString(),
-      },
-      ...prev,
-    ])
-  }, [])
+      .catch(() => ({ ok: false, error: 'Request failed' }))
+  }, [refetchWalletAndDeposits])
 
   const watchAd = useCallback(() => {
     const token =
@@ -989,6 +1003,7 @@ export function AppProvider({ children }) {
     setTeamCount,
     referralEarnings,
     setReferralEarnings,
+    teamCommissionEarnings,
     referralCount,
     claimedSalary,
     claimSalary,
@@ -1012,6 +1027,8 @@ export function AppProvider({ children }) {
     authCheckDone,
     isAdminViewAsMode,
     clearAdminViewAs,
+    theme,
+    setTheme,
   }
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>
 }

@@ -40,6 +40,7 @@ function WatchEarn() {
   const freeAccessForSetup = app?.freeAccessForSetup
   const adVideoIds = app?.adVideoIds
   const earningsHistory = app?.earningsHistory ?? []
+  const refetchWalletAndDeposits = app?.refetchWalletAndDeposits
 
   const [lastEarned, setLastEarned] = useState(null)
   const [currentAdIndex, setCurrentAdIndex] = useState(0)
@@ -85,8 +86,9 @@ function WatchEarn() {
     if (watchedLast24h < dailyLimit) {
       return { watchedLast24h, nextAvailableTs: null }
     }
-    const windowStartTs = watchAds[watchedLast24h - dailyLimit]
-    const nextAvailableTs = windowStartTs + DAY_MS
+    // Next ads available 24h from the *last* ad watched (not first in window), so countdown is full 24h
+    const lastAdTs = watchAds[watchedLast24h - 1]
+    const nextAvailableTs = lastAdTs + DAY_MS
     return { watchedLast24h, nextAvailableTs }
   }, [earningsHistory, dailyLimit])
   const watchedLast24h = watchAdsStats.watchedLast24h
@@ -131,7 +133,12 @@ function WatchEarn() {
     dailyLimitRef.current = dailyLimit
   }, [dailyLimit])
 
-  // Countdown until next ads become available (24h window based on earnings history)
+  // Refetch earnings when entering Watch & Earn so countdown is correct after logout/navigation
+  useEffect(() => {
+    if (refetchWalletAndDeposits) refetchWalletAndDeposits()
+  }, [refetchWalletAndDeposits])
+
+  // Countdown until next ads become available (24h from last ad; persists when user leaves/logs out)
   useEffect(() => {
     if (!isLocked || !nextAvailableTs) {
       setResetCountdown('')
@@ -303,9 +310,9 @@ function WatchEarn() {
   if (!hasAccess) {
     return (
       <div className="max-w-md mx-auto text-center py-12 px-4">
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-8">
-          <h2 className="text-xl font-bold text-gray-900 mb-2">No active ads engine</h2>
-          <p className="text-gray-600 mb-6">
+        <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-8">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">No active ads engine</h2>
+          <p className="text-gray-600 dark:text-gray-300 mb-6">
             Activate an Ads Engine package from your balance to watch ads here and earn.
           </p>
           <Link
@@ -322,50 +329,50 @@ function WatchEarn() {
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Watch & Earn</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Watch & Earn</h1>
         {activePacks.length > 0 ? (
           <>
-            <p className="text-primary-600 font-semibold mt-1">
-              {activePacks.length === 1 && packInfo ? packInfo.planName : `${dailyLimit} ads per day from your active packs`}
+            <p className="text-primary-600 dark:text-primary-400 font-semibold mt-1">
+              {activePacks.length === 1 && packInfo ? packInfo.planName : `${dailyLimit} ${dailyLimit === 1 ? 'ad' : 'ads'} per day from your active packs`}
             </p>
-            <p className="text-gray-600 mt-1">
-              {dailyLimit} ads per day · ${EARN_PER_AD_USD.toFixed(2)} per completed ad. Watch the full {REQUIRED_WATCH_SECONDS}s to earn.
+            <p className="text-gray-600 dark:text-gray-400 mt-1">
+              {dailyLimit} {dailyLimit === 1 ? 'ad' : 'ads'} per day · ${EARN_PER_AD_USD.toFixed(2)} per completed ad. Watch the full {REQUIRED_WATCH_SECONDS}s to earn.
             </p>
           </>
         ) : (
-          <p className="text-gray-600 mt-1">
-            Setup access mode active (preview: {setupLimit} ads/day). Earn ${EARN_PER_AD_USD.toFixed(2)} per completed ad.
+          <p className="text-gray-600 dark:text-gray-400 mt-1">
+            Setup access mode active (preview: {setupLimit} {setupLimit === 1 ? 'ad' : 'ads'}/day). Earn ${EARN_PER_AD_USD.toFixed(2)} per completed ad.
           </p>
         )}
       </div>
 
       {/* Today's summary */}
       <div className="grid grid-cols-2 gap-4">
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <p className="text-sm text-gray-500 mb-1">Ads left today</p>
-          <p className="text-2xl font-bold text-gray-900">{adsRemaining} / {dailyLimit}</p>
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Ads left today</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-white">{adsRemaining} / {dailyLimit}</p>
         </div>
-        <div className="bg-primary-50 rounded-xl border border-primary-200 p-5">
-          <p className="text-sm text-gray-500 mb-1">Earned today</p>
-          <p className="text-2xl font-bold text-primary-700">${totalEarnedToday.toFixed(2)}</p>
+        <div className="bg-primary-50 dark:bg-primary-900/20 rounded-xl border border-primary-200 dark:border-primary-800 p-5">
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Earned today</p>
+          <p className="text-2xl font-bold text-primary-700 dark:text-primary-400">${totalEarnedToday.toFixed(2)}</p>
         </div>
       </div>
 
       {adsRemaining > 0 ? (
         <>
           {!hasVideos && (
-            <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 text-center">
-              <p className="text-amber-800 font-medium">No YouTube ad videos configured yet.</p>
-              <p className="text-sm text-amber-700 mt-1">Admin should add YouTube links in Video Manager.</p>
+            <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-6 text-center">
+              <p className="text-amber-800 dark:text-amber-300 font-medium">No YouTube ad videos configured yet.</p>
+              <p className="text-sm text-amber-700 dark:text-amber-400 mt-1">Admin should add YouTube links in Video Manager.</p>
             </div>
           )}
           {hasVideos && (
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-              <div className="p-6 bg-gray-50 border-b border-gray-200">
-                <p className="text-sm text-gray-500 text-center">
+            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
+              <div className="p-6 bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-600">
+                <p className="text-sm text-gray-500 dark:text-gray-400 text-center">
                   Ad {Math.min(adsViewedToday + 1, dailyLimit)} of {dailyLimit}
                 </p>
-                <p className="text-gray-600 text-center mt-2 text-sm">
+                <p className="text-gray-600 dark:text-gray-300 text-center mt-2 text-sm">
                   Watch for {REQUIRED_WATCH_SECONDS} seconds. Reward is added and next ads load automatically.
                 </p>
               </div>
@@ -384,21 +391,21 @@ function WatchEarn() {
                       />
                     )
                   ) : (
-                    <div className="p-6 bg-gray-50 space-y-3 flex items-center justify-center min-h-[200px]">
-                      <p className="text-sm text-red-700">
+                    <div className="p-6 bg-gray-50 dark:bg-gray-700/50 space-y-3 flex items-center justify-center min-h-[200px]">
+                      <p className="text-sm text-red-700 dark:text-red-400">
                         Invalid YouTube link. Please update this ad link in Video Manager.
                       </p>
                     </div>
                   )}
                 </div>
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <p className="text-sm text-gray-600">
+                <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
+                  <p className="text-sm text-gray-600 dark:text-gray-300">
                     Timer: <span className="font-semibold">{countdown}s</span> / {REQUIRED_WATCH_SECONDS}s
                   </p>
-                  <div className="w-full h-2 rounded-full bg-gray-200 mt-2 overflow-hidden">
+                  <div className="w-full h-2 rounded-full bg-gray-200 dark:bg-gray-600 mt-2 overflow-hidden">
                     <div className="h-full bg-primary-600" style={{ width: `${Math.min(100, ((REQUIRED_WATCH_SECONDS - countdown) / REQUIRED_WATCH_SECONDS) * 100)}%` }} />
                   </div>
-                  <p className="text-xs text-gray-500 mt-2">{playerMessage}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">{playerMessage}</p>
                 </div>
               </div>
             </div>
@@ -406,21 +413,21 @@ function WatchEarn() {
 
           {/* Show amount earned after each watch */}
           {lastEarned !== null && (
-            <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-center animate-fade-in">
-              <p className="text-green-800 font-semibold">+ ${lastEarned.toFixed(2)} earned</p>
-              <p className="text-sm text-green-700 mt-1">Total today: ${(adsViewedToday * EARN_PER_AD_USD).toFixed(2)}</p>
+            <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-4 text-center animate-fade-in">
+              <p className="text-green-800 dark:text-green-300 font-semibold">+ ${lastEarned.toFixed(2)} earned</p>
+              <p className="text-sm text-green-700 dark:text-green-400 mt-1">Total today: ${(adsViewedToday * EARN_PER_AD_USD).toFixed(2)}</p>
             </div>
           )}
         </>
       ) : (
-        <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
-          <p className="text-gray-800 font-medium mb-2">Daily limit reached</p>
-          <p className="text-gray-600 mb-4">
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-8 text-center">
+          <p className="text-gray-800 dark:text-gray-200 font-medium mb-2">Daily limit reached</p>
+          <p className="text-gray-600 dark:text-gray-400 mb-4">
             You&apos;ve watched all your ads for today. You can watch again after 24hrs.
           </p>
-          <p className="text-primary-600 font-medium mb-1">Total earned today: ${totalEarnedToday.toFixed(2)}</p>
+          <p className="text-primary-600 dark:text-primary-400 font-medium mb-1">Total earned today: ${totalEarnedToday.toFixed(2)}</p>
           {resetCountdown && (
-            <p className="text-xs text-gray-500">Next ads available in {resetCountdown}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Next ads available in {resetCountdown}</p>
           )}
         </div>
       )}

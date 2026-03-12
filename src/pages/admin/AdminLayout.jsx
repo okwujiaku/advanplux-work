@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
+import ThemeToggle from '../../components/ThemeToggle'
 
 const DEFAULT_MEMBER = {
   id: 'current-user',
@@ -703,13 +704,14 @@ function AdminLayout() {
 
   if (!loggedIn) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
-        <div className="bg-white rounded-xl shadow-lg p-8 max-w-sm w-full">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Admin login</h1>
-          <p className="text-sm text-gray-500 mb-4">Restricted access. Use admin email and password.</p>
+      <div className="min-h-screen bg-gray-100 dark:bg-[#0a0f1a] flex items-center justify-center p-4 relative">
+        <div className="absolute top-4 right-4"><ThemeToggle /></div>
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 max-w-sm w-full border border-gray-200 dark:border-gray-700">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Admin login</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Restricted access. Use admin email and password.</p>
           <form onSubmit={handleLogin}>
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Admin email" className="w-full px-4 py-3 border border-gray-300 rounded-lg mb-4" />
-            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" className="w-full px-4 py-3 border border-gray-300 rounded-lg mb-4" />
+            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Admin email" className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:placeholder:text-gray-500 rounded-lg mb-4" />
+            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:placeholder:text-gray-500 rounded-lg mb-4" />
             <button type="submit" className="w-full py-2 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700">Enter</button>
           </form>
         </div>
@@ -756,7 +758,7 @@ function AdminLayout() {
   }
 
   return (
-    <div className="h-screen bg-[#eaf1f7] overflow-hidden">
+    <div className="h-screen bg-[#eaf1f7] dark:bg-[#0a0f1a] overflow-hidden">
       <header className="h-16 text-white border-b border-[#2b607f]" style={{ backgroundColor: '#143D59' }}>
         <div className="h-full px-4 sm:px-6 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -770,10 +772,13 @@ function AdminLayout() {
             </button>
             <h1 className="text-2xl sm:text-3xl font-bold text-[#2EC4B6]">Advanplux</h1>
           </div>
-          <div className="text-right">
-            <p className="font-semibold">Welcome Admin</p>
-            <div className="flex gap-2 justify-end mt-1">
-              <button onClick={handleLogout} className="px-4 py-2 text-sm font-medium rounded-md bg-red-600 text-white hover:bg-red-700 border border-red-500 shadow">Logout</button>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <div className="text-right">
+              <p className="font-semibold">Welcome Admin</p>
+              <div className="flex gap-2 justify-end mt-1">
+                <button onClick={handleLogout} className="px-4 py-2 text-sm font-medium rounded-md bg-red-600 text-white hover:bg-red-700 border border-red-500 shadow">Logout</button>
+              </div>
             </div>
           </div>
         </div>
@@ -817,7 +822,7 @@ function AdminLayout() {
           </nav>
         </aside>
 
-        <main className="flex-1 overflow-y-auto p-3 sm:p-6 w-full">
+        <main className="flex-1 overflow-y-auto p-3 sm:p-6 w-full bg-transparent dark:bg-[#0a0f1a]">
           <Outlet context={contextValue} />
         </main>
       </div>

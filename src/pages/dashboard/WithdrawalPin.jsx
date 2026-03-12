@@ -50,19 +50,19 @@ function WithdrawalPin() {
   return (
     <div className="max-w-md mx-auto space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Withdrawal PIN</h1>
-        <p className="text-gray-600 mt-1">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Withdrawal PIN</h1>
+        <p className="text-gray-600 dark:text-gray-400 mt-1">
           {hasSecurityPin
             ? 'Change your 4-digit PIN used to confirm withdrawals.'
             : 'Create a 4-digit PIN. You’ll use it to confirm withdrawal requests.'}
         </p>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
         <form onSubmit={handleCreateOrUpdate} className="space-y-4">
           {hasSecurityPin && !resetMode && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Current PIN</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Current PIN</label>
               <input
                 type="password"
                 inputMode="numeric"
@@ -70,13 +70,13 @@ function WithdrawalPin() {
                 maxLength={4}
                 value={currentPin}
                 onChange={(e) => setCurrentPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg"
+                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-lg"
                 placeholder="••••"
               />
             </div>
           )}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               {hasSecurityPin ? 'New PIN (4 digits)' : 'Create PIN (4 digits)'}
             </label>
             <input
@@ -86,12 +86,12 @@ function WithdrawalPin() {
               maxLength={4}
               value={pin}
               onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg"
+              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-lg"
               placeholder="••••"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Confirm PIN</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Confirm PIN</label>
             <input
               type="password"
               inputMode="numeric"
@@ -99,13 +99,13 @@ function WithdrawalPin() {
               maxLength={4}
               value={confirmPin}
               onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg"
+              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-lg"
               placeholder="••••"
             />
           </div>
-          {pinError && <p className="text-sm text-red-600">{pinError}</p>}
-          {success && <p className="text-sm text-green-600">{success}</p>}
-          <p className="text-xs text-gray-500">
+          {pinError && <p className="text-sm text-red-600 dark:text-red-400">{pinError}</p>}
+          {success && <p className="text-sm text-green-600 dark:text-green-400">{success}</p>}
+          <p className="text-xs text-gray-500 dark:text-gray-400">
             Keep this PIN safe. You’ll need it to confirm withdrawals.
           </p>
           {hasSecurityPin && (
@@ -117,7 +117,7 @@ function WithdrawalPin() {
                 setSuccess('')
                 setCurrentPin('')
               }}
-              className="text-xs text-primary-600 hover:underline"
+              className="text-xs text-primary-600 dark:text-primary-400 hover:underline"
             >
               {resetMode ? 'Cancel reset (use current PIN instead)' : 'Forgot PIN? Reset without current PIN'}
             </button>

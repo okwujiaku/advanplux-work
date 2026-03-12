@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import ThemeToggle from '../../components/ThemeToggle'
 
 function ResetPasswordWithTokenPage() {
   const [searchParams] = useSearchParams()
@@ -51,15 +52,16 @@ function ResetPasswordWithTokenPage() {
 
   if (!token.trim()) {
     return (
-      <div className="min-h-screen bg-[linear-gradient(135deg,#143D59_0%,#1B4965_100%)] px-4 py-6 flex items-center justify-center">
+      <div className="min-h-screen bg-[linear-gradient(135deg,#143D59_0%,#1B4965_100%)] dark:bg-[linear-gradient(135deg,#0f2d42_0%,#143652_100%)] px-4 py-6 flex items-center justify-center relative">
+        <div className="absolute top-4 right-4"><ThemeToggle /></div>
         <div className="max-w-md mx-auto w-full">
           <div className="text-center mb-5 text-white">
             <p className="text-3xl font-bold tracking-tight">Advanplux</p>
             <p className="text-sm text-white/85 mt-1">Watch ads and get paid</p>
           </div>
-          <div className="bg-white rounded-3xl border border-slate-200 shadow-xl p-6">
-            <h1 className="text-2xl font-bold text-slate-900">Invalid reset link</h1>
-            <p className="text-sm text-slate-500 mt-2">
+          <div className="bg-white dark:bg-gray-800 rounded-3xl border border-slate-200 dark:border-gray-700 shadow-xl p-6">
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Invalid reset link</h1>
+            <p className="text-sm text-slate-500 dark:text-gray-400 mt-2">
               This link is missing or invalid. Use the link from your email, or request a new one.
             </p>
             <Link
@@ -68,8 +70,8 @@ function ResetPasswordWithTokenPage() {
             >
               Forgot password
             </Link>
-            <p className="text-sm text-slate-500 mt-4 text-center">
-              <Link to="/sign-in" className="text-[#143D59] font-semibold">Sign In</Link>
+            <p className="text-sm text-slate-500 dark:text-gray-400 mt-4 text-center">
+              <Link to="/sign-in" className="text-[#143D59] dark:text-primary-400 font-semibold">Sign In</Link>
             </p>
           </div>
         </div>
@@ -78,15 +80,16 @@ function ResetPasswordWithTokenPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[linear-gradient(135deg,#143D59_0%,#1B4965_100%)] px-4 py-6 flex items-center justify-center">
+    <div className="min-h-screen bg-[linear-gradient(135deg,#143D59_0%,#1B4965_100%)] dark:bg-[linear-gradient(135deg,#0f2d42_0%,#143652_100%)] px-4 py-6 flex items-center justify-center relative">
+      <div className="absolute top-4 right-4"><ThemeToggle /></div>
       <div className="max-w-md mx-auto w-full">
         <div className="text-center mb-5 text-white">
           <p className="text-3xl font-bold tracking-tight">Advanplux</p>
           <p className="text-sm text-white/85 mt-1">Watch ads and get paid</p>
         </div>
-        <div className="bg-white rounded-3xl border border-slate-200 shadow-xl p-6">
-          <h1 className="text-3xl font-bold text-slate-900">Set new password</h1>
-          <p className="text-sm text-slate-500 mt-1">
+        <div className="bg-white dark:bg-gray-800 rounded-3xl border border-slate-200 dark:border-gray-700 shadow-xl p-6">
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Set new password</h1>
+          <p className="text-sm text-slate-500 dark:text-gray-400 mt-1">
             Enter your new password below. You’ll use it to sign in after this.
           </p>
 
@@ -96,7 +99,7 @@ function ResetPasswordWithTokenPage() {
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               placeholder="New password"
-              className="w-full px-4 py-3 border border-slate-200 rounded-2xl"
+              className="w-full px-4 py-3 border border-slate-200 dark:border-gray-600 dark:bg-gray-700/50 dark:text-gray-200 dark:placeholder:text-gray-500 rounded-2xl"
               autoComplete="new-password"
               required
               minLength={6}
@@ -106,7 +109,7 @@ function ResetPasswordWithTokenPage() {
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="Confirm password"
-              className="w-full px-4 py-3 border border-slate-200 rounded-2xl"
+              className="w-full px-4 py-3 border border-slate-200 dark:border-gray-600 dark:bg-gray-700/50 dark:text-gray-200 dark:placeholder:text-gray-500 rounded-2xl"
               autoComplete="new-password"
               required
               minLength={6}
@@ -124,8 +127,8 @@ function ResetPasswordWithTokenPage() {
             </button>
           </form>
 
-          <p className="text-sm text-slate-500 mt-5 text-center">
-            <Link to="/sign-in" className="text-[#143D59] font-semibold">Back to Sign In</Link>
+          <p className="text-sm text-slate-500 dark:text-gray-400 mt-5 text-center">
+            <Link to="/sign-in" className="text-[#143D59] dark:text-primary-400 font-semibold">Back to Sign In</Link>
           </p>
         </div>
       </div>

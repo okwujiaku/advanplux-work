@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import ThemeToggle from '../../components/ThemeToggle'
 
 function ForgotPasswordPage() {
   const [email, setEmail] = useState('')
@@ -33,15 +34,18 @@ function ForgotPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[linear-gradient(135deg,#143D59_0%,#1B4965_100%)] px-4 py-6 flex items-center justify-center">
+    <div className="min-h-screen bg-[linear-gradient(135deg,#143D59_0%,#1B4965_100%)] dark:bg-[linear-gradient(135deg,#0f2d42_0%,#143652_100%)] px-4 py-6 flex items-center justify-center relative">
+      <div className="absolute top-4 right-4">
+        <ThemeToggle />
+      </div>
       <div className="max-w-md mx-auto w-full">
         <div className="text-center mb-5 text-white">
           <p className="text-3xl font-bold tracking-tight">Advanplux</p>
           <p className="text-sm text-white/85 mt-1">Watch ads and get paid</p>
         </div>
-        <div className="bg-white rounded-3xl border border-slate-200 shadow-xl p-6">
-          <h1 className="text-3xl font-bold text-slate-900">Forgot password?</h1>
-          <p className="text-sm text-slate-500 mt-1">
+        <div className="bg-white dark:bg-gray-800 rounded-3xl border border-slate-200 dark:border-gray-700 shadow-xl p-6">
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Forgot password?</h1>
+          <p className="text-sm text-slate-500 dark:text-gray-400 mt-1">
             Enter your account email.
           </p>
 
@@ -51,7 +55,7 @@ function ForgotPasswordPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Email address"
-              className="w-full px-4 py-3 border border-slate-200 rounded-2xl"
+              className="w-full px-4 py-3 border border-slate-200 dark:border-gray-600 dark:bg-gray-700/50 dark:text-gray-200 dark:placeholder:text-gray-500 rounded-2xl"
               autoComplete="email"
               required
             />
@@ -68,9 +72,9 @@ function ForgotPasswordPage() {
             </button>
           </form>
 
-          <p className="text-sm text-slate-500 mt-5 text-center">
+          <p className="text-sm text-slate-500 dark:text-gray-400 mt-5 text-center">
             Remember your password?{' '}
-            <Link to="/sign-in" className="text-[#143D59] font-semibold">
+            <Link to="/sign-in" className="text-[#143D59] dark:text-primary-400 font-semibold">
               Sign In
             </Link>
           </p>

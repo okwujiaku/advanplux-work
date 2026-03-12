@@ -55,6 +55,25 @@ export default async function handler(req, res) {
     const net_amount_usd = Number(netAmountUsd) || amount_usd
     if (amount_usd <= 0) return json(res, 400, { ok: false, error: 'Invalid withdrawal amount.' })
 
+    // Prevent multiple pending withdrawals: user must wait for admin to approve/reject
+    const { data: existingPending, error: pendingErr } = await supabase
+      .from('withdrawals')
+      .select('id, status')
+      .eq('user_id', userId)
+      .eq('status', 'pending')
+      .limit(1)
+      .maybeSingle()
+    if (pendingErr) {
+      return json(res, 500, { ok: false, error: 'Unable to check existing withdrawals. Please try again.' })
+    }
+    if (existingPending) {
+      return json(res, 400, {
+        ok: false,
+        error: 'You already have a pending withdrawal. Please wait for it to be approved or rejected before submitting another.',
+        code: 'WITHDRAWAL_PENDING_EXISTS',
+      })
+    }
+
     const { data: walletRow, error: walletFetchErr } = await supabase
       .from('user_wallet')
       .select('balance_usd')
