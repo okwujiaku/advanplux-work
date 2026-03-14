@@ -231,21 +231,6 @@ function Deposit() {
           {country === 'nigeria' && selectedPaymentAccount && (
             <div className="space-y-4">
               <div>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Account name</p>
-                <div className="flex items-center gap-2">
-                  <p className="font-medium text-gray-900 dark:text-gray-200">
-                    {selectedPaymentAccount.accountName || '-'}
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => handleCopyField('Account name', selectedPaymentAccount.accountName)}
-                    className="px-2 py-1 text-[11px] rounded border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600"
-                  >
-                    Copy
-                  </button>
-                </div>
-              </div>
-              <div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Account number</p>
                 <div className="flex items-center gap-2">
                   <p className="font-mono font-medium text-gray-900 dark:text-gray-200">
@@ -254,6 +239,21 @@ function Deposit() {
                   <button
                     type="button"
                     onClick={() => handleCopyField('Account number', selectedPaymentAccount.accountNumber)}
+                    className="px-2 py-1 text-[11px] rounded border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600"
+                  >
+                    Copy
+                  </button>
+                </div>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Account name</p>
+                <div className="flex items-center gap-2">
+                  <p className="font-medium text-gray-900 dark:text-gray-200">
+                    {selectedPaymentAccount.accountName || '-'}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => handleCopyField('Account name', selectedPaymentAccount.accountName)}
                     className="px-2 py-1 text-[11px] rounded border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600"
                   >
                     Copy
@@ -277,104 +277,134 @@ function Deposit() {
               </div>
             </div>
           )}
-          {country === 'cameroon' && selectedPaymentAccount && (
-            <div className="space-y-4">
-              <div>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Mobile money network</p>
-                <div className="flex items-center gap-2">
-                  <p className="font-medium text-gray-900 dark:text-gray-200">
-                    {selectedPaymentAccount.bankName || '-'}
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => handleCopyField('Mobile money network', selectedPaymentAccount.bankName)}
-                    className="px-2 py-1 text-[11px] rounded border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600"
-                  >
-                    Copy
-                  </button>
+          {country === 'cameroon' && selectedPaymentAccount && (() => {
+            const ussd = '*126*9*670476375#'
+            return (
+              <div className="space-y-4">
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Mobile Money number (USSD)</p>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {ussd ? (
+                      <a
+                        href={`tel:${ussd}`}
+                        className="font-mono font-medium text-primary-600 dark:text-primary-400 hover:underline"
+                      >
+                        {ussd}
+                      </a>
+                    ) : (
+                      <p className="font-mono font-medium text-gray-900 dark:text-gray-200">-</p>
+                    )}
+                    {ussd && (
+                      <button
+                        type="button"
+                        onClick={() => handleCopyField('Mobile Money number', ussd)}
+                        className="px-2 py-1 text-[11px] rounded border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600"
+                      >
+                        Copy
+                      </button>
+                    )}
+                  </div>
+                  {ussd && (
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Tap to open phone dialer and complete payment</p>
+                  )}
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Account name</p>
+                  <div className="flex items-center gap-2">
+                    <p className="font-medium text-gray-900 dark:text-gray-200">
+                      {selectedPaymentAccount.accountName || '-'}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => handleCopyField('Account name', selectedPaymentAccount.accountName)}
+                      className="px-2 py-1 text-[11px] rounded border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600"
+                    >
+                      Copy
+                    </button>
+                  </div>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Mobile money network</p>
+                  <div className="flex items-center gap-2">
+                    <p className="font-medium text-gray-900 dark:text-gray-200">
+                      {selectedPaymentAccount.bankName || '-'}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => handleCopyField('Mobile money network', selectedPaymentAccount.bankName)}
+                      className="px-2 py-1 text-[11px] rounded border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600"
+                    >
+                      Copy
+                    </button>
+                  </div>
                 </div>
               </div>
-              <div>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Mobile Money number</p>
-                <div className="flex items-center gap-2">
-                  <p className="font-mono font-medium text-gray-900 dark:text-gray-200">
-                    {selectedPaymentAccount.accountNumber || '-'}
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => handleCopyField('Mobile Money number', selectedPaymentAccount.accountNumber)}
-                    className="px-2 py-1 text-[11px] rounded border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600"
-                  >
-                    Copy
-                  </button>
+            )
+          })()}
+          {country === 'rwanda' && selectedPaymentAccount && (() => {
+            const ussd = '*182*1*1*0787710293#'
+            return (
+              <div className="space-y-4">
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Mobile Money number (USSD)</p>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {ussd ? (
+                      <a
+                        href={`tel:${ussd}`}
+                        className="font-mono font-medium text-primary-600 dark:text-primary-400 hover:underline"
+                      >
+                        {ussd}
+                      </a>
+                    ) : (
+                      <p className="font-mono font-medium text-gray-900 dark:text-gray-200">-</p>
+                    )}
+                    {ussd && (
+                      <button
+                        type="button"
+                        onClick={() => handleCopyField('Mobile Money number', ussd)}
+                        className="px-2 py-1 text-[11px] rounded border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600"
+                      >
+                        Copy
+                      </button>
+                    )}
+                  </div>
+                  {ussd && (
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Tap to open phone dialer and complete payment</p>
+                  )}
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Account name</p>
+                  <div className="flex items-center gap-2">
+                    <p className="font-medium text-gray-900 dark:text-gray-200">
+                      {selectedPaymentAccount.accountName || '-'}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => handleCopyField('Account name', selectedPaymentAccount.accountName)}
+                      className="px-2 py-1 text-[11px] rounded border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600"
+                    >
+                      Copy
+                    </button>
+                  </div>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Mobile money network</p>
+                  <div className="flex items-center gap-2">
+                    <p className="font-medium text-gray-900 dark:text-gray-200">
+                      {selectedPaymentAccount.bankName || '-'}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => handleCopyField('Mobile money network', selectedPaymentAccount.bankName)}
+                      className="px-2 py-1 text-[11px] rounded border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600"
+                    >
+                      Copy
+                    </button>
+                  </div>
                 </div>
               </div>
-              <div>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Account name</p>
-                <div className="flex items-center gap-2">
-                  <p className="font-medium text-gray-900 dark:text-gray-200">
-                    {selectedPaymentAccount.accountName || '-'}
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => handleCopyField('Account name', selectedPaymentAccount.accountName)}
-                    className="px-2 py-1 text-[11px] rounded border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600"
-                  >
-                    Copy
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-          {country === 'rwanda' && selectedPaymentAccount && (
-            <div className="space-y-4">
-              <div>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Mobile money network</p>
-                <div className="flex items-center gap-2">
-                  <p className="font-medium text-gray-900 dark:text-gray-200">
-                    {selectedPaymentAccount.bankName || '-'}
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => handleCopyField('Mobile money network', selectedPaymentAccount.bankName)}
-                    className="px-2 py-1 text-[11px] rounded border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600"
-                  >
-                    Copy
-                  </button>
-                </div>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Mobile Money number</p>
-                <div className="flex items-center gap-2">
-                  <p className="font-mono font-medium text-gray-900 dark:text-gray-200">
-                    {selectedPaymentAccount.accountNumber || '-'}
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => handleCopyField('Mobile Money number', selectedPaymentAccount.accountNumber)}
-                    className="px-2 py-1 text-[11px] rounded border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600"
-                  >
-                    Copy
-                  </button>
-                </div>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Account name</p>
-                <div className="flex items-center gap-2">
-                  <p className="font-medium text-gray-900 dark:text-gray-200">
-                    {selectedPaymentAccount.accountName || '-'}
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => handleCopyField('Account name', selectedPaymentAccount.accountName)}
-                    className="px-2 py-1 text-[11px] rounded border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600"
-                  >
-                    Copy
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
+            )
+          })()}
 
           {copiedField && (
             <div className="mt-4 text-xs text-green-600 dark:text-green-400">
