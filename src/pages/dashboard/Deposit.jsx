@@ -304,9 +304,6 @@ function Deposit() {
                       </button>
                     )}
                   </div>
-                  {ussd && (
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Tap to open phone dialer and complete payment</p>
-                  )}
                 </div>
                 <div>
                   <p className="text-sm text-gray-500 dark:text-gray-400">Account name</p>
@@ -368,9 +365,6 @@ function Deposit() {
                       </button>
                     )}
                   </div>
-                  {ussd && (
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Tap to open phone dialer and complete payment</p>
-                  )}
                 </div>
                 <div>
                   <p className="text-sm text-gray-500 dark:text-gray-400">Account name</p>
