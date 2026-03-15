@@ -82,7 +82,7 @@ function DashboardHome() {
     { label: 'Announcement', to: '/dashboard/announcements', icon: '📢' },
     { label: 'Referral', to: '/dashboard/referral', icon: '👥' },
     { label: 'Weekly Salary', to: '/dashboard/team', icon: '🤝' },
-    { label: 'Live chat', action: 'open-chat', icon: '💬' },
+    { label: 'Contact Us', subLabel: 'Live chat', action: 'open-chat', icon: '💬' },
     { label: 'Community', href: 'https://chat.whatsapp.com/HNw0UYhzHgUAhubfNTTM8q?mode=hq1tcla', icon: '🌐' },
     { label: 'Promote your business with us', to: '/dashboard/promote-business', icon: '📣' },
     { label: 'About us', to: '/dashboard/about', icon: 'ℹ️' },
@@ -145,7 +145,10 @@ function DashboardHome() {
                 <div className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-1 rounded-md bg-blue-100 dark:bg-blue-900/40 ring-1 ring-blue-200 dark:ring-blue-800 flex items-center justify-center text-xl sm:text-2xl">
                   <span>{action.icon}</span>
                 </div>
-                <p className="font-semibold text-slate-800 dark:text-gray-200 text-[11px] sm:text-xs leading-tight">{action.label}</p>
+                <p className="font-semibold text-slate-800 dark:text-gray-200 text-[11px] sm:text-xs leading-tight">
+                  <span className="block">{action.label}</span>
+                  {action.subLabel && <span className="block">{action.subLabel}</span>}
+                </p>
               </button>
             ) : action.href ? (
               <a
