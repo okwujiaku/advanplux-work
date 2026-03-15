@@ -26,5 +26,63 @@
     </script>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
+    <script>
+      (function() {
+        function makeSmartsuppDraggable() {
+          var iframe = document.querySelector('iframe[src*="smartsuppchat.com"]');
+          if (!iframe) return false;
+          var container = iframe.parentElement;
+          if (!container || container.getAttribute('data-smartsupp-draggable') === 'true') return true;
+          var rect = container.getBoundingClientRect();
+          container.setAttribute('data-smartsupp-draggable', 'true');
+          container.style.left = rect.left + 'px';
+          container.style.top = rect.top + 'px';
+          container.style.right = 'auto';
+          container.style.bottom = 'auto';
+          container.classList.add('smartsupp-draggable-wrapper');
+          var handle = document.createElement('div');
+          handle.className = 'smartsupp-drag-handle';
+          handle.setAttribute('aria-label', 'Drag to move chat');
+          container.insertBefore(handle, container.firstChild);
+          var dragging = false, startX, startY, startLeft, startTop;
+          function start(e) {
+            e.preventDefault();
+            dragging = true;
+            startX = e.touches ? e.touches[0].clientX : e.clientX;
+            startY = e.touches ? e.touches[0].clientY : e.clientY;
+            startLeft = parseInt(container.style.left, 10) || 0;
+            startTop = parseInt(container.style.top, 10) || 0;
+          }
+          function move(e) {
+            if (!dragging) return;
+            e.preventDefault();
+            var x = e.touches ? e.touches[0].clientX : e.clientX;
+            var y = e.touches ? e.touches[0].clientY : e.clientY;
+            var newLeft = startLeft + (x - startX);
+            var newTop = startTop + (y - startY);
+            newLeft = Math.max(0, Math.min(newLeft, window.innerWidth - rect.width));
+            newTop = Math.max(0, Math.min(newTop, window.innerHeight - rect.height));
+            container.style.left = newLeft + 'px';
+            container.style.top = newTop + 'px';
+          }
+          function end() { dragging = false; }
+          handle.addEventListener('mousedown', start);
+          handle.addEventListener('touchstart', start, { passive: false });
+          document.addEventListener('mousemove', move);
+          document.addEventListener('touchmove', move, { passive: false });
+          document.addEventListener('mouseup', end);
+          document.addEventListener('touchend', end);
+          return true;
+        }
+        var attempts = 0;
+        function tryInit() {
+          if (makeSmartsuppDraggable() || attempts > 40) return;
+          attempts++;
+          setTimeout(tryInit, 250);
+        }
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', tryInit);
+        else tryInit();
+      })();
+    </script>
   </body>
 </html>
