@@ -75,7 +75,7 @@ function DashboardHome() {
     { label: 'Referral', to: '/dashboard/referral', icon: '👥' },
     { label: 'Weekly Salary', to: '/dashboard/team', icon: '🤝' },
     { label: 'Contact us', to: '/dashboard/support-center', icon: '🛟' },
-    { label: 'Community', href: 'https://chat.whatsapp.com/I8YAAMLwMv43dv7OlholTA?mode=hq1tcla', icon: '🌐' },
+    { label: 'Community', href: 'https://chat.whatsapp.com/HNw0UYhzHgUAhubfNTTM8q?mode=hq1tcla', icon: '🌐' },
     { label: 'Promote your business with us', to: '/dashboard/promote-business', icon: '📣' },
     { label: 'About us', to: '/dashboard/about', icon: 'ℹ️' },
   ]

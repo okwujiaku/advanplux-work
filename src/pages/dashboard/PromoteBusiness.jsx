@@ -17,7 +17,7 @@ function PromoteBusiness() {
             <h2 className="text-base sm:text-lg font-semibold text-slate-900 dark:text-white mb-2">How it works</h2>
             <p className="text-sm text-slate-700 dark:text-gray-300">
               To promote your business with us, make a 30 seconds video of your company/brand and after making the video, contact us on WhatsApp:{' '}
-              <a href="https://wa.me/16084071154" target="_blank" rel="noopener noreferrer" className="font-semibold text-primary-600 dark:text-primary-400 hover:underline">Chat on WhatsApp</a>.
+              <a href="https://wa.me/639979552631" target="_blank" rel="noopener noreferrer" className="font-semibold text-primary-600 dark:text-primary-400 hover:underline">Chat on WhatsApp</a>.
             </p>
           </div>
         </div>

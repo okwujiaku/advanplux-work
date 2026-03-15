@@ -3,7 +3,7 @@ import { Outlet, NavLink, Link, useLocation } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
 import ThemeToggle from '../components/ThemeToggle'
 
-const COMMUNITY_WHATSAPP_URL = 'https://chat.whatsapp.com/I8YAAMLwMv43dv7OlholTA?mode=hq1tcla'
+const COMMUNITY_WHATSAPP_URL = 'https://chat.whatsapp.com/HNw0UYhzHgUAhubfNTTM8q?mode=hq1tcla'
 
 const navItems = [
   { to: '/dashboard', end: true, label: 'Home' },

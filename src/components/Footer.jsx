@@ -47,7 +47,7 @@ function Footer() {
             <h4 className="text-white font-semibold mb-4">Support</h4>
             <ul className="space-y-2 text-sm">
               <li><a href="#" className="hover:text-primary-400 transition-colors">Help Center</a></li>
-              <li><a href="#" className="hover:text-primary-400 transition-colors">Contact Us</a></li>
+              <li><a href="https://wa.me/639979552631" target="_blank" rel="noopener noreferrer" className="hover:text-primary-400 transition-colors">Contact Us</a></li>
               <li><a href="#" className="hover:text-primary-400 transition-colors">FAQs</a></li>
               <li><a href="#" className="hover:text-primary-400 transition-colors">Terms of Service</a></li>
               <li><a href="#" className="hover:text-primary-400 transition-colors">Privacy Policy</a></li>

@@ -12,7 +12,7 @@ function SupportCenter() {
         <p className="text-white/85 mt-4">Email: support@advanplux.com</p>
         <p className="text-white/85 mt-2">
           WhatsApp:{' '}
-          <a href="https://wa.me/16084071154" target="_blank" rel="noopener noreferrer" className="font-semibold underline hover:no-underline">
+          <a href="https://wa.me/639979552631" target="_blank" rel="noopener noreferrer" className="font-semibold underline hover:no-underline">
             Chat on WhatsApp
           </a>
         </p>

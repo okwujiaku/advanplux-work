@@ -278,31 +278,20 @@ function Deposit() {
             </div>
           )}
           {country === 'cameroon' && selectedPaymentAccount && (() => {
-            const ussd = '*126*9*670476375#'
+            const momoNumber = '670476375'
             return (
               <div className="space-y-4">
                 <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Mobile Money number (USSD)</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Mobile Money number</p>
                   <div className="flex items-center gap-2 flex-wrap">
-                    {ussd ? (
-                      <a
-                        href={`tel:${ussd}`}
-                        className="font-mono font-medium text-primary-600 dark:text-primary-400 hover:underline"
-                      >
-                        {ussd}
-                      </a>
-                    ) : (
-                      <p className="font-mono font-medium text-gray-900 dark:text-gray-200">-</p>
-                    )}
-                    {ussd && (
-                      <button
-                        type="button"
-                        onClick={() => handleCopyField('Mobile Money number', ussd)}
-                        className="px-2 py-1 text-[11px] rounded border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600"
-                      >
-                        Copy
-                      </button>
-                    )}
+                    <p className="font-mono font-medium text-gray-900 dark:text-gray-200">{momoNumber}</p>
+                    <button
+                      type="button"
+                      onClick={() => handleCopyField('Mobile Money number', momoNumber)}
+                      className="px-2 py-1 text-[11px] rounded border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600"
+                    >
+                      Copy
+                    </button>
                   </div>
                 </div>
                 <div>
@@ -339,31 +328,20 @@ function Deposit() {
             )
           })()}
           {country === 'rwanda' && selectedPaymentAccount && (() => {
-            const ussd = '*182*1*1*0787710293#'
+            const momoNumber = '0787710293'
             return (
               <div className="space-y-4">
                 <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Mobile Money number (USSD)</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Mobile Money number</p>
                   <div className="flex items-center gap-2 flex-wrap">
-                    {ussd ? (
-                      <a
-                        href={`tel:${ussd}`}
-                        className="font-mono font-medium text-primary-600 dark:text-primary-400 hover:underline"
-                      >
-                        {ussd}
-                      </a>
-                    ) : (
-                      <p className="font-mono font-medium text-gray-900 dark:text-gray-200">-</p>
-                    )}
-                    {ussd && (
-                      <button
-                        type="button"
-                        onClick={() => handleCopyField('Mobile Money number', ussd)}
-                        className="px-2 py-1 text-[11px] rounded border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600"
-                      >
-                        Copy
-                      </button>
-                    )}
+                    <p className="font-mono font-medium text-gray-900 dark:text-gray-200">{momoNumber}</p>
+                    <button
+                      type="button"
+                      onClick={() => handleCopyField('Mobile Money number', momoNumber)}
+                      className="px-2 py-1 text-[11px] rounded border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600"
+                    >
+                      Copy
+                    </button>
                   </div>
                 </div>
                 <div>
