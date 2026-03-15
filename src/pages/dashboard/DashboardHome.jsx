@@ -66,6 +66,11 @@ function DashboardHome() {
   }
 
   useEffect(() => {
+    document.body.classList.add('dashboard-home')
+    return () => document.body.classList.remove('dashboard-home')
+  }, [])
+
+  useEffect(() => {
     const interval = setInterval(() => {
       setBannerIndex((prevIndex) => (prevIndex + 1) % bannerMessages.length)
     }, 3200)
