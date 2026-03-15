@@ -29,15 +29,22 @@
   }
 }
 
-/* Smartsupp live chat widget - bottom right corner */
+/* Smartsupp live chat widget - bottom right, above nav/footer */
 #smartsupp-widget,
 div[id*="smartsupp"],
 iframe[src*="smartsuppchat.com"] {
   position: fixed !important;
   right: 20px !important;
-  bottom: 20px !important;
+  bottom: 80px !important;
   left: auto !important;
   top: auto !important;
+}
+@media (min-width: 768px) {
+  #smartsupp-widget,
+  div[id*="smartsupp"],
+  iframe[src*="smartsuppchat.com"] {
+    bottom: 24px !important;
+  }
 }
 
 @layer utilities {
