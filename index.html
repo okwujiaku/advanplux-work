@@ -28,12 +28,21 @@
     <script type="module" src="/src/main.jsx"></script>
     <script>
       (function() {
+        function getFixedAncestor(el) {
+          var node = el;
+          while (node && node.nodeType === 1) {
+            if (window.getComputedStyle(node).position === 'fixed') return node;
+            node = node.parentElement;
+          }
+          return null;
+        }
         function makeSmartsuppDraggable() {
-          var iframe = document.querySelector('iframe[src*="smartsuppchat.com"]');
+          var iframe = document.querySelector('iframe[src*="smartsuppchat.com"]') || document.querySelector('iframe[src*="smartsupp"]');
           if (!iframe) return false;
-          var container = iframe.parentElement;
+          var container = getFixedAncestor(iframe) || iframe.parentElement;
           if (!container || container.getAttribute('data-smartsupp-draggable') === 'true') return true;
           var rect = container.getBoundingClientRect();
+          if (rect.width < 20 || rect.height < 20) return false;
           container.setAttribute('data-smartsupp-draggable', 'true');
           container.style.left = rect.left + 'px';
           container.style.top = rect.top + 'px';
@@ -43,42 +52,51 @@
           var handle = document.createElement('div');
           handle.className = 'smartsupp-drag-handle';
           handle.setAttribute('aria-label', 'Drag to move chat');
+          handle.style.pointerEvents = 'auto';
           container.insertBefore(handle, container.firstChild);
-          var dragging = false, startX, startY, startLeft, startTop;
+          var dragging = false, startX, startY, startLeft, startTop, rectW = rect.width, rectH = rect.height;
+          function getCoords(e) {
+            return e.touches ? { x: e.touches[0].clientX, y: e.touches[0].clientY } : { x: e.clientX, y: e.clientY };
+          }
           function start(e) {
-            e.preventDefault();
+            var c = getCoords(e);
+            startX = c.x;
+            startY = c.y;
+            startLeft = parseInt(container.style.left, 10) || rect.left;
+            startTop = parseInt(container.style.top, 10) || rect.top;
             dragging = true;
-            startX = e.touches ? e.touches[0].clientX : e.clientX;
-            startY = e.touches ? e.touches[0].clientY : e.clientY;
-            startLeft = parseInt(container.style.left, 10) || 0;
-            startTop = parseInt(container.style.top, 10) || 0;
+            e.preventDefault();
+            e.stopPropagation();
           }
           function move(e) {
             if (!dragging) return;
             e.preventDefault();
-            var x = e.touches ? e.touches[0].clientX : e.clientX;
-            var y = e.touches ? e.touches[0].clientY : e.clientY;
-            var newLeft = startLeft + (x - startX);
-            var newTop = startTop + (y - startY);
-            newLeft = Math.max(0, Math.min(newLeft, window.innerWidth - rect.width));
-            newTop = Math.max(0, Math.min(newTop, window.innerHeight - rect.height));
+            var c = getCoords(e);
+            var newLeft = startLeft + (c.x - startX);
+            var newTop = startTop + (c.y - startY);
+            newLeft = Math.max(4, Math.min(newLeft, window.innerWidth - rectW - 4));
+            newTop = Math.max(4, Math.min(newTop, window.innerHeight - rectH - 4));
             container.style.left = newLeft + 'px';
             container.style.top = newTop + 'px';
           }
-          function end() { dragging = false; }
-          handle.addEventListener('mousedown', start);
-          handle.addEventListener('touchstart', start, { passive: false });
-          document.addEventListener('mousemove', move);
-          document.addEventListener('touchmove', move, { passive: false });
-          document.addEventListener('mouseup', end);
-          document.addEventListener('touchend', end);
+          function end(e) {
+            if (dragging) e.preventDefault();
+            dragging = false;
+          }
+          handle.addEventListener('mousedown', start, true);
+          handle.addEventListener('touchstart', start, { passive: false, capture: true });
+          document.addEventListener('mousemove', move, true);
+          document.addEventListener('touchmove', move, { passive: false, capture: true });
+          document.addEventListener('mouseup', end, true);
+          document.addEventListener('touchend', end, true);
+          document.addEventListener('mouseleave', end, true);
           return true;
         }
         var attempts = 0;
         function tryInit() {
-          if (makeSmartsuppDraggable() || attempts > 40) return;
+          if (makeSmartsuppDraggable() || attempts > 60) return;
           attempts++;
-          setTimeout(tryInit, 250);
+          setTimeout(tryInit, 300);
         }
         if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', tryInit);
         else tryInit();
