@@ -295,14 +295,14 @@ function Deposit() {
                   </div>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Account name</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Mobile money name</p>
                   <div className="flex items-center gap-2">
                     <p className="font-medium text-gray-900 dark:text-gray-200">
                       {selectedPaymentAccount.accountName || '-'}
                     </p>
                     <button
                       type="button"
-                      onClick={() => handleCopyField('Account name', selectedPaymentAccount.accountName)}
+                      onClick={() => handleCopyField('Mobile money name', selectedPaymentAccount.accountName)}
                       className="px-2 py-1 text-[11px] rounded border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600"
                     >
                       Copy
@@ -345,14 +345,14 @@ function Deposit() {
                   </div>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Account name</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Mobile money name</p>
                   <div className="flex items-center gap-2">
                     <p className="font-medium text-gray-900 dark:text-gray-200">
                       {selectedPaymentAccount.accountName || '-'}
                     </p>
                     <button
                       type="button"
-                      onClick={() => handleCopyField('Account name', selectedPaymentAccount.accountName)}
+                      onClick={() => handleCopyField('Mobile money name', selectedPaymentAccount.accountName)}
                       className="px-2 py-1 text-[11px] rounded border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600"
                     >
                       Copy
