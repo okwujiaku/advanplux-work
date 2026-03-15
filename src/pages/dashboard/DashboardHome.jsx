@@ -66,8 +66,32 @@ function DashboardHome() {
   }
 
   useEffect(() => {
-    document.body.classList.add('dashboard-home')
-    return () => document.body.classList.remove('dashboard-home')
+    let timer = null
+    let attempts = 0
+
+    const hideChat = () => {
+      if (typeof window !== 'undefined' && typeof window.smartsupp === 'function') {
+        window.smartsupp('chat:hide')
+        return true
+      }
+      return false
+    }
+
+    if (!hideChat()) {
+      timer = setInterval(() => {
+        attempts += 1
+        if (hideChat() || attempts > 20) {
+          clearInterval(timer)
+        }
+      }, 300)
+    }
+
+    return () => {
+      if (timer) clearInterval(timer)
+      if (typeof window !== 'undefined' && typeof window.smartsupp === 'function') {
+        window.smartsupp('chat:show')
+      }
+    }
   }, [])
 
   useEffect(() => {

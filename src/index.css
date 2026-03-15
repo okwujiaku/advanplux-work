@@ -29,14 +29,6 @@
   }
 }
 
-/* Hide floating chat on dashboard home (Live chat is in Quick links) */
-body.dashboard-home [data-smartsupp-draggable],
-body.dashboard-home div:has(iframe[src*="smartsupp"]),
-body.dashboard-home iframe[src*="smartsuppchat.com"],
-body.dashboard-home iframe[src*="smartsupp"] {
-  display: none !important;
-}
-
 /* Smartsupp live chat widget - floating, draggable; clear of bottom nav */
 #smartsupp-widget,
 div[id*="smartsupp"],
