@@ -47,7 +47,7 @@ iframe[src*="smartsuppchat.com"] {
     bottom: 24px !important;
   }
 }
-/* When widget is made draggable, script sets left/top and clears right/bottom */
+/* When widget is made draggable (floating), script sets left/top and clears right/bottom */
 .smartsupp-draggable-wrapper {
   position: fixed !important;
   z-index: 9999 !important;

@@ -57,6 +57,14 @@ function DashboardHome() {
     refetchWalletAndDeposits()
   }, [refetchWalletAndDeposits])
 
+  const openLiveChat = () => {
+    if (typeof window !== 'undefined' && typeof window.smartsupp === 'function') {
+      window.smartsupp('chat:open')
+    } else {
+      window.location.href = '/dashboard/support-center'
+    }
+  }
+
   useEffect(() => {
     const interval = setInterval(() => {
       setBannerIndex((prevIndex) => (prevIndex + 1) % bannerMessages.length)
@@ -74,7 +82,7 @@ function DashboardHome() {
     { label: 'Announcement', to: '/dashboard/announcements', icon: '📢' },
     { label: 'Referral', to: '/dashboard/referral', icon: '👥' },
     { label: 'Weekly Salary', to: '/dashboard/team', icon: '🤝' },
-    { label: 'Contact us', to: '/dashboard/support-center', icon: '🛟' },
+    { label: 'Live chat', action: 'open-chat', icon: '💬' },
     { label: 'Community', href: 'https://chat.whatsapp.com/HNw0UYhzHgUAhubfNTTM8q?mode=hq1tcla', icon: '🌐' },
     { label: 'Promote your business with us', to: '/dashboard/promote-business', icon: '📣' },
     { label: 'About us', to: '/dashboard/about', icon: 'ℹ️' },
@@ -127,7 +135,19 @@ function DashboardHome() {
         <h2 className="text-base sm:text-lg font-semibold text-slate-900 dark:text-white mb-3 sm:mb-4">Quick links</h2>
         <div className="grid grid-cols-3 gap-2 sm:gap-3 sm:grid-cols-4 lg:grid-cols-5">
           {actions.map((action) =>
-            action.href ? (
+            action.action === 'open-chat' ? (
+              <button
+                key={action.label}
+                type="button"
+                onClick={openLiveChat}
+                className="aspect-square p-2 sm:p-3 rounded-md border border-slate-200 dark:border-gray-600 bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_100%)] dark:bg-[linear-gradient(180deg,#374151_0%,#1f2937_100%)] text-center flex flex-col items-center justify-center hover:-translate-y-0.5 hover:shadow-md transition-all w-full"
+              >
+                <div className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-1 rounded-md bg-blue-100 dark:bg-blue-900/40 ring-1 ring-blue-200 dark:ring-blue-800 flex items-center justify-center text-xl sm:text-2xl">
+                  <span>{action.icon}</span>
+                </div>
+                <p className="font-semibold text-slate-800 dark:text-gray-200 text-[11px] sm:text-xs leading-tight">{action.label}</p>
+              </button>
+            ) : action.href ? (
               <a
                 key={action.label}
                 href={action.href}
