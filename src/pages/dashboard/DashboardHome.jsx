@@ -66,35 +66,6 @@ function DashboardHome() {
   }
 
   useEffect(() => {
-    let timer = null
-    let attempts = 0
-
-    const hideChat = () => {
-      if (typeof window !== 'undefined' && typeof window.smartsupp === 'function') {
-        window.smartsupp('chat:hide')
-        return true
-      }
-      return false
-    }
-
-    if (!hideChat()) {
-      timer = setInterval(() => {
-        attempts += 1
-        if (hideChat() || attempts > 20) {
-          clearInterval(timer)
-        }
-      }, 300)
-    }
-
-    return () => {
-      if (timer) clearInterval(timer)
-      if (typeof window !== 'undefined' && typeof window.smartsupp === 'function') {
-        window.smartsupp('chat:show')
-      }
-    }
-  }, [])
-
-  useEffect(() => {
     const interval = setInterval(() => {
       setBannerIndex((prevIndex) => (prevIndex + 1) % bannerMessages.length)
     }, 3200)
