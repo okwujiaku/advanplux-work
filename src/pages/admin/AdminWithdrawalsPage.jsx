@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useOutletContext } from 'react-router-dom'
 import { getUserDisplay } from './memberDisplay'
 
@@ -16,8 +17,20 @@ function formatPayoutInUserCurrency(netUsd, currency) {
 
 function AdminWithdrawalsPage() {
   const { withdrawals, approveWithdrawal, rejectWithdrawal, members } = useOutletContext()
+  const [copiedKey, setCopiedKey] = useState('')
   const getUserLabel = (userId) => getUserDisplay(userId, members)
   const pendingWithdrawals = withdrawals.filter((w) => w.status === 'pending')
+
+  const copyDetail = async (key, value) => {
+    if (!value || value === '–') return
+    try {
+      await navigator.clipboard.writeText(String(value))
+      setCopiedKey(key)
+      setTimeout(() => setCopiedKey(''), 1500)
+    } catch {
+      // clipboard can fail in restricted browser contexts
+    }
+  }
 
   return (
     <section className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
@@ -55,9 +68,39 @@ function AdminWithdrawalsPage() {
                 </td>
                 <td className="p-3 dark:text-gray-200">{w.currency}</td>
                 <td className="p-3 max-w-[200px]">
-                  <span className="block font-mono dark:text-gray-200">{accNum}</span>
-                  <span className="block text-gray-800 dark:text-gray-200">{accName}</span>
-                  <span className="block text-gray-700 dark:text-gray-300">{bank}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="block font-mono dark:text-gray-200">{accNum}</span>
+                    <button
+                      type="button"
+                      onClick={() => copyDetail(`${w.id}-accnum`, accNum)}
+                      className="px-1.5 py-0.5 border border-gray-300 dark:border-gray-600 rounded text-[10px] text-gray-600 dark:text-gray-300"
+                    >
+                      Copy
+                    </button>
+                    {copiedKey === `${w.id}-accnum` && <span className="text-[10px] text-green-600 dark:text-green-400">Copied</span>}
+                  </div>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="block text-gray-800 dark:text-gray-200">{accName}</span>
+                    <button
+                      type="button"
+                      onClick={() => copyDetail(`${w.id}-accname`, accName)}
+                      className="px-1.5 py-0.5 border border-gray-300 dark:border-gray-600 rounded text-[10px] text-gray-600 dark:text-gray-300"
+                    >
+                      Copy
+                    </button>
+                    {copiedKey === `${w.id}-accname` && <span className="text-[10px] text-green-600 dark:text-green-400">Copied</span>}
+                  </div>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="block text-gray-700 dark:text-gray-300">{bank}</span>
+                    <button
+                      type="button"
+                      onClick={() => copyDetail(`${w.id}-bank`, bank)}
+                      className="px-1.5 py-0.5 border border-gray-300 dark:border-gray-600 rounded text-[10px] text-gray-600 dark:text-gray-300"
+                    >
+                      Copy
+                    </button>
+                    {copiedKey === `${w.id}-bank` && <span className="text-[10px] text-green-600 dark:text-green-400">Copied</span>}
+                  </div>
                 </td>
                 <td className="p-3 dark:text-gray-200">{w.status}</td>
                 <td className="p-3">
