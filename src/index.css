@@ -29,57 +29,6 @@
   }
 }
 
-/* Smartsupp live chat widget - floating, draggable; clear of bottom nav */
-#smartsupp-widget,
-div[id*="smartsupp"],
-iframe[src*="smartsuppchat.com"] {
-  position: fixed !important;
-  right: 20px !important;
-  bottom: 120px !important;
-  left: auto !important;
-  top: auto !important;
-  z-index: 9999 !important;
-}
-@media (min-width: 768px) {
-  #smartsupp-widget,
-  div[id*="smartsupp"],
-  iframe[src*="smartsuppchat.com"] {
-    bottom: 24px !important;
-  }
-}
-/* When widget is made draggable (floating), script sets left/top and clears right/bottom */
-.smartsupp-draggable-wrapper {
-  position: fixed !important;
-  z-index: 9999 !important;
-  cursor: default !important;
-}
-.smartsupp-drag-handle {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 50%;
-  min-height: 44px;
-  cursor: move;
-  z-index: 10001;
-  background: linear-gradient(to top, rgba(0,0,0,0.2), transparent 60%);
-  border-radius: 0 0 50% 50%;
-  touch-action: none;
-  -webkit-tap-highlight-color: transparent;
-}
-.smartsupp-drag-handle::after {
-  content: '⋮⋮ Drag';
-  position: absolute;
-  left: 50%;
-  bottom: 6px;
-  transform: translateX(-50%);
-  font-size: 11px;
-  font-weight: 600;
-  color: rgba(255,255,255,0.95);
-  text-shadow: 0 1px 2px rgba(0,0,0,0.4);
-  letter-spacing: 1px;
-}
-
 @layer utilities {
   .animate-fade-in {
     animation: fadeIn 1s ease-in;
