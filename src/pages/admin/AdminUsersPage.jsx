@@ -6,7 +6,19 @@ function AdminUsersPage() {
   const { members, setSelectedMemberId, setMemberBanned, getAdminKey } = useOutletContext()
   const navigate = useNavigate()
   const [searchTerm, setSearchTerm] = useState('')
-  const displayMembers = members.filter((member) => member.id !== 'current-user')
+  const displayMembers = useMemo(() => {
+    const getJoinTime = (member) => {
+      const raw = member.createdAt || member.joinedAt || member.updatedAt
+      const time = raw ? new Date(raw).getTime() : NaN
+      return Number.isFinite(time) ? time : 0
+    }
+
+    return members
+      .filter((member) => member.id !== 'current-user')
+      .slice()
+      .sort((a, b) => getJoinTime(b) - getJoinTime(a))
+  }, [members])
+
   const filteredMembers = useMemo(() => {
     const query = searchTerm.trim().toLowerCase()
     if (!query) return displayMembers
