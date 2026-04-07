@@ -917,13 +917,15 @@ export function AppProvider({ children }) {
       .catch(() => ({ ok: false, error: 'Request failed' }))
   }, [refetchWalletAndDeposits])
 
-  const watchAd = useCallback(() => {
+  const watchAd = useCallback(async () => {
     const token =
       typeof window !== 'undefined' && window.localStorage
         ? getStoredToken()
         : null
-    if (token) {
-      fetch('/api/user/earnings', {
+    if (!token) return { ok: false, error: 'Unauthorized' }
+
+    try {
+      const response = await fetch('/api/user/earnings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
@@ -931,30 +933,23 @@ export function AppProvider({ children }) {
           amountUsd: EARN_PER_AD_USD,
           note: 'Watched ad and earned reward',
         }),
-      }).catch(() => {})
-      fetch('/api/user/wallet', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ addUsd: EARN_PER_AD_USD }),
       })
-        .then((r) => r.json())
-        .then((d) => {
-          if (d?.ok && d.balanceUsd != null) setWalletUsd(d.balanceUsd)
-        })
-        .catch(() => {})
+      const payload = await response.json().catch(() => ({}))
+      if (!response.ok || !payload?.ok || !payload?.earning) {
+        return { ok: false, error: payload?.error || 'Unable to credit watch reward.' }
+      }
+
+      setAdsViewedToday((prev) => prev + 1)
+      if (payload.balanceUsd != null) {
+        setWalletUsd(Number(payload.balanceUsd) || 0)
+      } else {
+        setWalletUsd((prev) => Number((prev + EARN_PER_AD_USD).toFixed(2)))
+      }
+      setEarningsHistory((prev) => [payload.earning, ...prev])
+      return { ok: true, earning: payload.earning, balanceUsd: payload.balanceUsd }
+    } catch {
+      return { ok: false, error: 'Network error while crediting watch reward.' }
     }
-    setAdsViewedToday((prev) => prev + 1)
-    setWalletUsd((prev) => Number((prev + EARN_PER_AD_USD).toFixed(2)))
-    setEarningsHistory((prev) => [
-      {
-        id: newId('earn'),
-        source: 'watch-ads',
-        amountUsd: EARN_PER_AD_USD,
-        note: 'Watched ad and earned reward',
-        date: new Date().toISOString(),
-      },
-      ...prev,
-    ])
   }, [])
 
   const deleteUserAccount = useCallback((userId) => {

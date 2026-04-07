@@ -59,6 +59,8 @@ function WatchEarn() {
   const stopTimerRef = useRef(null)
   const currentAdKeyRef = useRef(null)
   const [ytReady, setYtReady] = useState(false)
+  const [ytApiFailed, setYtApiFailed] = useState(false)
+  const [fallbackMode, setFallbackMode] = useState(false)
   const [resetCountdown, setResetCountdown] = useState('')
 
   const hasAccess = !!(activePacks.length > 0 || isAdminLoggedIn || freeAccessForSetup)
@@ -213,7 +215,17 @@ function WatchEarn() {
   }, [])
 
   // Create or update YouTube player; timer starts only when user clicks play (PLAYING state)
-  const [ytApiFailed, setYtApiFailed] = useState(false)
+  useEffect(() => {
+    if (ytReady && !ytApiFailed) {
+      setFallbackMode(false)
+      return
+    }
+    const id = setTimeout(() => {
+      if (!ytReady || ytApiFailed) setFallbackMode(true)
+    }, 6000)
+    return () => clearTimeout(id)
+  }, [ytReady, ytApiFailed])
+
   useEffect(() => {
     if (!ytReady || !youtubeVideoId || !hasVideos || adsRemaining <= 0) return
     if (typeof window === 'undefined' || !window.YT || !window.YT.Player) {
@@ -258,14 +270,22 @@ function WatchEarn() {
     }
   }, [ytReady, youtubeVideoId, hasVideos, adsRemaining])
 
-  const claimAdReward = (force = false) => {
+  const claimAdReward = async (force = false) => {
     if (!force && !canClaim) return
     if (!hasVideos || !currentAdLink || adsViewedTodayRef.current >= dailyLimitRef.current) return
     if (lastCreditedAdKeyRef.current === currentAdKey) return
 
     lastCreditedAdKeyRef.current = currentAdKey
-    if (typeof watchAd === 'function') watchAd()
-    setLastEarned(EARN_PER_AD_USD)
+    const result = typeof watchAd === 'function' ? await watchAd() : { ok: false, error: 'Watch service unavailable.' }
+    if (!result?.ok) {
+      lastCreditedAdKeyRef.current = null
+      setPlayerMessage(result?.error || 'Could not credit this ad. Please try again.')
+      setCanClaim(false)
+      setCountdown(REQUIRED_WATCH_SECONDS)
+      return
+    }
+
+    setLastEarned(Number(result?.earning?.amountUsd) || EARN_PER_AD_USD)
     setCurrentAdIndex((prev) => prev + 1)
     stopTimer()
     setCanClaim(false)
@@ -293,7 +313,7 @@ function WatchEarn() {
         stopTimer()
         setCanClaim(true)
         setPlayerMessage('Ad completed. Loading next ad...')
-        claimAdReward(true)
+        void claimAdReward(true)
       }
     }, 1000)
   }
@@ -398,6 +418,21 @@ function WatchEarn() {
                     </div>
                   )}
                 </div>
+                {fallbackMode && (
+                  <div className="rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 p-3">
+                    <p className="text-xs text-amber-800 dark:text-amber-300">
+                      If video play is not auto-detected in your browser/region, start the timer manually after pressing Play.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={startTimer}
+                      disabled={timerRunning || canClaim}
+                      className="mt-2 px-3 py-1.5 rounded bg-amber-600 text-white text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {timerRunning ? 'Timer running...' : canClaim ? 'Completed' : 'Start timer'}
+                    </button>
+                  </div>
+                )}
                 <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
                   <p className="text-sm text-gray-600 dark:text-gray-300">
                     Timer: <span className="font-semibold">{countdown}s</span> / {REQUIRED_WATCH_SECONDS}s
