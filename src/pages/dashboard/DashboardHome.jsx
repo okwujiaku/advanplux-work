@@ -60,6 +60,9 @@ function DashboardHome() {
   const openLiveChat = () => {
     if (typeof window === 'undefined') return
     const api = window.Tawk_API
+    if (api && typeof api.showWidget === 'function') {
+      api.showWidget()
+    }
     if (api && typeof api.maximize === 'function') {
       api.maximize()
       return
