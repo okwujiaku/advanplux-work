@@ -54,6 +54,7 @@ function WatchEarn() {
   const adsViewedTodayRef = useRef(0)
   const dailyLimitRef = useRef(0)
   const timerStartedForAdRef = useRef(null)
+  const claimIdRef = useRef('')
   const playerRef = useRef(null)
   const startTimerRef = useRef(null)
   const stopTimerRef = useRef(null)
@@ -180,6 +181,7 @@ function WatchEarn() {
     setCountdown(REQUIRED_WATCH_SECONDS)
     setPlayerMessage('Click play on the video to start.')
     timerStartedForAdRef.current = null
+    claimIdRef.current = ''
   }, [adsRemaining, currentAdKey, currentAdLink, hasAccess])
 
   useEffect(() => {
@@ -276,9 +278,20 @@ function WatchEarn() {
     if (lastCreditedAdKeyRef.current === currentAdKey) return
 
     lastCreditedAdKeyRef.current = currentAdKey
-    const claimId = `${currentAdKey}-${timerStartedForAdRef.current || 'manual'}`
+    const claimId = claimIdRef.current || `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
     const result = typeof watchAd === 'function' ? await watchAd(claimId) : { ok: false, error: 'Watch service unavailable.' }
     if (!result?.ok) {
+      if (String(result?.error || '').toLowerCase().includes('duplicate ad claim')) {
+        // Request was retried but reward was already credited; continue flow without showing hard error.
+        if (refetchWalletAndDeposits) refetchWalletAndDeposits()
+        setCurrentAdIndex((prev) => prev + 1)
+        stopTimer()
+        setCanClaim(false)
+        setCountdown(REQUIRED_WATCH_SECONDS)
+        setPlayerMessage('Ad already credited. Loading next ad...')
+        claimIdRef.current = ''
+        return
+      }
       lastCreditedAdKeyRef.current = null
       setPlayerMessage(result?.error || 'Could not credit this ad. Please try again.')
       setCanClaim(false)
@@ -292,6 +305,7 @@ function WatchEarn() {
     setCanClaim(false)
     setCountdown(REQUIRED_WATCH_SECONDS)
     setPlayerMessage('Ad completed. Loading next ad...')
+    claimIdRef.current = ''
   }
 
   const startTimer = () => {
@@ -303,6 +317,9 @@ function WatchEarn() {
 
     setTimerRunning(true)
     setPlayerMessage('Ads running.')
+    if (!claimIdRef.current) {
+      claimIdRef.current = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
+    }
 
     timerIntervalRef.current = setInterval(() => {
       const next = countdownRef.current - 1
