@@ -58,11 +58,17 @@ function DashboardHome() {
   }, [refetchWalletAndDeposits])
 
   const openLiveChat = () => {
-    if (typeof window !== 'undefined' && typeof window.smartsupp === 'function') {
-      window.smartsupp('chat:open')
-    } else {
-      window.location.href = '/dashboard/support-center'
+    if (typeof window === 'undefined') return
+    const api = window.Tawk_API
+    if (api && typeof api.maximize === 'function') {
+      api.maximize()
+      return
     }
+    if (api && typeof api.toggle === 'function') {
+      api.toggle()
+      return
+    }
+    window.location.href = '/dashboard/support-center'
   }
 
   useEffect(() => {
