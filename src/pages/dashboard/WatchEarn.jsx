@@ -276,7 +276,8 @@ function WatchEarn() {
     if (lastCreditedAdKeyRef.current === currentAdKey) return
 
     lastCreditedAdKeyRef.current = currentAdKey
-    const result = typeof watchAd === 'function' ? await watchAd() : { ok: false, error: 'Watch service unavailable.' }
+    const claimId = `${currentAdKey}-${timerStartedForAdRef.current || 'manual'}`
+    const result = typeof watchAd === 'function' ? await watchAd(claimId) : { ok: false, error: 'Watch service unavailable.' }
     if (!result?.ok) {
       lastCreditedAdKeyRef.current = null
       setPlayerMessage(result?.error || 'Could not credit this ad. Please try again.')

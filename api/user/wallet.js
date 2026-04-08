@@ -1,7 +1,8 @@
-import { getEffectiveUserIdFromRequest, getSupabaseAdmin, json } from '../_lib/auth-utils.js'
+import { getEffectiveUserIdFromRequest, getSupabaseAdmin, isAdminRequest, json } from '../_lib/auth-utils.js'
 
 export default async function handler(req, res) {
   const userId = getEffectiveUserIdFromRequest(req)
+  const isAdmin = isAdminRequest(req)
   if (!userId) return json(res, 401, { ok: false, error: 'Unauthorized.' })
 
   const supabase = getSupabaseAdmin()
@@ -113,6 +114,12 @@ export default async function handler(req, res) {
     }
 
     if (addUsd != null) {
+      // Harden against stale/legacy clients double-crediting rewards.
+      // End-users should not directly mutate wallet via addUsd on this route.
+      // Admin balance adjustments must use /api/admin/user-wallet.
+      if (!isAdmin) {
+        return json(res, 403, { ok: false, error: 'Direct wallet credit is disabled. Please refresh app and retry.' })
+      }
       const amount = Number(addUsd)
       if (Number.isNaN(amount)) return json(res, 400, { ok: false, error: 'Invalid addUsd.' })
       const { data: row, error: fetchErr } = await supabase

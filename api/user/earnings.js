@@ -3,6 +3,7 @@ import { getEffectiveUserIdFromRequest, getSupabaseAdmin, json } from '../_lib/a
 const EARN_PER_AD_USD = 0.4
 const NINETY_DAYS_MS = 90 * 24 * 60 * 60 * 1000
 const DAY_MS = 24 * 60 * 60 * 1000
+const WATCH_AD_MIN_INTERVAL_MS = 25000
 const PACK_ADS_PER_DAY = {
   10: 1,
   20: 2,
@@ -45,7 +46,7 @@ export default async function handler(req, res) {
 
   if (req.method === 'POST') {
     const body = req.body || {}
-    const { source, amountUsd, note } = body
+    const { source, amountUsd, note, claimId } = body
     let amount_usd = Number(amountUsd) || 0
     if (!source || String(source).trim() === '') {
       return json(res, 400, { ok: false, error: 'Source is required.' })
@@ -93,7 +94,46 @@ export default async function handler(req, res) {
       if ((watchedLast24h || 0) >= dailyLimit) {
         return json(res, 429, { ok: false, error: 'Daily ad limit reached.' })
       }
+
+      // Best-effort idempotency for retries/duplicate taps.
+      // 1) Optional claimId check (new clients send stable key per ad claim).
+      const normalizedClaimId = String(claimId || '').trim()
+      if (normalizedClaimId) {
+        const { data: dupByClaim, error: dupByClaimErr } = await supabase
+          .from('earnings_history')
+          .select('id')
+          .eq('user_id', userId)
+          .eq('source', 'watch-ads')
+          .eq('note', `watch-claim:${normalizedClaimId}`)
+          .limit(1)
+          .maybeSingle()
+        if (!dupByClaimErr && dupByClaim) {
+          return json(res, 409, { ok: false, error: 'Duplicate ad claim ignored.' })
+        }
+      }
+
+      // 2) Time-window guard for stale clients that do not send claimId.
+      const { data: lastWatch, error: lastWatchErr } = await supabase
+        .from('earnings_history')
+        .select('date')
+        .eq('user_id', userId)
+        .eq('source', 'watch-ads')
+        .order('date', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+      if (lastWatchErr) return json(res, 500, { ok: false, error: 'Unable to validate ad claim timing.' })
+      if (lastWatch?.date) {
+        const elapsed = Date.now() - new Date(lastWatch.date).getTime()
+        if (Number.isFinite(elapsed) && elapsed >= 0 && elapsed < WATCH_AD_MIN_INTERVAL_MS) {
+          return json(res, 409, { ok: false, error: 'Ad claim is too soon. Please continue watching.' })
+        }
+      }
     }
+
+    const safeNote =
+      sourceStr === 'watch-ads' && String(claimId || '').trim()
+        ? `watch-claim:${String(claimId).trim()}`
+        : (note != null ? String(note) : null)
 
     const { data: inserted, error } = await supabase
       .from('earnings_history')
@@ -101,7 +141,7 @@ export default async function handler(req, res) {
         user_id: userId,
         source: sourceStr,
         amount_usd,
-        note: note != null ? String(note) : null,
+        note: safeNote,
       })
       .select()
       .single()

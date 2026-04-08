@@ -917,7 +917,7 @@ export function AppProvider({ children }) {
       .catch(() => ({ ok: false, error: 'Request failed' }))
   }, [refetchWalletAndDeposits])
 
-  const watchAd = useCallback(async () => {
+  const watchAd = useCallback(async (claimId) => {
     const token =
       typeof window !== 'undefined' && window.localStorage
         ? getStoredToken()
@@ -932,6 +932,7 @@ export function AppProvider({ children }) {
           source: 'watch-ads',
           amountUsd: EARN_PER_AD_USD,
           note: 'Watched ad and earned reward',
+          claimId: claimId || null,
         }),
       })
       const payload = await response.json().catch(() => ({}))
