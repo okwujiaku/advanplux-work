@@ -17,16 +17,26 @@ function Referral() {
   const referralLink = `https://advanplux.com/sign-up?invite=${code}`
 
   useEffect(() => {
-    const token =
-      typeof window !== 'undefined' && window.sessionStorage
+    if (!currentUser) {
+      setReferralListLoading(false)
+      return
+    }
+    const authHeaders = (() => {
+      if (typeof window === 'undefined' || !window.localStorage) return {}
+      const viewAsId = window.localStorage.getItem('adminViewAsUserId')
+      const viewAsKey = window.localStorage.getItem('adminViewAsKey')
+      if (viewAsId && viewAsKey) return { 'X-Admin-Key': viewAsKey, 'X-View-As-User': viewAsId }
+      const token = typeof window !== 'undefined' && window.sessionStorage
         ? window.sessionStorage.getItem('authSessionToken')
         : null
-    if (!token || !currentUser) {
+      return token ? { Authorization: `Bearer ${token}` } : {}
+    })()
+    if (!authHeaders.Authorization && !authHeaders['X-Admin-Key']) {
       setReferralListLoading(false)
       return
     }
     setReferralListLoading(true)
-    fetch('/api/user/referral-list', { headers: { Authorization: `Bearer ${token}` } })
+    fetch('/api/user/referral-list', { headers: authHeaders })
       .then((r) => r.json())
       .then((d) => {
         if (d?.ok && d.level1) setReferralList({ level1: d.level1 || [], level2: d.level2 || [], level3: d.level3 || [] })

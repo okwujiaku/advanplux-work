@@ -256,6 +256,17 @@ function AdminLayout() {
   }, [editableMembers, members, selectedMemberId])
 
   const pendingDepositsCount = depositsForAdmin.filter((d) => d.status === 'pending').length
+  const pendingHighTierActivationsCount = depositsForAdmin.filter(
+    (d) => d.status === 'pending' && d.paymentType === 'balance_activation',
+  ).length
+  const pendingPaymentDepositsCount = depositsForAdmin.filter(
+    (d) => d.status === 'pending' && d.paymentType !== 'balance_activation',
+  ).length
+  const pendingWatchEarnAutoDepositsCount = depositsForAdmin.filter(
+    (d) =>
+      d.status === 'pending' &&
+      (d.pack === 'watch_earn_auto' || d.paymentType === 'watch_earn_auto'),
+  ).length
   const withdrawalsForAdmin = adminWithdrawals.length > 0 ? adminWithdrawals : withdrawals
   const pendingWithdrawalsCount = withdrawalsForAdmin.filter((w) => w.status === 'pending').length
   const pendingBonusWithdrawalsCount = bonusWithdrawals.filter((w) => w.status === 'pending').length
@@ -377,13 +388,21 @@ function AdminLayout() {
   const menuItems = [
     { to: '/admin/users', icon: '🏠', label: 'Registered Members', count: members.length },
     { to: '/admin/add-bank', icon: '➕', label: 'Add Bank Account' },
-    { to: '/admin/deposits', icon: '$', label: 'Confirm Pending Deposit', count: pendingDepositsCount },
+    { to: '/admin/high-tier-activations', icon: '📺', label: 'High-tier Activations', count: pendingHighTierActivationsCount },
+    { to: '/admin/deposits', icon: '$', label: 'Confirm Pending Deposit', count: pendingPaymentDepositsCount },
+    {
+      to: '/admin/watch-earn-auto-deposits',
+      icon: '⚡',
+      label: 'Watch Earn Auto ($10)',
+      count: pendingWatchEarnAutoDepositsCount,
+    },
     { to: '/admin/withdrawals', icon: '📥', label: 'Members withdrawals', count: pendingWithdrawalsCount },
     { to: '/admin/gift-code', icon: '🎁', label: 'Generate Gift Code' },
     { to: '/admin/video-manager', icon: '🎬', label: 'Video Manager', count: adVideoIds.length },
     { to: '/admin/account-topup', icon: '➕', label: 'Account Top up' },
     { to: '/admin/deduct-account', icon: '➖', label: 'Deduct Account' },
     { to: '/admin/lock-withdrawal', icon: '⊘', label: 'Lock/Unlock Withdrawal' },
+    { to: '/admin/watch-earn-lock', icon: '📺', label: 'Watch & Earn Schedule' },
     { to: '/admin/purchased-history', icon: '⊘', label: 'Purchase Engine History' },
     { to: '/admin/register-admin', icon: '👥', label: 'Register Admin' },
     { to: '/admin/change-password', icon: '🔒', label: 'Change Password' },

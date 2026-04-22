@@ -1,4 +1,5 @@
 import { getEffectiveUserIdFromRequest, getSupabaseAdmin, json } from '../_lib/auth-utils.js'
+import { getActivePackUsdList, getWatchEarnSettings } from '../_lib/watch-earn-utils.js'
 
 /**
  * GET: return referral counts (level1, level2, level3) for the current user.
@@ -44,11 +45,26 @@ export default async function handler(req, res) {
   // Direct active downlines = L1 users who have invested (have at least one active pack)
   let directActiveDownlines = 0
   if (level1Ids.size > 0) {
-    const { data: packsRows } = await supabase
+    const [{ data: packsRows }, watchSettings] = await Promise.all([
+      supabase
       .from('user_active_packs')
-      .select('user_id')
+      .select('user_id, pack_usd, created_at')
       .in('user_id', Array.from(level1Ids))
-    const investedL1Ids = new Set((packsRows || []).map((r) => r.user_id))
+      .order('created_at', { ascending: true }),
+      getWatchEarnSettings(supabase),
+    ])
+    const groupedByUser = (packsRows || []).reduce((acc, row) => {
+      const uid = row?.user_id
+      if (!uid) return acc
+      if (!acc[uid]) acc[uid] = []
+      acc[uid].push(row)
+      return acc
+    }, {})
+    const investedL1Ids = new Set(
+      Object.entries(groupedByUser)
+        .filter(([, rows]) => getActivePackUsdList(rows, { sundayLockEnabled: !!watchSettings?.sundayLockEnabled }).length > 0)
+        .map(([uid]) => uid),
+    )
     directActiveDownlines = investedL1Ids.size
   }
 

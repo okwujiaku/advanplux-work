@@ -52,6 +52,9 @@ function AdminActionSectionPage() {
   const [giftForm, setGiftForm] = useState({ value: '' })
   const [globalWithdrawalLocked, setGlobalWithdrawalLocked] = useState(null)
   const [withdrawalLockLoading, setWithdrawalLockLoading] = useState(false)
+  const [watchEarnManualLock, setWatchEarnManualLock] = useState(false)
+  const [watchEarnSundayLockEnabled, setWatchEarnSundayLockEnabled] = useState(false)
+  const [watchEarnLockLoading, setWatchEarnLockLoading] = useState(false)
   const [videoUrlsText, setVideoUrlsText] = useState(() => (Array.isArray(adVideoIds) ? adVideoIds.join('\n') : ''))
   const [announcementText, setAnnouncementText] = useState('')
   const [registerAdminForm, setRegisterAdminForm] = useState({ email: '', password: '' })
@@ -88,6 +91,23 @@ function AdminActionSectionPage() {
       .then((r) => r.json())
       .then((d) => { if (d?.ok) setGlobalWithdrawalLocked(!!d.locked) })
       .catch(() => setGlobalWithdrawalLocked(false))
+  }, [section, getAdminKey])
+
+  useEffect(() => {
+    if (section !== 'watch-earn-lock') return
+    const key = typeof getAdminKey === 'function' ? getAdminKey() : ''
+    fetch('/api/admin/watch-earn-lock', { headers: key ? { 'X-Admin-Key': key } : {} })
+      .then((r) => r.json())
+      .then((d) => {
+        if (d?.ok) {
+          setWatchEarnManualLock(!!d.manualLock)
+          setWatchEarnSundayLockEnabled(!!d.sundayLockEnabled)
+        }
+      })
+      .catch(() => {
+        setWatchEarnManualLock(false)
+        setWatchEarnSundayLockEnabled(false)
+      })
   }, [section, getAdminKey])
 
   if (section === 'add-bank') {
@@ -426,6 +446,71 @@ function AdminActionSectionPage() {
           >
             Unlock withdrawal for all
           </button>
+        </div>
+      </section>
+    )
+  }
+
+  if (section === 'watch-earn-lock') {
+    const saveWatchEarnLockSettings = async (patch) => {
+      setWatchEarnLockLoading(true)
+      const key = typeof getAdminKey === 'function' ? getAdminKey() : ''
+      try {
+        const res = await fetch('/api/admin/watch-earn-lock', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', ...(key ? { 'X-Admin-Key': key } : {}) },
+          body: JSON.stringify(patch),
+        })
+        const data = await res.json().catch(() => ({}))
+        if (res.ok && data?.ok) {
+          setWatchEarnManualLock(!!data.manualLock)
+          setWatchEarnSundayLockEnabled(!!data.sundayLockEnabled)
+        } else if (!res.ok) {
+          alert(data?.error || 'Failed to update Watch & Earn lock settings.')
+        }
+      } finally {
+        setWatchEarnLockLoading(false)
+      }
+    }
+
+    return (
+      <section className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Watch & Earn Schedule</h2>
+        <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+          Configure when Watch & Earn is unavailable. Sunday lock pauses watch tasks on Sundays and preserves users&apos; effective 90 active earning days.
+        </p>
+        <div className="space-y-3">
+          <div className="flex items-center justify-between gap-3 border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+            <div>
+              <p className="text-sm font-medium text-gray-800 dark:text-gray-200">Sunday lock</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Automatically lock Watch & Earn every Sunday.</p>
+            </div>
+            <button
+              onClick={() => saveWatchEarnLockSettings({ sundayLockEnabled: !watchEarnSundayLockEnabled })}
+              disabled={watchEarnLockLoading}
+              className={`px-3 py-1.5 rounded text-xs text-white disabled:opacity-50 ${
+                watchEarnSundayLockEnabled ? 'bg-green-600' : 'bg-amber-600'
+              }`}
+            >
+              {watchEarnSundayLockEnabled ? 'Enabled' : 'Disabled'}
+            </button>
+          </div>
+
+          <div className="flex items-center justify-between gap-3 border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+            <div>
+              <p className="text-sm font-medium text-gray-800 dark:text-gray-200">Manual lock</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Immediately lock/unlock Watch & Earn for all users.</p>
+            </div>
+            <button
+              onClick={() => saveWatchEarnLockSettings({ lockNow: !watchEarnManualLock })}
+              disabled={watchEarnLockLoading}
+              className={`px-3 py-1.5 rounded text-xs text-white disabled:opacity-50 ${
+                watchEarnManualLock ? 'bg-red-600' : 'bg-blue-600'
+              }`}
+            >
+              {watchEarnManualLock ? 'Locked now' : 'Unlocked now'}
+            </button>
+          </div>
         </div>
       </section>
     )

@@ -1,4 +1,5 @@
 import { getEffectiveUserIdFromRequest, getSupabaseAdmin, json } from '../_lib/auth-utils.js'
+import { getActivePackUsdList, getWatchEarnSettings } from '../_lib/watch-earn-utils.js'
 
 const SALARY_TIERS = [
   { investors: 10, salary: 2 },
@@ -35,11 +36,26 @@ export default async function handler(req, res) {
     return json(res, 400, { ok: false, error: 'No direct downlines. Team salary is based on direct downlines who have invested.' })
   }
 
-  const { data: packsRows } = await supabase
-    .from('user_active_packs')
-    .select('user_id')
-    .in('user_id', level1Ids)
-  const investedL1Ids = new Set((packsRows || []).map((r) => r.user_id))
+  const [{ data: packsRows }, watchSettings] = await Promise.all([
+    supabase
+      .from('user_active_packs')
+      .select('user_id, pack_usd, created_at')
+      .in('user_id', level1Ids)
+      .order('created_at', { ascending: true }),
+    getWatchEarnSettings(supabase),
+  ])
+  const groupedByUser = (packsRows || []).reduce((acc, row) => {
+    const uid = row?.user_id
+    if (!uid) return acc
+    if (!acc[uid]) acc[uid] = []
+    acc[uid].push(row)
+    return acc
+  }, {})
+  const investedL1Ids = new Set(
+    Object.entries(groupedByUser)
+      .filter(([, rows]) => getActivePackUsdList(rows, { sundayLockEnabled: !!watchSettings?.sundayLockEnabled }).length > 0)
+      .map(([uid]) => uid),
+  )
   const directActiveDownlines = investedL1Ids.size
 
   // 2) Tier from invested count

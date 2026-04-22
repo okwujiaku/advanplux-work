@@ -6,7 +6,7 @@ const USD_TO_NGN = 1450
 const USD_TO_CFA = 600
 const USD_TO_RWF = 1500
 /** Packs that are locked: show "Locked" and disable activation. */
-const LOCKED_PACKS_USD = [500, 1000]
+const LOCKED_PACKS_USD = []
 const SOCIAL_PROOF = [
   { id: '****59364', pack: '$20', usd: 20, time: '2 min ago' },
   { id: '****88291', pack: '$50', usd: 50, time: '5 min ago' },
@@ -17,6 +17,7 @@ function AdGenerator() {
   const { activePacks, PACKS_USD, walletUsd, activatePack } = useApp()
   const [proofIndex, setProofIndex] = useState(0)
   const [activating, setActivating] = useState(null)
+  const [activationNotice, setActivationNotice] = useState('')
 
   useEffect(() => {
     const t = setInterval(() => setProofIndex((i) => (i + 1) % SOCIAL_PROOF.length), 3500)
@@ -28,9 +29,19 @@ function AdGenerator() {
 
   const handleActivate = async (packUsd) => {
     if (balance < packUsd || activating) return
+    setActivationNotice('')
     setActivating(packUsd)
     try {
-      await activatePack(packUsd)
+      const result = await activatePack(packUsd)
+      if (!result?.ok) {
+        setActivationNotice(result?.error || 'Could not process activation request.')
+        return
+      }
+      if (result?.pendingApproval) {
+        setActivationNotice(result?.message || 'Activation request sent. Waiting for admin approval.')
+      } else {
+        setActivationNotice('Pack activated successfully.')
+      }
     } finally {
       setActivating(null)
     }
@@ -79,6 +90,9 @@ function AdGenerator() {
       <div id="purchase-ads-engine">
         <h2 className="text-lg font-semibold text-[#143D59] dark:text-white mb-2">Activate Ads Engine from your balance</h2>
         <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">The Ads Engine expires after 90 days.</p>
+        {activationNotice && (
+          <p className="text-sm text-primary-600 dark:text-primary-400 mb-3">{activationNotice}</p>
+        )}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {PACKS_USD.map((pack) => {
             const isLocked = LOCKED_PACKS_USD.includes(pack.usd)

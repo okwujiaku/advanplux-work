@@ -93,6 +93,12 @@ function isYouTubeUrl(value) {
   return link.includes('youtube.com') || link.includes('youtu.be')
 }
 
+function isWithinLast24Hours(dateStr, nowTs = Date.now()) {
+  if (!dateStr) return false
+  const ts = new Date(dateStr).getTime()
+  return Number.isFinite(ts) && (nowTs - ts < 24 * 60 * 60 * 1000)
+}
+
 export function AppProvider({ children }) {
   const [users, setUsers] = useState([])
   const [currentUserId, setCurrentUserId] = useState(null)
@@ -405,13 +411,7 @@ export function AppProvider({ children }) {
           fetch('/api/user/earnings', { headers: h }).then((r) => r.json()).then((e) => {
             if (e?.ok && Array.isArray(e.earnings)) {
               setEarningsHistory(e.earnings)
-              const today = new Date()
-              const isToday = (dateStr) => {
-                if (!dateStr) return false
-                const x = new Date(dateStr)
-                return x.getDate() === today.getDate() && x.getMonth() === today.getMonth() && x.getFullYear() === today.getFullYear()
-              }
-              const watchAdsToday = e.earnings.filter((x) => x.source === 'watch-ads' && isToday(x.date)).length
+              const watchAdsToday = e.earnings.filter((x) => x.source === 'watch-ads' && isWithinLast24Hours(x.date)).length
               setAdsViewedToday(watchAdsToday)
               const teamSalaryTotal = e.earnings
                 .filter((x) => x && x.source === 'team-salary')
@@ -518,13 +518,7 @@ export function AppProvider({ children }) {
         if (wd?.ok && Array.isArray(wd.withdrawals)) setWithdrawals(wd.withdrawals)
         if (e?.ok && Array.isArray(e.earnings)) {
           setEarningsHistory(e.earnings)
-          const today = new Date()
-          const isToday = (dateStr) => {
-            if (!dateStr) return false
-            const x = new Date(dateStr)
-            return x.getDate() === today.getDate() && x.getMonth() === today.getMonth() && x.getFullYear() === today.getFullYear()
-          }
-          const watchAdsToday = e.earnings.filter((x) => x.source === 'watch-ads' && isToday(x.date)).length
+          const watchAdsToday = e.earnings.filter((x) => x.source === 'watch-ads' && isWithinLast24Hours(x.date)).length
           setAdsViewedToday(watchAdsToday)
           const teamSalaryTotal = e.earnings
             .filter((x) => x && x.source === 'team-salary')
@@ -747,7 +741,9 @@ export function AppProvider({ children }) {
 
   const activatePack = useCallback(async (packUsd) => {
     const headers = getAuthHeaders()
-    if ((!headers.Authorization && !headers['X-Admin-Key']) || !packUsd) return false
+    if ((!headers.Authorization && !headers['X-Admin-Key']) || !packUsd) {
+      return { ok: false, error: 'Unauthorized.' }
+    }
     try {
       const res = await fetch('/api/user/wallet', {
         method: 'PATCH',
@@ -759,12 +755,16 @@ export function AppProvider({ children }) {
         if (data.balanceUsd != null) setWalletUsd(data.balanceUsd)
         if (Array.isArray(data.activePacks)) setActivePacks(data.activePacks)
         if (data.activePackUsd != null) setUserPack(data.activePackUsd)
-        return true
+        return {
+          ok: true,
+          pendingApproval: !!data.pendingApproval,
+          message: data.message || '',
+        }
       }
+      return { ok: false, error: data?.error || 'Unable to activate pack.' }
     } catch {
-      // ignore
+      return { ok: false, error: 'Network error while activating pack.' }
     }
-    return false
   }, [])
 
   const hasToken = useMemo(() => {
@@ -918,16 +918,13 @@ export function AppProvider({ children }) {
   }, [refetchWalletAndDeposits])
 
   const watchAd = useCallback(async (claimId) => {
-    const token =
-      typeof window !== 'undefined' && window.localStorage
-        ? getStoredToken()
-        : null
-    if (!token) return { ok: false, error: 'Unauthorized' }
+    const headers = getAuthHeaders()
+    if (!headers.Authorization && !headers['X-Admin-Key']) return { ok: false, error: 'Unauthorized' }
 
     try {
       const response = await fetch('/api/user/earnings', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        headers: { 'Content-Type': 'application/json', ...headers },
         body: JSON.stringify({
           source: 'watch-ads',
           amountUsd: EARN_PER_AD_USD,
@@ -952,6 +949,31 @@ export function AppProvider({ children }) {
       return { ok: false, error: 'Network error while crediting watch reward.' }
     }
   }, [])
+
+  const runAutoAdsTask = useCallback(async () => {
+    const headers = getAuthHeaders()
+    if (!headers.Authorization && !headers['X-Admin-Key']) return { ok: false, error: 'Unauthorized' }
+    try {
+      const response = await fetch('/api/user/earnings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...headers },
+        body: JSON.stringify({ source: 'watch-ads-auto-task' }),
+      })
+      const payload = await response.json().catch(() => ({}))
+      if (!response.ok || !payload?.ok) {
+        return { ok: false, error: payload?.error || 'Unable to complete auto task.' }
+      }
+      refetchWalletAndDeposits()
+      return {
+        ok: true,
+        creditedCount: Number(payload.creditedCount) || 0,
+        creditedAmountUsd: Number(payload.creditedAmountUsd) || 0,
+        balanceUsd: payload.balanceUsd,
+      }
+    } catch {
+      return { ok: false, error: 'Network error while completing auto task.' }
+    }
+  }, [refetchWalletAndDeposits])
 
   const deleteUserAccount = useCallback((userId) => {
     if (!userId) return
@@ -1005,6 +1027,7 @@ export function AppProvider({ children }) {
     claimSalary,
     adsViewedToday,
     watchAd,
+    runAutoAdsTask,
     hasSecurityPin,
     setSecurityPinForCurrentUser,
     verifySecurityPinForCurrentUser,

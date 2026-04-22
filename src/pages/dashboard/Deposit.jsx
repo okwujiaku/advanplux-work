@@ -138,7 +138,7 @@ function Deposit() {
           className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-lg"
         />
         <div className="mt-3 flex flex-wrap gap-2">
-          {[10, 20, 50, 100, 200].map((usd) => (
+          {[10, 20, 50, 100, 200, 500, 1000].map((usd) => (
             <button
               key={usd}
               type="button"

@@ -21,9 +21,11 @@ import WithdrawalHistory from './pages/dashboard/WithdrawalHistory'
 import AdminLayout from './pages/admin/AdminLayout'
 import AdminUsersPage from './pages/admin/AdminUsersPage'
 import AdminDepositsPage from './pages/admin/AdminDepositsPage'
+import AdminWatchEarnAutoDepositsPage from './pages/admin/AdminWatchEarnAutoDepositsPage'
 import AdminWithdrawalsPage from './pages/admin/AdminWithdrawalsPage'
 import AdminBonusWithdrawalsPage from './pages/admin/AdminBonusWithdrawalsPage'
 import AdminPurchasedHistoryPage from './pages/admin/AdminPurchasedHistoryPage'
+import AdminHighTierActivationsPage from './pages/admin/AdminHighTierActivationsPage'
 import AdminToolsPage from './pages/admin/AdminToolsPage'
 import AdminHistoryPage from './pages/admin/AdminHistoryPage'
 import AdminActionSectionPage from './pages/admin/AdminActionSectionPage'
@@ -123,7 +125,9 @@ function App() {
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<Navigate to="users" replace />} />
           <Route path="users" element={<AdminUsersPage />} />
+          <Route path="high-tier-activations" element={<AdminHighTierActivationsPage />} />
           <Route path="deposits" element={<AdminDepositsPage />} />
+          <Route path="watch-earn-auto-deposits" element={<AdminWatchEarnAutoDepositsPage />} />
           <Route path="withdrawals" element={<AdminWithdrawalsPage />} />
           <Route path="bonus-withdrawals" element={<AdminBonusWithdrawalsPage />} />
           <Route path="purchased-history" element={<AdminPurchasedHistoryPage />} />
@@ -134,6 +138,7 @@ function App() {
           <Route path="account-topup" element={<AdminActionSectionPage />} />
           <Route path="deduct-account" element={<AdminActionSectionPage />} />
           <Route path="lock-withdrawal" element={<AdminActionSectionPage />} />
+          <Route path="watch-earn-lock" element={<AdminActionSectionPage />} />
           <Route path="register-admin" element={<AdminActionSectionPage />} />
           <Route path="change-password" element={<AdminActionSectionPage />} />
           <Route path="announcement" element={<AdminActionSectionPage />} />

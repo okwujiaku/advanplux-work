@@ -1,7 +1,11 @@
 import { getEffectiveUserIdFromRequest, getSupabaseAdmin, json } from '../_lib/auth-utils.js'
+import { getActivePackUsdList, getWatchEarnSettings, isWatchEarnLockedNow } from '../_lib/watch-earn-utils.js'
+import {
+  WATCH_EARN_AUTO_PACK,
+  WATCH_EARN_AUTO_PAYMENT_TYPE,
+} from '../_lib/watch-earn-auto-deposit.js'
 
 const EARN_PER_AD_USD = 0.4
-const NINETY_DAYS_MS = 90 * 24 * 60 * 60 * 1000
 const DAY_MS = 24 * 60 * 60 * 1000
 const WATCH_AD_MIN_INTERVAL_MS = 25000
 const PACK_ADS_PER_DAY = {
@@ -56,28 +60,108 @@ export default async function handler(req, res) {
       return json(res, 400, { ok: false, error: 'Use the Claim salary button on the Team page. Team salary can only be claimed once every 7 days.' })
     }
 
+    if (sourceStr === 'watch-ads-auto-task') {
+      const [{ data: walletRow, error: walletErr }, { data: packsRows, error: packsErr }, watchSettings] = await Promise.all([
+        supabase.from('user_wallet').select('active_pack_usd, balance_usd').eq('user_id', userId).maybeSingle(),
+        supabase
+          .from('user_active_packs')
+          .select('pack_usd, created_at')
+          .eq('user_id', userId)
+          .order('created_at', { ascending: true }),
+        getWatchEarnSettings(supabase),
+      ])
+      if (walletErr || packsErr) return json(res, 500, { ok: false, error: 'Unable to verify watch access.' })
+      if (isWatchEarnLockedNow(watchSettings)) {
+        return json(res, 423, { ok: false, error: 'Watch & Earn is unavailable on Sundays.' })
+      }
+
+      const activePacks = getActivePackUsdList(packsRows, {
+        sundayLockEnabled: !!watchSettings?.sundayLockEnabled,
+        legacyPackUsd: walletRow?.active_pack_usd,
+      })
+      const dailyLimit = activePacks.reduce((sum, usd) => sum + (PACK_ADS_PER_DAY[usd] || 0), 0)
+
+      const { data: paidAutoRow, error: paidAutoErr } = await supabase
+        .from('deposits')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('status', 'approved')
+        .or(`pack.eq.${WATCH_EARN_AUTO_PACK},payment_type.eq.${WATCH_EARN_AUTO_PAYMENT_TYPE}`)
+        .limit(1)
+        .maybeSingle()
+      if (paidAutoErr) return json(res, 500, { ok: false, error: 'Unable to verify Watch Earn Auto add-on.' })
+
+      const isHighTierAuto = dailyLimit >= 50
+      const hasPaidApprovedAuto = !!paidAutoRow && dailyLimit > 0 && dailyLimit < 50
+      if (!isHighTierAuto && !hasPaidApprovedAuto) {
+        if (dailyLimit <= 0) {
+          return json(res, 403, { ok: false, error: 'No active ads engine.' })
+        }
+        return json(res, 403, {
+          ok: false,
+          error:
+            'Auto task for your plan requires the $10 Watch Earn Auto add-on (pay on Watch & Earn, then wait for admin approval) or a 500/1000 ads engine plan.',
+        })
+      }
+
+      const watchCutoffIso = new Date(Date.now() - DAY_MS).toISOString()
+      const { count: watchedLast24h, error: countErr } = await supabase
+        .from('earnings_history')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId)
+        .eq('source', 'watch-ads')
+        .gte('date', watchCutoffIso)
+      if (countErr) return json(res, 500, { ok: false, error: 'Unable to verify daily watch limit.' })
+
+      const remaining = Math.max(0, dailyLimit - (watchedLast24h || 0))
+      if (remaining <= 0) {
+        return json(res, 429, { ok: false, error: 'Daily ad limit reached.' })
+      }
+
+      const batchId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+      const rows = Array.from({ length: remaining }, (_, idx) => ({
+        user_id: userId,
+        source: 'watch-ads',
+        amount_usd: EARN_PER_AD_USD,
+        note: `auto-task:${batchId}:${idx + 1}/${remaining}`,
+      }))
+      const { error: insertErr } = await supabase.from('earnings_history').insert(rows)
+      if (insertErr) return json(res, 500, { ok: false, error: 'Unable to complete auto task.' })
+
+      const creditedAmountUsd = Number((remaining * EARN_PER_AD_USD).toFixed(2))
+      const now = new Date().toISOString()
+      const current = walletRow ? Number(walletRow.balance_usd) : 0
+      const next = Number((current + creditedAmountUsd).toFixed(2))
+      const { error: walletErr2 } = await supabase
+        .from('user_wallet')
+        .upsert({ user_id: userId, balance_usd: next, updated_at: now }, { onConflict: 'user_id' })
+      if (walletErr2) return json(res, 500, { ok: false, error: 'Auto task completed but wallet update failed.' })
+
+      return json(res, 200, { ok: true, creditedCount: remaining, creditedAmountUsd, balanceUsd: next })
+    }
+
     // Server-side guard for watch-ads so users cannot bypass daily limits from client/network tools.
     if (sourceStr === 'watch-ads') {
       amount_usd = EARN_PER_AD_USD
 
-      const cutoffIso = new Date(Date.now() - NINETY_DAYS_MS).toISOString()
-      const [{ data: walletRow, error: walletErr }, { data: packsRows, error: packsErr }] = await Promise.all([
+      const [{ data: walletRow, error: walletErr }, { data: packsRows, error: packsErr }, watchSettings] = await Promise.all([
         supabase.from('user_wallet').select('active_pack_usd').eq('user_id', userId).maybeSingle(),
         supabase
           .from('user_active_packs')
           .select('pack_usd, created_at')
           .eq('user_id', userId)
-          .gte('created_at', cutoffIso),
+          .order('created_at', { ascending: true }),
+        getWatchEarnSettings(supabase),
       ])
       if (walletErr || packsErr) return json(res, 500, { ok: false, error: 'Unable to verify watch access.' })
-
-      let activePacks = Array.isArray(packsRows)
-        ? packsRows.map((r) => Number(r.pack_usd)).filter((n) => Number.isFinite(n) && n > 0)
-        : []
-      if (activePacks.length === 0 && walletRow?.active_pack_usd != null) {
-        const legacyPack = Number(walletRow.active_pack_usd)
-        if (Number.isFinite(legacyPack) && legacyPack > 0) activePacks = [legacyPack]
+      if (isWatchEarnLockedNow(watchSettings)) {
+        return json(res, 423, { ok: false, error: 'Watch & Earn is unavailable on Sundays.' })
       }
+
+      const activePacks = getActivePackUsdList(packsRows, {
+        sundayLockEnabled: !!watchSettings?.sundayLockEnabled,
+        legacyPackUsd: walletRow?.active_pack_usd,
+      })
       const dailyLimit = activePacks.reduce((sum, usd) => sum + (PACK_ADS_PER_DAY[usd] || 0), 0)
       if (dailyLimit <= 0) {
         return json(res, 403, { ok: false, error: 'No active ads engine.' })

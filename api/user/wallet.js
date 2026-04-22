@@ -1,4 +1,7 @@
 import { getEffectiveUserIdFromRequest, getSupabaseAdmin, isAdminRequest, json } from '../_lib/auth-utils.js'
+import { getActivePackUsdList, getWatchEarnSettings } from '../_lib/watch-earn-utils.js'
+
+const HIGH_TIER_PACKS_REQUIRING_APPROVAL = new Set([500, 1000])
 
 export default async function handler(req, res) {
   const userId = getEffectiveUserIdFromRequest(req)
@@ -11,24 +14,21 @@ export default async function handler(req, res) {
   }
 
   if (req.method === 'GET') {
-    const NINETY_DAYS_MS = 90 * 24 * 60 * 60 * 1000
-    const cutoffIso = new Date(Date.now() - NINETY_DAYS_MS).toISOString()
-    const [{ data: walletRow, error: walletErr }, { data: packsRows, error: packsErr }] = await Promise.all([
+    const [{ data: walletRow, error: walletErr }, { data: packsRows, error: packsErr }, watchSettings] = await Promise.all([
       supabase.from('user_wallet').select('balance_usd, active_pack_usd').eq('user_id', userId).maybeSingle(),
       supabase
         .from('user_active_packs')
         .select('pack_usd, created_at')
         .eq('user_id', userId)
-        .gte('created_at', cutoffIso)
         .order('created_at', { ascending: true }),
+      getWatchEarnSettings(supabase),
     ])
     if (walletErr || packsErr) return json(res, 500, { ok: false, error: 'Unable to load wallet.' })
     const balance = walletRow ? Number(walletRow.balance_usd) : 0
-    let activePacks = Array.isArray(packsRows) ? packsRows.map((r) => Number(r.pack_usd)).filter(Number.isFinite) : []
-    if (activePacks.length === 0 && walletRow?.active_pack_usd != null) {
-      const legacy = Number(walletRow.active_pack_usd)
-      if (Number.isFinite(legacy)) activePacks = [legacy]
-    }
+    const activePacks = getActivePackUsdList(packsRows, {
+      sundayLockEnabled: !!watchSettings?.sundayLockEnabled,
+      legacyPackUsd: walletRow?.active_pack_usd,
+    })
     const activePackUsd = activePacks.length > 0 ? Math.max(...activePacks) : null
     return json(res, 200, { ok: true, balanceUsd: balance, activePackUsd, activePacks })
   }
@@ -49,6 +49,72 @@ export default async function handler(req, res) {
       if (balance < packUsd) return json(res, 400, { ok: false, error: 'Insufficient balance to activate this pack.' })
       const nextBalance = Number((balance - packUsd).toFixed(2))
       const now = new Date().toISOString()
+
+      if (HIGH_TIER_PACKS_REQUIRING_APPROVAL.has(packUsd)) {
+        const { data: existingPending, error: pendingErr } = await supabase
+          .from('deposits')
+          .select('id')
+          .eq('user_id', userId)
+          .eq('status', 'pending')
+          .eq('payment_type', 'balance_activation')
+          .limit(1)
+          .maybeSingle()
+        if (pendingErr) return json(res, 500, { ok: false, error: 'Unable to verify pending activation requests.' })
+        if (existingPending) {
+          return json(res, 400, { ok: false, error: 'You already have a pending high-tier activation awaiting admin approval.' })
+        }
+
+        const { error: upsertErr } = await supabase.from('user_wallet').upsert(
+          { user_id: userId, balance_usd: nextBalance, updated_at: now },
+          { onConflict: 'user_id' },
+        )
+        if (upsertErr) return json(res, 500, { ok: false, error: 'Unable to reserve balance for activation request.' })
+
+        const { data: pendingActivation, error: pendingInsertErr } = await supabase
+          .from('deposits')
+          .insert({
+            user_id: userId,
+            amount: String(packUsd),
+            amount_usd: packUsd,
+            currency: 'USD',
+            country: 'Internal',
+            payment_type: 'balance_activation',
+            account_name: 'Wallet balance',
+            account_number: null,
+            bank_name: null,
+            account_used: 'wallet',
+            pack: packUsd,
+            status: 'pending',
+          })
+          .select('id')
+          .single()
+        if (pendingInsertErr) {
+          // Best-effort rollback of reserved balance if request creation fails.
+          await supabase.from('user_wallet').upsert(
+            { user_id: userId, balance_usd: balance, updated_at: now },
+            { onConflict: 'user_id' },
+          )
+          return json(res, 500, { ok: false, error: 'Unable to create admin approval request.' })
+        }
+
+        const { data: packsRows } = await supabase
+          .from('user_active_packs')
+          .select('pack_usd')
+          .eq('user_id', userId)
+          .order('created_at', { ascending: true })
+        const activePacks = Array.isArray(packsRows) ? packsRows.map((r) => Number(r.pack_usd)).filter(Number.isFinite) : []
+        const activePackUsd = activePacks.length > 0 ? Math.max(...activePacks) : null
+        return json(res, 200, {
+          ok: true,
+          pendingApproval: true,
+          requestId: pendingActivation?.id || null,
+          message: `Activation request for $${packUsd} submitted. Waiting for admin approval.`,
+          balanceUsd: nextBalance,
+          activePackUsd,
+          activePacks,
+        })
+      }
+
       const { error: insertPackErr } = await supabase.from('user_active_packs').insert({
         user_id: userId,
         pack_usd: packUsd,
